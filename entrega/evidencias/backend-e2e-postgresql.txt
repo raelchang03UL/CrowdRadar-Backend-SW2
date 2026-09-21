@@ -1,0 +1,32 @@
+{
+  "database": "crowdradar_sprint1",
+  "test_email": "codex.sprint1.20260920222357094@example.com",
+  "register": {
+    "status": 201,
+    "id": 1,
+    "email": "codex.sprint1.20260920222357094@example.com"
+  },
+  "login": {
+    "status": 200,
+    "jwt_received": true,
+    "user_email": "codex.sprint1.20260920222357094@example.com"
+  },
+  "profile": {
+    "status": 200,
+    "nombre": "Ciudadano",
+    "distrito": "Lima"
+  },
+  "update": {
+    "status": 200,
+    "nombre": "Ciudadano Actualizado",
+    "telefono": "912345678",
+    "distrito": "Miraflores"
+  },
+  "profile_after_update": {
+    "status": 200,
+    "nombre": "Ciudadano Actualizado",
+    "apellido": "Sprint Uno",
+    "telefono": "912345678",
+    "distrito": "Miraflores"
+  }
+}

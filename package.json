@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon app.js",
-    "start": "node app.js"
+    "start": "node app.js",
+    "test": "node --test"
   },
   "dependencies": {
     "ajv": "^8.17.1",
