@@ -13,6 +13,7 @@ Windows 11 25H2 (build 26200.9457); Git 2.51.0.windows.1; Node 22.20.0; npm 10.9
 | Área | Comprobación | Resultado |
 | --- | --- | --- |
 | Backend | `npm ci` | Correcto; 151 paquetes desde `package-lock.json`; lockfile sin cambios. |
+| Backend | Clonación local limpia de `develop` | Sin `node_modules` ni `.env` al inicio; `npm ci` instaló 151 paquetes, `npm test` pasó 4/4 y el servidor arrancó con variables de entorno externas en el puerto 3001; `GET /` devolvió 200. La clonación temporal se eliminó tras la prueba. |
 | Backend | `npm test` | 4 aprobadas, 0 fallidas. |
 | Backend | `node --check` en 16 archivos JS | Sin errores sintácticos. |
 | Backend | `npm audit` | 5 vulnerabilidades: 3 moderadas, 2 altas; paquetes señalados: `brace-expansion`, `fast-uri`, `qs`, `sequelize` y `uuid`. No se ejecutó `npm audit fix --force` ni se cambiaron dependencias. |
