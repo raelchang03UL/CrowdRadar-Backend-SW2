@@ -1,4 +1,22 @@
-# Estado actual — cierre local HU 3.1 / Web, 07/10/2026
+# Estado actual
+
+## Hito B — HU 2.3, 08/10/2026
+
+Rama dependiente `feature/hu-2-3-cambio-password`, padre HU 3.1 `c2aa7c0a098e2b4a26557edf1170e3cb1582696b` (PR #26 pendiente). Frontend compañero parte del hito A `0361ae13017def4d9c135a78b3b95ab1f07bf635`. Sin integración en develop/main.
+
+Cambio autenticado con contraseña actual/nueva/confirmación, bcrypt 8 caracteres Unicode/72 bytes UTF-8, rechazo de reutilización. La actualización transaccional bloquea el usuario y aumenta `sessionVersion`; JWT anteriores (también legacy sin claim) se rechazan. El cierre local HU 2.4 sigue sin revocar por sí mismo.
+
+Migración explícita `002-users-session-version`: esquema users baseline en DB nueva, columna aditiva en la existente, historial/idempotencia. Ya no hay User.sync ni DDL al arrancar; falta de migración impide iniciar con instrucción pública. Ver configuración y contrato.
+
+- `npm test`: 36 aprobadas, 0 fallidas. Primer intento restringido bloqueó loopback; la ejecución real detectó un nombre local que sombreaba el validador (TDZ), corregido y reejecutado. Regresión PostgreSQL lugares: cuatro comprobaciones aprobadas; sintaxis de 40 JS y diff correctos.
+- `npm run test:db:auth`: PostgreSQL 18 real, exclusivamente `crowdradar_auth_test`; base limpia, actualización/preservación e idempotencia, CHECK negativo, arranque sin DDL, dos cambios concurrentes (200/401), hash/version persistidos, JWT anterior rechazado, nuevo login y rollback tras fallo posterior al UPDATE.
+- Aplicación a `crowdradar_dev`: sus 4 usuarios previos conservaron todos los datos (comparación JSON excluyendo únicamente la nueva columna). Runner repetido sin cambios; servidor reiniciado en 3000. Ninguna conexión a Sprint 1 ni Supabase.
+
+Integración opt-in `test/local_api_smoke_test.dart` frontend: 1/1 con widgets VM y HTTP real contra este servidor/crowdradar_dev. Registro/login/perfil → formulario → actual incorrecta → éxito → cierre/aviso → ruta protegida bloqueada; JWT viejo 401 y login nuevo correcto. No es navegador ni Android. La cuenta QA queda identificable y sus credenciales aleatorias solo vivieron en memoria.
+
+Recorrido manual Chrome/Android pendiente; los registros siguientes son históricos y no describen la política de sesiones nueva.
+
+## Registro histórico — cierre local HU 3.1 / Web, 07/10/2026
 
 Fotografía de la validación local del 07/10/2026, anterior a su publicación: ambos repositorios estaban en `feature/hu-3-1-mapa-lugares`, sin staging/commit/publicación. Bases conservadas en esa revisión: backend `a6da9a72e736bcb18568533a4ec7bf7aa4daa3f3`, frontend `f214886d7a40aabfc3b10b0af1a266128cc421fe`. No se tocaron main, upstream, Issues ni Project durante esa validación. Para conocer la publicación/integración posterior, comprobar Git y los PR relacionados; los resultados siguientes conservan su fecha y alcance.
 

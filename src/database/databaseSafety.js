@@ -1,5 +1,11 @@
 const localHosts = ["localhost", "127.0.0.1", "::1"];
 
+export function assertIsolatedAuthTestDatabase({ config: { database, host } }) {
+    if (!localHosts.includes(host) || database !== "crowdradar_auth_test") {
+        throw new Error("La comprobación de autenticación solo admite crowdradar_auth_test en PostgreSQL local.");
+    }
+}
+
 export function assertLocalDevelopmentDatabase({ config: { database, host } }) {
     if (!localHosts.includes(host) ||
         !["crowdradar_dev", "crowdradar_hu31_test"].includes(database)) {

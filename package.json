@@ -9,7 +9,8 @@
     "db:migrate": "node scripts/migrate.js",
     "db:seed:demo": "node scripts/seed-places-demo.js",
     "db:seed:user-demo": "node scripts/seed-demo-user.js",
-    "test:db:places": "node scripts/verify-places-db.js"
+    "test:db:places": "node scripts/verify-places-db.js",
+    "test:db:auth": "node scripts/verify-auth-db.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",

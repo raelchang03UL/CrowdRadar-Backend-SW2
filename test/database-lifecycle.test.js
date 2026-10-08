@@ -6,20 +6,25 @@ import User from "../src/models/User.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { assertLocalDevelopmentDatabase, assertIsolatedPlacesTestDatabase, assertMigrationTarget } from "../src/database/databaseSafety.js";
 
-test("arranque remoto no usa allowlist ni ejecuta DDL de places", async () => {
+test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
     const original = { config: { ...sequelize.config }, authenticate: sequelize.authenticate, transaction: sequelize.transaction, query: sequelize.query, sync: User.sync };
     const calls = [];
     let server;
     try {
         Object.assign(sequelize.config, { host: "db.staging.example", database: "crowdradar_staging" });
         sequelize.authenticate = async () => calls.push("authenticate");
-        sequelize.transaction = sequelize.query = () => assert.fail("Arranque no debe migrar places");
-        User.sync = async (...args) => { assert.deepEqual(args, []); calls.push("User.sync"); };
+        sequelize.transaction = () => assert.fail("Arranque no debe migrar");
+        sequelize.query = async (sql) => {
+            assert.match(sql, /^SELECT /);
+            calls.push("schema-read");
+            return [{ name: "002-users-session-version" }];
+        };
+        User.sync = () => assert.fail("Arranque no debe sincronizar modelos");
         server = await startServer({ port: 0 });
         const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), { message: "CrowdRadar API" });
-        assert.deepEqual(calls, ["authenticate", "User.sync"]);
+        assert.deepEqual(calls, ["authenticate", "schema-read", "schema-read"]);
     } finally {
         if (server) await new Promise((resolve) => server.close(resolve));
         Object.assign(sequelize.config, original.config);

@@ -1,6 +1,6 @@
 # CrowdRadar Backend
 
-API REST para registro, inicio de sesión, consulta y actualización del perfil. El incremento local HU 3.1 añade lectura autenticada de lugares. Está construida con Node.js, Express, Sequelize y PostgreSQL.
+API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña y lectura autenticada de lugares. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
 
 Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
 
@@ -50,7 +50,7 @@ La línea base de desarrollo se verificó con Node.js 22.20.0, npm 10.9.3 y Post
 npm start
 ```
 
-El arranque autentica la conexión y conserva el mecanismo histórico `User.sync()` sin `force` ni `alter`; su migración formal sigue pendiente. **No crea ni migra `places` al arrancar.** Ejecuta antes `npm run db:migrate`. La respuesta de control está disponible en `GET http://localhost:3000/`.
+Antes del primer arranque y de actualizar este incremento, ejecuta `npm run db:migrate`. Aplica `001-create-places` y `002-users-session-version`: esta última crea `users` en una base limpia o añade la versión de sesión a su esquema histórico reconocido, sin borrar usuarios. El arranque solo autentica y verifica el esquema; **no ejecuta DDL ni `User.sync()`**. Si falta la migración, se detiene con instrucciones. La respuesta de control está en `GET http://localhost:3000/`.
 
 Los fixtures admiten únicamente `crowdradar_dev` o `crowdradar_hu31_test` en PostgreSQL local. El comando de migración es explícito y portable; bloquea la base de entrega, bases de sistema y hosts Supabase. En esta tarea todas las conexiones reales fueron locales. No se realizó despliegue.
 
@@ -81,6 +81,7 @@ npm run dev
 | --- | --- | --- | --- |
 | `POST` | `/api/auth/register` | No | Registrar un ciudadano. |
 | `POST` | `/api/auth/login` | No | Validar credenciales y obtener JWT. |
+| `POST` | `/api/auth/password/change` | Bearer JWT | Verificar contraseña actual, cambiarla e invalidar todas las sesiones anteriores. |
 | `GET` | `/api/users/profile` | Bearer JWT | Consultar el perfil autenticado. |
 | `PUT` | `/api/users/profile` | Bearer JWT | Actualizar nombre, apellido, teléfono o distrito. |
 | `GET` | `/api/places` | Bearer JWT | Listar lugares activos con coordenadas válidas. |
@@ -102,13 +103,15 @@ Ejemplo de registro:
 
 El valor de contraseña es un marcador, no una credencial predeterminada: elige una propia de al menos 8 caracteres y como máximo 72 bytes UTF-8. Todos los campos del formulario Web son obligatorios; nombre, apellido y distrito requieren al menos 2 caracteres; teléfono exactamente 9 dígitos. El backend no envía correo de verificación.
 
-Opcionalmente, `npm run db:seed:user-demo` crea **Rael Chang** mediante el mismo registro/bcrypt, con `DEMO_USER_EMAIL` y `DEMO_USER_PASSWORD` suministrados solo en la sesión local. No hay valores predeterminados. Ejecuta después del primer arranque que prepara `users`; si existe otra cuenta/contraseña no la sobrescribe. No guardar esas variables en documentos ni Git.
+Opcionalmente, `npm run db:seed:user-demo` crea **Rael Chang** mediante el mismo registro/bcrypt, con `DEMO_USER_EMAIL` y `DEMO_USER_PASSWORD` suministrados solo en la sesión local. No hay valores predeterminados. Ejecuta después de `npm run db:migrate`; si existe otra cuenta/contraseña no la sobrescribe. No guardar esas variables en documentos ni Git.
 
 Para las rutas protegidas usa el token retornado por login:
 
 ```text
 Authorization: Bearer <token>
 ```
+
+HU 2.3: enviar `currentPassword`, `newPassword` y `confirmPassword` al cambio de contraseña. La nueva debe tener mínimo 8 caracteres Unicode, no ser solo espacios, no superar 72 bytes UTF-8 y ser diferente de la actual. El éxito no devuelve JWT: vuelve a login. Cada petición protegida comprueba la versión de sesión persistida; todos los JWT anteriores quedan rechazados, incluso en otros clientes y después de reiniciar el backend. Los JWT antiguos sin versión tampoco se aceptan: inicia sesión nuevamente tras actualizar. El cierre local HU 2.4 por sí solo continúa sin revocar JWT.
 
 ## Pruebas
 
@@ -125,6 +128,12 @@ npm run test:db:places
 ```
 
 Esta comprobación requiere PostgreSQL local y permiso de crear bases: crea o reutiliza exclusivamente `crowdradar_hu31_test`, nunca usa `DB_NAME` como destino. Verifica idempotencia, preservación de una tabla `users` centinela, restricciones SQL, fixture repetible y exclusión de inactivos. Las inserciones negativas se revierten mediante transacción; la base aislada se conserva para inspección. No la uses para datos personales.
+
+```powershell
+npm run test:db:auth
+```
+
+Usa exclusivamente `crowdradar_auth_test` local, separada de la tabla centinela de lugares. Verifica migración limpia (primera ejecución), actualización aditiva e idempotencia, preservación de usuarios, restricciones y HTTP real con bcrypt/PostgreSQL: dos cambios simultáneos, rechazo del JWT viejo, login nuevo y rollback de hash/versión. No elimina tablas ni bases; conserva usuarios de prueba con credenciales aleatorias nunca impresas. Requiere permiso `CREATEDB`. No se incluyen credenciales ni nuevas dependencias.
 
 ## Estado verificado
 

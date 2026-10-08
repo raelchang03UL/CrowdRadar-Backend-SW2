@@ -27,6 +27,12 @@ User.init(
             type: DataTypes.STRING,
             allowNull: false
         },
+        sessionVersion: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+            validate: { min: 0 }
+        },
         telefono: {
             type: DataTypes.STRING
         },
