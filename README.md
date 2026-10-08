@@ -2,6 +2,8 @@
 
 API REST para registro, inicio de sesión, consulta y actualización del perfil. El incremento local HU 3.1 añade lectura autenticada de lugares. Está construida con Node.js, Express, Sequelize y PostgreSQL.
 
+Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+
 ## Requisitos
 
 - Node.js y npm.
