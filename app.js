@@ -6,18 +6,22 @@ import { fileURLToPath } from "node:url";
 import authRoutes from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
 import sequelize from "./src/config/database.js";
+import User from "./src/models/User.js";
+import placeRoutes from "./src/routes/place.routes.js";
+import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 
 dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors(corsOptions()));
 
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 
 app.use("/api/users", userRoutes);
+app.use("/api/places", placeRoutes);
 
 app.get("/", (req, res) => {
     res.json({
@@ -27,30 +31,12 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-const validateEnvironment = () => {
-    const requiredVariables = [
-        "DB_NAME",
-        "DB_USER",
-        "DB_PASSWORD",
-        "DB_HOST",
-        "JWT_SECRET"
-    ];
-
-    const missingVariables = requiredVariables.filter(
-        (variable) => process.env[variable] === undefined
-    );
-
-    if (missingVariables.length > 0) {
-        throw new Error(
-            `Faltan variables de entorno requeridas: ${missingVariables.join(", ")}. ` +
-            "Copia .env.example como .env y completa los valores."
-        );
-    }
-};
-
 export const startServer = async ({ port = PORT } = {}) => {
     validateEnvironment();
-    await sequelize.sync();
+    await sequelize.authenticate();
+    // La tabla histórica conserva el comportamiento previo, sin force ni alter.
+    // places se prepara explícitamente con npm run db:migrate, nunca al arrancar.
+    await User.sync();
 
     return app.listen(port, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);

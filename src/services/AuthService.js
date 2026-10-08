@@ -6,6 +6,11 @@ class AuthService {
 
     async register(userData) {
 
+        if (typeof userData.password !== "string" || userData.password.length < 8 ||
+            !userData.password.trim() || Buffer.byteLength(userData.password, "utf8") > 72) {
+            throw new Error("La contraseña debe tener al menos 8 caracteres y no superar 72 bytes.");
+        }
+
         const existingUser = await UserRepository.findByEmail(userData.email);
 
         if (existingUser) {
