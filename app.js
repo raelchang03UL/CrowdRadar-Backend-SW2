@@ -3,31 +3,30 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import authRoutes from "./src/routes/auth.routes.js";
+import { createAuthRoutes } from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
 import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
+import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 
 dotenv.config();
 
-const app = express();
-
-app.use(cors(corsOptions()));
-
-app.use(express.json());
-
-app.use("/api/auth", authRoutes);
-
-app.use("/api/users", userRoutes);
-app.use("/api/places", placeRoutes);
-
-app.get("/", (req, res) => {
-    res.json({
-        message: "CrowdRadar API"
+export function createApp({ recoveryService } = {}) {
+    const app = express();
+    app.use(cors(corsOptions()));
+    app.use(express.json());
+    app.use("/api/auth", createAuthRoutes({ recoveryService }));
+    app.use("/api/users", userRoutes);
+    app.use("/api/places", placeRoutes);
+    app.get("/", (req, res) => {
+        res.json({ message: "CrowdRadar API" });
     });
-});
+    return app;
+}
+
+const app = createApp();
 
 const PORT = process.env.PORT || 3000;
 
@@ -36,6 +35,7 @@ export const startServer = async ({ port = PORT } = {}) => {
     await sequelize.authenticate();
     // Toda creación/cambio de esquema es explícita: npm run db:migrate.
     await assertAuthSchemaReady(sequelize);
+    await assertRecoverySchemaReady(sequelize);
 
     return app.listen(port, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);

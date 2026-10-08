@@ -24,7 +24,8 @@ test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
         const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), { message: "CrowdRadar API" });
-        assert.deepEqual(calls, ["authenticate", "schema-read", "schema-read"]);
+        assert.equal(calls[0], "authenticate");
+        assert.ok(calls.length > 1 && calls.slice(1).every((call) => call === "schema-read"));
     } finally {
         if (server) await new Promise((resolve) => server.close(resolve));
         Object.assign(sequelize.config, original.config);

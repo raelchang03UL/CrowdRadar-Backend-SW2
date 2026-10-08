@@ -59,7 +59,7 @@ No se borran cambios locales para ejecutar esta secuencia. Una rama de tarea que
 
 Los dos repositorios tienen historias Git independientes; no hay un merge atómico conjunto. «Último frontend» y «último backend» no garantizan por sí solos compatibilidad. Antes de declarar una base lista, registrar en el PR/Issue de integración **SHA backend + SHA frontend + pruebas/recorrido + pendientes**. Si cambia cualquiera, validar de nuevo lo afectado. No copiar una lista paralela de versiones en todos los README.
 
-Para este incremento HU 3.1, la publicación de las ramas y la apertura de PR en borrador no autorizan su merge. Mientras sigan sin integrar, los compañeros que clonen `develop` reciben la base anterior; para revisar HU 3.1 deben descargar las ramas indicadas en los dos PR. La guía visual es una propuesta, no un rediseño ya implementado.
+Para HU 3.1, la publicación y los PR en borrador no autorizan su merge. Mientras sigan sin integrar, clonar `develop` recibe la base anterior. El 08/10 se publicaron incrementos dependientes: pulido visual A (frontend `0361ae1`) y HU 2.3 B (backend `97e607e`, frontend `1e62c75`); recuperación C parte de B. Sus ramas no añaden alcance a los PR HU 3.1. Descargar explícitamente el par de ramas para revisión, sin confundirlo con integración. No abrir sus PR a develop hasta integrar sus bases, ni reescribir historial para ocultar dependencias.
 
 Una tarea tiene un responsable humano y un revisor distinto. Los demás pueden colaborar en pruebas, UI o API con tareas delimitadas. Nadie aprueba automáticamente el código de su propia IA. Los roles rotan: no dejar a una persona permanentemente solo con documentación.
 
@@ -69,7 +69,7 @@ Propuesta para distribuir trabajo, todavía sin nombres ni compromiso:
 | --- | --- | --- |
 | A | Backend solicitar/restablecer HU 2.1–2.2 | Contrato, esquema, envío y sesiones |
 | B | Frontend solicitar/restablecer HU 2.1–2.2 | Contrato de A; puede usar dobles mientras se integra |
-| C | Backend cambiar contraseña HU 2.3 | Espera el esquema/política de A; no editar auth a la vez |
+| C | Backend cambiar contraseña HU 2.3 | Base B ya define versión persistente/migración; recuperación la reutiliza. No editar auth a la vez |
 | D | Frontend cambiar contraseña HU 2.3 | Contrato de C; coordina router/perfil con B |
 | E | Pruebas de integración y casos negativos | Participa desde el contrato; verifica el par final |
 | F | Pulido visual sobrio de autenticación/perfil | Tokens compartidos; no editar los formularios de B/D a la vez |

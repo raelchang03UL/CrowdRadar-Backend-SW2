@@ -8,10 +8,11 @@ const { default: repository } = await import("../src/repositories/UserRepository
 const { default: jwt } = await import("../src/utils/jwt.js");
 const { validPassword } = await import("../src/utils/passwordPolicy.js");
 let server, url, user, failSave, failSession, lockedVersion, missingUser, failLogin;
-const originals = { findSessionById: repository.findSessionById, withLockedUser: repository.withLockedUser, findByEmail: repository.findByEmail, findById: repository.findById };
+const originals = { findSessionById: repository.findSessionById, withLockedUser: repository.withLockedUser, findByEmail: repository.findByEmail, findById: repository.findById, invalidatePasswordResetTokens: repository.invalidatePasswordResetTokens };
 const oldPassword = "unit-current-password";
 const newPassword = "unit-new-password";
 before(() => {
+    repository.invalidatePasswordResetTokens = async () => {};
     repository.findSessionById = async () => {
         if (failSession) throw new Error("private-db-detail");
         if (missingUser) return null;
