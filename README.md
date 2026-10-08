@@ -2,7 +2,9 @@
 
 API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación tiene envío real deshabilitado hasta elegir proveedor/remitente; su flujo se prueba mediante correo en memoria exclusivo de pruebas. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
 
-Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+Para colaborar con el equipo y usar IA sobre el código, empieza por [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [inicio del equipo](docs/INICIO_EQUIPO.md), que incluye un prompt sin tarea asignada. Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+
+**Descarga actual del equipo:** `integration/base-equipo` en backend y frontend contiene los avances A/B/C y las guías de inicio, pendientes de revisión/integración. Usarla para leer, ejecutar y revisar; iniciar tareas nuevas desde `develop` solo después de integrar y comprobar el par. Los comandos de clonación y el prompt están en la guía de inicio.
 
 ## Requisitos
 

@@ -5,7 +5,7 @@ El equipo tiene siete integrantes activos. Cada persona trabaja con su clon, su 
 ## Lectura inicial
 
 1. [Reglas de este repositorio](AGENTS.md).
-2. [Acuerdo de coordinación](docs/COORDINACION_EQUIPO.md), canónico para ambos repositorios.
+2. [Inicio del equipo y prompt para IA](docs/INICIO_EQUIPO.md), luego el [acuerdo de coordinación](docs/COORDINACION_EQUIPO.md), canónicos para ambos repositorios.
 3. [Arquitectura backend](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md).
 4. [Configuración local](docs/CONFIGURACION_LOCAL.md) y [estado técnico](docs/ESTADO_ACTUAL.md).
 5. Issue aprobado de la tarea en el [Project](https://github.com/users/raelchang03UL/projects/1).
