@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import sequelize from "../config/database.js";
 
 class UserRepository {
 
@@ -9,7 +10,7 @@ class UserRepository {
     async findById(id) {
         return await User.findByPk(id, {
             attributes: {
-                exclude: ["passwordHash"]
+                exclude: ["passwordHash", "sessionVersion"]
             }
         });
     }
@@ -19,6 +20,17 @@ class UserRepository {
             where: {
                 email
             }
+        });
+    }
+
+    async findSessionById(id) {
+        return User.findByPk(id, { attributes: ["id", "rol", "status", "sessionVersion"], raw: true });
+    }
+
+    async withLockedUser(id, operation) {
+        return sequelize.transaction(async (transaction) => {
+            const user = await User.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+            return operation(user, transaction);
         });
     }
 
@@ -34,7 +46,7 @@ class UserRepository {
 
         return await User.findByPk(id, {
             attributes: {
-                exclude: ["passwordHash"]
+                exclude: ["passwordHash", "sessionVersion"]
             }
         });
 

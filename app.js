@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import authRoutes from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
 import sequelize from "./src/config/database.js";
-import User from "./src/models/User.js";
+import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 
@@ -34,9 +34,8 @@ const PORT = process.env.PORT || 3000;
 export const startServer = async ({ port = PORT } = {}) => {
     validateEnvironment();
     await sequelize.authenticate();
-    // La tabla histórica conserva el comportamiento previo, sin force ni alter.
-    // places se prepara explícitamente con npm run db:migrate, nunca al arrancar.
-    await User.sync();
+    // Toda creación/cambio de esquema es explícita: npm run db:migrate.
+    await assertAuthSchemaReady(sequelize);
 
     return app.listen(port, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
@@ -48,7 +47,7 @@ const executedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";
 
 if (path.resolve(currentFile) === executedFile) {
     startServer().catch((error) => {
-        console.error(`No se pudo iniciar CrowdRadar API: ${error.message}`);
+        console.error(error.code === "SCHEMA_NOT_READY" ? error.message : "No se pudo iniciar CrowdRadar API. Revisa la configuración local y la conexión PostgreSQL.");
         process.exitCode = 1;
     });
 }

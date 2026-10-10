@@ -18,12 +18,13 @@ const originalRepositoryMethods = {
     create: UserRepository.create,
     findById: UserRepository.findById,
     findByEmail: UserRepository.findByEmail,
+    findSessionById: UserRepository.findSessionById,
     update: UserRepository.update
 };
 
 const publicUser = (user) => {
     if (!user) return null;
-    const { passwordHash, password, ...safeUser } = user;
+    const { passwordHash, password, sessionVersion, ...safeUser } = user;
     return safeUser;
 };
 
@@ -32,6 +33,7 @@ before(() => {
         const now = new Date().toISOString();
         const user = {
             ...data,
+            sessionVersion: 0,
             id: nextId++,
             createdAt: now,
             updatedAt: now
@@ -41,6 +43,7 @@ before(() => {
     };
 
     UserRepository.findById = async (id) => publicUser(users.get(id));
+    UserRepository.findSessionById = async (id) => users.get(id) ?? null;
 
     UserRepository.findByEmail = async (email) =>
         [...users.values()].find((user) => user.email === email) ?? null;
