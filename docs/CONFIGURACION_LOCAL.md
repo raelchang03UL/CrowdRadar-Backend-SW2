@@ -39,6 +39,8 @@ En PowerShell:
 Set-Location (Join-Path $workspaceRoot 'CrowdRadar-Backend')
 Copy-Item .env.example .env
 # Edita .env y coloca la contraseña PostgreSQL y un JWT_SECRET largo y aleatorio propios.
+# El bloqueo entre reportes del mismo usuario y lugar dura 3 minutos por defecto.
+# Puedes cambiarlo con REPORT_COOLDOWN_MINUTES, usando un entero mayor que cero.
 # Mantén DB_NAME=crowdradar_dev, DB_HOST=localhost, DB_PORT=5432 y PORT=3000.
 npm ci
 npm test
@@ -64,7 +66,7 @@ Los fixtures solo admiten PostgreSQL local con `crowdradar_dev` o `crowdradar_hu
 
 Después de aplicar HU 2.3, inicia sesión de nuevo: los JWT sin `sessionVersion` no se aceptan. El cambio exitoso de contraseña invalida todas las versiones anteriores y exige login en cada cliente; recargar Flutter también pierde su sesión local en memoria. La UI utiliza `POST /api/auth/password/change` con contraseña actual, nueva y confirmación. No hace falta una nueva variable de entorno ni instalar paquetes para este incremento.
 
-La configuración opcional `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA` y `CORS_ORIGINS` está descrita en el README y `.env.example`. Mantén TLS verificado para una futura base remota autorizada. No hay despliegue en esta tarea.
+La configuración opcional `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA` y `CORS_ORIGINS` está descrita en el README y `.env.example`. `REPORT_COOLDOWN_MINUTES` también es opcional y toma `3` si no se define; controla el periodo de bloqueo de reportes de saturación por usuario y lugar. Mantén TLS verificado para una futura base remota autorizada. No hay despliegue en esta tarea.
 
 ### Recuperación de contraseña — hito C
 
@@ -88,6 +90,10 @@ El puerto 465 usa TLS directo; cualquier otro exige STARTTLS. La entrega es así
 Las pruebas construyen `PasswordRecoveryService` con `delivery.sendResetLink({email,resetUrl})` y `delivery.sendPasswordChangedNotification({email})`, y lo inyectan mediante `createApp({recoveryService})`. El transporte de memoria existe solo bajo `test/helpers`; se consulta después de `drainDeliveries()` dentro del proceso de prueba. Los runners QA separan sus presupuestos de abuso mediante un namespace de claves exclusivo de cada ejecución, conservando SQL/umbrales reales. Esto no se aplica al arranque normal.
 
 No declarar HU 2.1/Sprint 2 terminados con un correo capturado: todavía faltan entrega real y recorrido manual de las plataformas afectadas.
+
+### Reportes de saturación
+
+La migración `004-saturation-reports` crea la tabla `saturation_reports` al ejecutar `npm run db:migrate`, después de las migraciones anteriores. El endpoint requiere JWT y permite los niveles `TRANQUILO`, `MODERADO` y `SATURADO`. El primer reporte se registra normalmente; los reportes posteriores del mismo usuario para el mismo lugar se rechazan durante `REPORT_COOLDOWN_MINUTES` (3 minutos por defecto). La migración no crea la base PostgreSQL ni modifica el archivo `.env` real.
 
 ## 3. Android y Flutter
 

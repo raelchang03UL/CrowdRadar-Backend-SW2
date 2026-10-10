@@ -13,11 +13,21 @@ export function databaseConfiguration(env = process.env) {
     };
 }
 
+export function reportCooldownMinutes(env = process.env) {
+    const value = env.REPORT_COOLDOWN_MINUTES ?? "3";
+    const minutes = Number(value);
+    if (!Number.isInteger(minutes) || minutes < 1) {
+        throw new Error("REPORT_COOLDOWN_MINUTES debe ser un entero mayor que cero.");
+    }
+    return minutes;
+}
+
 export function validateEnvironment(env = process.env) {
     const required = env.DATABASE_URL ? ["JWT_SECRET"] : ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "JWT_SECRET"];
     const missing = required.filter((name) => env[name] === undefined || (name !== "DB_PASSWORD" && !env[name].trim()));
     if (missing.length) throw new Error(`Faltan variables de entorno requeridas: ${missing.join(", ")}. Copia .env.example como .env y completa los valores.`);
     if (env.DB_SSL && !["true", "false"].includes(env.DB_SSL)) throw new Error("DB_SSL debe ser true o false.");
+    reportCooldownMinutes(env);
     if (env.DATABASE_URL) {
         let url;
         try { url = new URL(env.DATABASE_URL); } catch { throw new Error("DATABASE_URL no es una URL PostgreSQL válida."); }
