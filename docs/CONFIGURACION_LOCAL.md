@@ -4,7 +4,7 @@ Línea base comprobada en Windows 11 con Node 22.20.0, npm 10.9.3, PostgreSQL 18
 
 ## 1. Clonar ambos repositorios
 
-**Vigencia:** HU 3.1 y los incrementos A/B/C siguen en ramas dependientes de revisión, sin integrar. Clonar `develop` reproduce la base anterior, no las migraciones/pantallas descritas aquí. Para revisar el par final A/B/C publicado, usar `feature/hu-2-1-2-recuperacion` en ambos clones; sus padres y pruebas constan en ESTADO_ACTUAL. No se reejecutó una clonación limpia del incremento; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
+**Vigencia (10/10/2026):** `develop` ya integra HU 3.1, el pulido A, HU 2.3 (B) y HU 2.1–2.2 (C): backend #26, #29 y #30; frontend #9, #11, #12 y #13. Clonar `develop` incluye las migraciones 001–003 y sus pantallas. Siguen en revisión, sin integrar, el envío real de correo (backend #31, `feature/hu-2-1-correo-smtp`) y el arreglo del mapa Web (frontend #14, `fix/web-referrer-mapa`): hasta su merge, `develop` responde 503 uniforme en la recuperación y el mapa Web muestra las teselas bloqueadas. No se reejecutó una clonación limpia del conjunto integrado; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
 
 ```powershell
 $workspaceRoot = Join-Path $env:USERPROFILE 'Documents\CrowdRadar-SW2'
@@ -14,16 +14,16 @@ git clone -b develop https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git
 git clone -b develop https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
 ```
 
-Solo para revisar A/B/C, con ambos clones limpios y las ramas ya publicadas:
+Solo para revisar el correo y el mapa antes de su merge, con ambos clones limpios:
 
 ```powershell
 git -C CrowdRadar-Backend fetch origin
 git -C CrowdRadar-FrontEnd fetch origin
-git -C CrowdRadar-Backend switch --track origin/feature/hu-2-1-2-recuperacion
-git -C CrowdRadar-FrontEnd switch --track origin/feature/hu-2-1-2-recuperacion
+git -C CrowdRadar-Backend switch --track origin/feature/hu-2-1-correo-smtp
+git -C CrowdRadar-FrontEnd switch --track origin/fix/web-referrer-mapa
 ```
 
-Si esa rama local ya existe, usar `git switch feature/hu-2-1-2-recuperacion` y actualizar únicamente con `git pull --ff-only origin feature/hu-2-1-2-recuperacion`, sin sobrescribir cambios. Después de los merges autorizados, la base diaria volverá a ser develop.
+Si esas ramas locales ya existen, usar `git switch` y actualizar únicamente con `git pull --ff-only`, sin sobrescribir cambios. Para cualquier tarea nueva, la base es `develop`.
 
 ## 2. Backend y base de datos
 
@@ -70,9 +70,20 @@ La configuración opcional `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA` y `CORS_ORIGINS
 
 Al actualizar este incremento, `npm run db:migrate` aplica además `003-password-recovery`: dos tablas nuevas para hashes de enlaces y límites persistentes, sin modificar usuarios ni reescribir 001/002. El arranque exige ese esquema y sigue sin ejecutar DDL. `npm run test:db:recovery` aplica/comprueba 003 exclusivamente en `crowdradar_auth_test` local, conservando los datos de otras ejecuciones.
 
-`PASSWORD_RESET_URL=http://localhost:5500/#/reset-password` define la base local confiable. El servicio añade el token a la query del fragmento; no utiliza cabeceras del cliente. Fuera de desarrollo/pruebas locales se exige HTTPS. No se admiten credenciales, query ni rutas distintas en la URL configurada. Un proveedor habilitado debe validar su URL al construir el servicio; sin proveedor, la API y el cambio autenticado arrancan aunque falte esa variable.
+`PASSWORD_RESET_URL="http://localhost:5500/#/reset-password"` define la base local confiable. Las comillas son obligatorias en `.env`: sin ellas dotenv trata `#/reset-password` como comentario y el arranque con correo se detiene por URL no confiable. El servicio añade el token a la query del fragmento; no utiliza cabeceras del cliente. Fuera de desarrollo/pruebas locales se exige HTTPS. No se admiten credenciales, query ni rutas distintas en la URL configurada. Con correo configurado, el arranque valida esa URL y se detiene si falta o no es confiable; sin correo, la API y el cambio autenticado arrancan aunque falte esa variable.
 
-El envío real está deshabilitado: todavía no se eligieron proveedor, remitente ni credenciales. No hay variables SMTP ni un flag de prueba que capture enlaces en el servidor normal. `/password/forgot` devuelve 503 `RECOVERY_UNAVAILABLE` de manera uniforme para cualquier correo. Para completar la entrega real falta elegir esos datos e implementar/verificar el adaptador; configurar la URL por sí sola no produce un 202 ni entrega correo. Las contraseñas y enlaces nunca se escriben en documentos/logs.
+#### Correo por SMTP (Brevo)
+
+Proveedor: Brevo (plan gratuito) por SMTP mediante `nodemailer`. Gmail se descartó porque la cuenta del proyecto no permitió crear contraseñas de aplicación; el adaptador es SMTP genérico y también funcionaría con Gmail (`smtp.gmail.com`, 465, contraseña de aplicación). Sin variables `SMTP_*`, `/password/forgot` sigue devolviendo 503 `RECOVERY_UNAVAILABLE` uniforme y no consulta cuentas; no hay flag de captura en el servidor normal. Para habilitar el envío en tu PC:
+
+1. Crea tu cuenta Brevo gratuita, verifica tu teléfono y añade un remitente en ⚙️ → Senders, Domains & Dedicated IPs → Senders (confirmar el correo que llega).
+2. En ⚙️ → SMTP & API → SMTP genera una clave SMTP. Copia el login (`…@smtp-brevo.com`) y la clave; solo se muestra una vez.
+3. En tu `.env` (nunca en `.env.example`, documentos ni capturas compartidas) define `SMTP_HOST=smtp-relay.sendinblue.com`, `SMTP_PORT=587`, `SMTP_USER=<login>`, `SMTP_PASSWORD=<clave>` y `MAIL_FROM=CrowdRadar <remitente verificado>`. `MAIL_FROM` es obligatorio con Brevo.
+4. Reinicia `npm start`. El log indica `envío por correo habilitado`. Una configuración incompleta, un puerto inválido o una `PASSWORD_RESET_URL` no confiable detienen el arranque con un mensaje sin secretos.
+
+**Host:** usar `smtp-relay.sendinblue.com`, no `smtp-relay.brevo.com`. El 10/10/2026, desde Perú, `smtp-relay.brevo.com` resolvió al relay `smtp-relay-offshore-southamerica-east-v2`, cuyo certificado (Let's Encrypt) solo incluye nombres `sendinblue.com`; la verificación TLS fallaba (`ESOCKET`, altname inválido) y no se envió nada. Ambos nombres apuntan a la misma IP; con `sendinblue` la validación TLS completa y la autenticación son correctas. No desactivar la verificación de certificados para evitarlo.
+
+El puerto 465 usa TLS directo; cualquier otro exige STARTTLS. La entrega es asíncrona y no se reintenta (cola en memoria): un fallo del proveedor no cambia la respuesta uniforme y solo registra su código (`EAUTH` clave rechazada, `ESOCKET` conexión/certificado), nunca destinatario, enlace ni token. Brevo reescribe el remitente `@gmail.com` a su dominio `brevosend.com` porque no puede firmar en nombre de Gmail; si no llega, revisar spam y Transactional → Logs en Brevo. Las contraseñas y enlaces nunca se escriben en documentos/logs.
 
 Las pruebas construyen `PasswordRecoveryService` con `delivery.sendResetLink({email,resetUrl})` y `delivery.sendPasswordChangedNotification({email})`, y lo inyectan mediante `createApp({recoveryService})`. El transporte de memoria existe solo bajo `test/helpers`; se consulta después de `drainDeliveries()` dentro del proceso de prueba. Los runners QA separan sus presupuestos de abuso mediante un namespace de claves exclusivo de cada ejecución, conservando SQL/umbrales reales. Esto no se aplica al arranque normal.
 
