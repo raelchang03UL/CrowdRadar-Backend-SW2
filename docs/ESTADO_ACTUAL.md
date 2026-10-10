@@ -1,4 +1,74 @@
-# Estado técnico verificado — 22/09/2026
+# Estado actual — cierre local HU 3.1 / Web, 07/10/2026
+
+Fotografía de la validación local del 07/10/2026, anterior a su publicación: ambos repositorios estaban en `feature/hu-3-1-mapa-lugares`, sin staging/commit/publicación. Bases conservadas en esa revisión: backend `a6da9a72e736bcb18568533a4ec7bf7aa4daa3f3`, frontend `f214886d7a40aabfc3b10b0af1a266128cc421fe`. No se tocaron main, upstream, Issues ni Project durante esa validación. Para conocer la publicación/integración posterior, comprobar Git y los PR relacionados; los resultados siguientes conservan su fecha y alcance.
+
+## Verificación final de este cierre
+
+- PostgreSQL 18 activo. `.env` ignorado apunta a `crowdradar_dev`, localhost:5432; no se imprimieron credenciales. Sin conexión a Supabase ni a `crowdradar_sprint1`.
+- **Migración explícita**: `npm run db:migrate` → `001-create-places ya aplicada; sin cambios.` El arranque solo autentica y conserva `User.sync()`; nunca ejecuta la migración de `places`. Fixtures restringidos a las dos bases locales; migración portable con barreras para entrega/sistema/Supabase.
+- `npm test`: **24 aprobadas, 0 fallidas, 0 omitidas**, código 0. `npm run test:db:places`: 4 comprobaciones aprobadas (idempotencia/preservación, cuatro rechazos SQL con rollback, fixture repetible, exclusión de inactivos). `node --check`: **35 JS** correctos. `git diff --check`: código 0; solo avisos de normalización LF/CRLF.
+- Backend real reiniciado tras la caída controlada, puerto 3000; `GET /` → 200 `{"message":"CrowdRadar API"}`. Migración y fixture demostrativo repetidos sin duplicación.
+- Cuenta desechable **Rael Chang** registrada desde Flutter Web, correo QA único y contraseña aleatoria solo en memoria de la prueba. SQL confirmó `current_database() = crowdradar_dev`, nombre/apellido, distrito, teléfono de 9 dígitos y bcrypt (sin imprimir hash). Los 3 lugares activos son demostrativos.
+- Web real: registro, duplicado, validaciones, login, contraseña incorrecta, mapa/selección, cierre/guardas y backend apagado comprobados en navegador integrado. `flutter run -d chrome` lanzó Chrome normal, pero el recorrido interactivo de ese Chrome no pudo completarse con el control disponible: **no equiparar la prueba IAB a una prueba manual en Chrome normal**. Detalle/capturas en ESTADO_ACTUAL del frontend.
+- Frontend final: análisis sin problemas, **69/69 pruebas**, build Web correcto (`58,7 s`, código 0), sin nuevas dependencias. Android anterior del día se conserva como evidencia histórica; no se repitió tras las últimas mejoras de login/registro.
+
+Configuración DB por variables/URL, TLS verificado y CORS explícito se cubren con dobles y CORS local; no se validó despliegue remoto. El fixture opcional de usuario no tiene contraseña predeterminada y no se ejecutó con una credencial demo persistida: la cuenta manual se creó por la interfaz. Solo el registro añade una validación pequeña del límite bcrypt de 72 bytes; recuperación/cambio de contraseña no se implementaron.
+
+Pendientes: revisión/publicación autorizada de HU 3.1, recorrido Chrome de otro integrante, clonación limpia del incremento (todavía no publicado), migración `users`, E2E automático integral y fuente canónica. No se declaran HU 2.1–2.3, HU 3.2 ni HU 3.3 terminadas. Los registros siguientes son históricos del estado de cada ejecución, no instrucciones vigentes; README/CONFIGURACION controlan la ejecución actual.
+
+## Inventario final para revisión (sin staging)
+
+28 archivos: 9 modificados y 19 nuevos. Incluye trabajo local anterior conservado. Salida de `git status --porcelain=v1 --untracked-files=all` desde la raíz backend:
+
+```text
+ M .env.example
+ M README.md
+ M app.js
+ M docs/CONFIGURACION_LOCAL.md
+ M docs/ESTADO_ACTUAL.md
+ M docs/PLAN_TECNICO_SW2.md
+ M package.json
+ M src/config/database.js
+ M src/services/AuthService.js
+?? scripts/migrate.js
+?? scripts/seed-demo-user.js
+?? scripts/seed-places-demo.js
+?? scripts/verify-places-db.js
+?? src/config/environment.js
+?? src/controllers/PlaceController.js
+?? src/database/databaseSafety.js
+?? src/database/migratePlaces.js
+?? src/database/seedDemoUser.js
+?? src/database/seedPlacesDemo.js
+?? src/models/Place.js
+?? src/repositories/PlaceRepository.js
+?? src/routes/place.routes.js
+?? src/services/PlaceService.js
+?? test/database-lifecycle.test.js
+?? test/demo-user.test.js
+?? test/environment.test.js
+?? test/password-boundary.test.js
+?? test/places.test.js
+```
+
+Revisión: `.env` no rastreado e ignorado, node_modules ignorado, sin asignaciones locales de contraseña/JWT detectadas en textos ni candidatos generados o mayores de 5 MB. `package-lock.json` y `entrega/` sin diferencias. Solo se añadieron comandos en package.json, no dependencias. `HEAD = develop = origin/develop`, diferencia `0 0` en referencias locales; los cambios están en archivos. `origin/main` conserva `1130a900d1e02c390c3acf5a8c3964077a44a34d`. La rama local main preexistente apunta a `828a6aaadb2ec52ea57855c3aeffe8b4f27f6e72`/upstream/main, no a la entrega: se informó, no se corrigió ni tocó fuera de alcance. Origin sigue siendo Rael, upstream Walturx; no hubo operaciones remotas de escritura.
+
+## Registro inicial HU 3.1 — 07/10/2026
+
+Rama `feature/hu-3-1-mapa-lugares`, base `develop` / `a6da9a72e736bcb18568533a4ec7bf7aa4daa3f3`. Al comenzar, ambos repositorios estaban limpios y sincronizados después de `git fetch --no-tags origin`; frontend desde el merge HU 2.4 `f214886d7a40aabfc3b10b0af1a266128cc421fe`. No se crearon commits ni se publicaron cambios.
+
+- `GET /api/places` usa el middleware JWT existente y la estructura controlador → servicio → repositorio → modelo. Lista solo activos, en orden de ID, con coordenadas finitas y dentro de rango. El error devuelve 503 sin detalles de DB.
+- Se sustituyó la sincronización global por migración transaccional de `places` y el `User.sync()` histórico, sin `force` ni `alter`. Historial `crowdradar_migrations`, bloqueo transaccional para concurrencia y rechazo de tabla preexistente sin historial. Guardas explícitas impiden migrar fuera de las dos bases locales admitidas.
+- Primero se probó en `crowdradar_hu31_test`: migración repetida sin cambios, historial único, estructura y contenido de `users` centinela conservados, cuatro rechazos SQL de rango/NaN/infinito (código PostgreSQL `23514`), fixture repetido sin duplicados y exclusión de inactivos. No se borraron tablas ni bases.
+- Después se aplicó a `crowdradar_dev`. Una comparación SHA-256 de filas y columnas antes/después confirmó `users` intacta (2 usuarios). Se cargaron explícitamente tres lugares con `demostrativo=true`. No se conectó a `crowdradar_sprint1` ni a Supabase.
+- `npm test`: **12 pruebas, 12 aprobadas, 0 fallidas, 0 omitidas**. `node --check`: **27 archivos JS**, sin errores. `npm run test:db:places`, `db:migrate` repetido y `db:seed:demo` repetido: código 0. `git diff --check`: sin errores.
+- Servidor real en puerto 3000: `GET /` 200; `/api/places` sin token 401; con JWT local 200 y los tres lugares. Login real desde Android y consulta del mapa funcionaron.
+
+Android 16/API 36 compiló e instaló el frontend: login, mapa OpenStreetMap, tres marcadores, identificación breve, backend apagado con error comprensible y reintento correcto tras reiniciar. Evidencias locales en `CrowdRadar-FrontEnd/docs/evidencias/hu_3_1/2026_10_07` dentro de la carpeta general. La advertencia XML del SDK no impidió compilar.
+
+Limitaciones: catálogo real pendiente; fixtures ilustrativos, sin saturación ni tiempo real. La migración cubre solo `places`, no resuelve la deuda de `users`. No hay despliegue, edición de lugares ni rollback destructivo. La base de prueba se conserva. Dependencias y `package-lock.json` sin cambios; `package.json` añade únicamente comandos. HU 3.2 y HU 3.3 no se implementaron ni se marcaron terminadas; Issues/Project no se modificaron.
+
+## Registro histórico — 22/09/2026
 
 Esta línea base se trabajó en `develop`. Los commits de entrega permanecen intactos en `main` y en el tag `sprint1-entrega-2026-09-22`. Los SDK se instalaron fuera de los repositorios. El `.env` local no se publica.
 
