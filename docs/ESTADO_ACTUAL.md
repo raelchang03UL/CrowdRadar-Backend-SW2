@@ -1,5 +1,23 @@
 # Estado actual
 
+## Hito C — HU 2.1–2.2, avance verificable, 08/10/2026
+
+Rama `feature/hu-2-1-2-recuperacion`, padre B backend `97e607ed22b48561bed30a4e821099f76360210d`; frontend compañero parte de B `1e62c754682f3abe2b166b178d44b7e6e7d1fad0`. HU 3.1/PR #26 y #9 continúan abiertos en borrador; las bases no están integradas. No se abrió otro PR ni se modificaron main/develop, Issues o Project.
+
+Solicitud uniforme → enlace validado antes del formulario → restablecimiento de un solo uso → login nuevo. Token aleatorio de 32 bytes, solo SHA-256 en PostgreSQL, 15 minutos de vigencia; consumo condicionado a expiración/uso después de esperar el lock del usuario. Hash, consumo e incremento de versión de sesión se confirman juntos. Nueva solicitud y cambio autenticado invalidan enlaces anteriores. Límites persistentes por IP/correo, URL confiable y errores públicos sin secretos. El criterio uniforme sustituye por autorización el criterio de enumeración heredado del Issue #3, que no se editó. Ver contrato para códigos/umbrales y límites de temporización.
+
+**Correo real pendiente por decisión del usuario:** no hay proveedor, remitente ni adaptador configurados. El servidor normal devuelve 503 `RECOVERY_UNAVAILABLE` antes del lookup/generación; no afirma envío exitoso. El transporte en memoria existe exclusivamente en pruebas. HU 2.1 y Sprint 2 no están terminados; publicación tampoco equivale a revisión/integración.
+
+- `npm test`: 51 comprobaciones aprobadas, 0 fallidas/omitidas (50 casos y la carga del helper de pruebas). Sintaxis de 49 JS y `git diff --check` correctos. Sin dependencias ni lockfiles modificados.
+- `npm run test:db:auth`: regresión aprobada en `crowdradar_auth_test`; migración aditiva, concurrencia 200/401, JWT anterior rechazado y rollback. El primer ensayo B de base vacía está registrado abajo; este rerun conserva la base ya existente.
+- `npm run test:db:recovery`: seis bloques aprobados en PostgreSQL 18 aislado. 003 aditiva/idempotente conserva usuarios; validación no consume; dos resets simultáneos dan 200/400; JWT viejo401/login nuevo200; renovación/cambio invalidan enlaces; validaciones y fallo posterior al UPDATE revierten hash/versión/token; expiración durante espera de lock se rechaza. Límites email3/solicitudIP10/resetIP30 persisten entre instancias; correo ambiguo no selecciona otra cuenta. No se borraron bases ni tablas.
+- `npm run test:db:places`: cuatro comprobaciones de regresión aprobadas, exclusivamente `crowdradar_hu31_test`.
+- `003-password-recovery` aplicada explícitamente a `crowdradar_dev`: comparación JSON de todos los campos/filas confirma sus cinco usuarios intactos. Segunda ejecución y `npm run db:migrate` sin cambios. Servidor real iniciado en3000; GET `/`200. Solicitud con correo existente/inexistente: mismo503/cuerpo y ningún token creado; validación inválida400. Sin conexión a entrega Sprint1/Supabase ni DDL al arrancar.
+- Integración frontend opt-in C: 1/1, widgets VM + HTTP real en127.0.0.1:3031 + `crowdradar_auth_test`; correo/enlace/aviso solo en RAM. Comprueba solicitud, enlace GoRouter, espera de validación antes de campos, reset/cierre, JWT viejo401, contraseña vieja rechazada/nueva válida/perfil y enlace usado inválido sin formulario. Puerto3031 cerrado al terminar. Regresión opt-in B: 1/1 contra3000/`crowdradar_dev`; cuentas QA aleatorias sin credenciales publicadas.
+- Frontend final: análisis limpio, 226 aprobadas/2 omitidas opt-in/0 fallidas; build Web63,8s y APK debug33,9s correctos. No acredita Chrome/Android manual ni recepción de correo.
+
+Para repetir QA, ejecutar secuencialmente los runners DB y luego los comandos opt-in en ESTADO_ACTUAL frontend; no correrlos en paralelo durante comparaciones de preservación. Retención de tokens/límites, entrega durable/reintentos, observación sin secretos y pruebas bajo carga quedan pendientes antes de producción. El piso temporal común mitiga diferencias, no certifica tiempos indistinguibles. Se respetó la detención de seguridad del control de Chrome: recorrido manual final Chrome/IAB/Android y enlaces nativos pendientes.
+
 ## Hito B — HU 2.3, 08/10/2026
 
 Rama dependiente `feature/hu-2-3-cambio-password`, padre HU 3.1 `c2aa7c0a098e2b4a26557edf1170e3cb1582696b` (PR #26 pendiente). Frontend compañero parte del hito A `0361ae13017def4d9c135a78b3b95ab1f07bf635`. Sin integración en develop/main.

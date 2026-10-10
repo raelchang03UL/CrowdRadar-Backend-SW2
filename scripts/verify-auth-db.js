@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { QueryTypes } from "sequelize";
 import { migrateAuth, assertAuthSchemaReady, authMigration } from "../src/database/migrateAuth.js";
 import { assertIsolatedAuthTestDatabase } from "../src/database/databaseSafety.js";
+import { migrateRecovery } from "../src/database/migrateRecovery.js";
 
 // No usa DB_NAME/DATABASE_URL como destino ni elimina tablas/bases.
 const database = "crowdradar_auth_test";
@@ -66,6 +67,8 @@ try {
             (error) => error.parent?.code === "23514");
     } finally { await constraintTransaction.rollback(); }
     console.log("PASS: PostgreSQL rechaza versión negativa; rollback sin modificar usuarios.");
+
+    await migrateRecovery(sequelize);
 
     server = await startServer({ port: 0 });
     const base = `http://127.0.0.1:${server.address().port}`;

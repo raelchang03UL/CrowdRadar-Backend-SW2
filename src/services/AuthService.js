@@ -90,6 +90,7 @@ class AuthService {
             if (user.sessionVersion >= 2147483647) throw new Error("Session version exhausted");
             const passwordHash = await bcrypt.hash(newPassword, 10);
             await user.update({ passwordHash, sessionVersion: user.sessionVersion + 1 }, { transaction });
+            await UserRepository.invalidatePasswordResetTokens(user.id, transaction);
         });
     }
 

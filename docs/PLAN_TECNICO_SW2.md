@@ -4,23 +4,23 @@ La línea base Sprint 1 funciona en Android y PostgreSQL local. Este plan separa
 
 | Prioridad | Área | Hallazgo y dirección |
 | --- | --- | --- |
-| Crítico | Reproducibilidad / base de datos | HU 3.1 local incorpora migración aditiva y probada de `places`; `users` sigue dependiendo de `User.sync()`. Versionar el esquema histórico y diseñar el camino de despliegue antes de ampliar otros modelos; mantener `crowdradar_sprint1` intacta. |
-| Alto | Autenticación y seguridad | JWT sin revocación; recuperación/cambio todavía no existen. CORS ahora usa orígenes explícitos, no `*`. Revisar límites de abuso y expiración antes de exponer la API. El audit histórico del 4/10 reportó 9 paquetes (5 altos, 4 moderados); no se reejecutó en este cierre ni se actualizaron paquetes. |
-| Alto | Pruebas | 24 pruebas backend, comprobación PostgreSQL de lugares y 69 Flutter; falta un E2E automatizado completo con PostgreSQL para autenticación y perfil. Los recorridos Android/Web reales son manuales, no un pipeline. |
+| Crítico | Reproducibilidad / base de datos | Migraciones explícitas de `places` y `users`/versión de sesión publicadas en ramas de revisión, sin DDL al arrancar. Recuperación añade otra migración aditiva. Revisar/integrar las bases antes de usarlas como línea común; mantener `crowdradar_sprint1` intacta y preparar permisos/backups para despliegue. |
+| Alto | Autenticación y seguridad | HU 2.3 invalida sesiones en PostgreSQL; recuperación reutiliza esa política. Falta elegir proveedor/remitente y probar correo real; no cerrar HU 2.1. Mantener HTTPS/secretos fuertes antes de exposición y revisar política de contraseñas/MFA sin cambiarla silenciosamente. Audit histórico: 9 paquetes (5 altos/4 moderados), sin actualización masiva ni nuevo audit en estos incrementos. |
+| Alto | Pruebas | C: 51 comprobaciones backend, PostgreSQL auth/recuperación/lugares y 226 Flutter; dos integraciones opt-in aprobadas con widgets+API real. Builds Web/APK correctos. No equivalen a Chrome/Android manual, CI ni entrega de correo; detalle y límites en ESTADO_ACTUAL. |
 | Medio | Configuración | DB por variables o URL, TLS verificado opcional y CORS configurable están cubiertos con dobles; solo PostgreSQL local fue ejecutado. Preparar secretos externos y configuración de staging cuando se autorice. |
-| Medio | Arquitectura backend | Repositorio, servicios y controladores están separados, pero el arranque acopla HTTP y sincronización de esquema. Extraer el ciclo de DB cuando se introduzcan migraciones, sin refactorización masiva ahora. |
-| Medio | Arquitectura frontend | Cubits y servicios cubren Sprint 1; el token vive en memoria y los errores HTTP/red se muestran de modo desigual. Definir una política única de sesión y errores antes de nuevas pantallas. |
-| Medio | Experiencia de usuario | Login/registro/mapa ya tienen errores públicos; formulario estable, requisitos y mostrar/ocultar. Revisar en otra PC/Chrome normal y homogeneizar perfil/edición posteriormente, sin rediseño masivo. |
+| Medio | Arquitectura backend | Arranque separado de migraciones; servicios/repositorios controlan transacciones. Revisar errores históricos de perfil y operación de entrega asíncrona antes de producción, sin reestructurar todo el servidor. |
+| Medio | Arquitectura frontend | Token solo en memoria, guardas y generaciones preservadas. Pantallas nuevas reutilizan tema/validación; revisar caducidad global y accesibilidad en plataformas reales antes de añadir persistencia. |
+| Medio | Experiencia de usuario | Pulido A aplicado a login/registro/perfil/edición/mapa con widgets móviles/escritorio. Repetir Chrome normal/Android y revisar con el equipo; no hay certificación de accesibilidad. |
 | Medio | Deuda técnica | Gradle/SDK XML y APIs obsoletas generan advertencias, aunque el APK compila. Revisar versiones de plugin/SDK de forma aislada cuando haya pruebas de regresión, no actualizar en bloque. |
 | Mejora futura | Despliegue | Definir entorno de staging, HTTPS, secretos externos, migraciones de despliegue y pipeline de APK release firmado cuando exista un objetivo de publicación. |
 
 ## Próximas cinco tareas (valor alto, riesgo acotado)
 
-1. Añadir un script E2E de desarrollo contra una base PostgreSQL desechable para registro, login, perfil y actualización, sin datos persistentes de la entrega.
-2. Versionar el esquema `users` con una migración inicial y documentar el paso de `sequelize.sync()` a migraciones en bases nuevas; verificar sobre una base limpia antes de tocar bases existentes.
-3. Revisar/publicar HU 3.1 con autorización y repetir el recorrido Chrome desde otra sesión/PC con las instrucciones finales.
-4. Revalidar una por una las alertas de `npm audit`, proponer actualizaciones compatibles y probarlas por separado, sin `--force`.
-5. Refinar HU 2.1–2.2 juntas y acordar entrega de correo, respuesta uniforme y política de sesiones antes de implementarlas en otra rama.
+1. Revisar e integrar, solo con autorización, HU 3.1 y luego las ramas dependientes A/B/C; probar el par de SHA en un clon nuevo del equipo.
+2. Elegir proveedor/remitente autorizado, implementar/configurar su adaptador y demostrar entrega/recepción real de recuperación y aviso, sin publicar credenciales.
+3. Repetir recorrido final Chrome normal/Android, teclado, enlaces e invalidación entre clientes; registrar capturas sin tokens y corregir únicamente fallos observados.
+4. Automatizar CI con lockfiles, PostgreSQL aislado, análisis/tests/builds y la integración opt-in ya disponible; aprobar checks/protecciones por separado.
+5. Revalidar alertas de npm audit individualmente y preparar correcciones compatibles con regresión, sin force ni actualizaciones mayores automáticas.
 
 ## Hallazgos HU 3.1 — 07/10/2026, no compromisos automáticos
 
@@ -30,23 +30,23 @@ La línea base Sprint 1 funciona en Android y PostgreSQL local. Este plan separa
 - Medio: las 24 pruebas backend y la comprobación PostgreSQL aislada amplían cobertura; todavía falta el E2E automatizado completo y una migración de `users`.
 - Mejora futura: paginación/límites del catálogo cuando exista volumen real. No añadir búsqueda, filtros, saturación ni detalles completos dentro de HU 3.1.
 
-## Preparación siguiente — no implementada ni comprometida
+## Dirección de incrementos — actualización 08/10/2026
 
-Primero revisar e integrar/publicar HU 3.1 con autorización. No crear estas ramas ni modificar Issues/Project en el cierre actual.
+HU 3.1 ya está publicada, aún sin integrar. Rael autorizó A → B → C en ramas dependientes, commits/push a origin sin merge ni cambios de backlog. A/B están publicados; C incorpora solo las partes verificables mientras falte correo real. Los apartados siguientes conservan el alcance de diseño, no comprometen responsables/puntos/fechas ni declaran historias cerradas.
 
 ### `feature/hu-2-1-2-recuperacion`
 
-HU 2.1 y 2.2 son un único recorrido E2E: solicitar y restablecer. Backend: respuesta uniforme para correo existente/inexistente, límites de abuso; token aleatorio criptográfico, almacenar solo hash, vencimiento corto configurable, invalidar anteriores, consumo atómico de un solo uso mediante transacción/condición para impedir carreras. Guardar contraseña con bcrypt respetando máximo 72 bytes. Proveedor de entrega desacoplado: adaptador falso/local para pruebas privadas, futuro adaptador correo; no imprimir tokens en producción ni incluirlos en evidencias públicas. Frontend: pantallas Web/Android coherentes para solicitud, confirmación genérica, token inválido/expirado y nueva contraseña/confirmación. Pruebas: expiración, reutilización, concurrencia (solo un ganador), solicitudes repetidas y no enumeración. Decidir invalidación de sesiones antes de aceptar el recorrido completo.
+HU 2.1 y 2.2 forman un único recorrido: solicitar y restablecer. Implementado/probado en C con transporte exclusivo de pruebas: respuesta uniforme, límites persistentes, token aleatorio/hash, vencimiento15min, reemplazo y consumo atómico, bcrypt8caracteres/72bytes e invalidación persistente de sesiones. Frontend valida enlace antes del formulario y exige login nuevo. Envío real deshabilitado; faltan proveedor/remitente/adaptador, entrega/recepción y revisión manual antes de aceptar el recorrido completo. No imprimir tokens en logs/evidencias. Retención y entrega durable/reintentos requieren decisión antes de producción.
 
-Criterio propuesto para reemplazar el contradictorio del Issue backend #3 (no editado): «Ante cualquier correo con formato válido, exista o no una cuenta, el sistema devuelve el mismo estado HTTP y el mensaje “Si existe una cuenta asociada a ese correo, recibirás instrucciones para restablecer tu contraseña”, sin revelar la existencia de la cuenta mediante el cuerpo, los errores ni diferencias observables sistemáticas de tiempo. El envío solo se realiza cuando corresponde y queda sujeto a límites de abuso.»
+Criterio uniforme autorizado para sustituir el contradictorio del Issue backend #3 (no editado): misma respuesta pública para correo existente/inexistente, sujeto a validación/límites. Sin proveedor ambos reciben503; con transporte de prueba202/mensaje fijo del contrato. Piso temporal común200ms y entrega asíncrona mitigan atajos, pero no certifican tiempos indistinguibles bajo carga; verificarlo antes de exposición real.
 
 Referencia para respuesta uniforme, token aleatorio/expirable y uso único: [OWASP Forgot Password Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
 
 ### `feature/hu-2-3-cambio-password`
 
-Requiere sesión autenticada y contraseña actual. Validar/confirmar nueva, rechazar actual incorrecta y reutilización inmediata, bcrypt, invalidar recuperaciones pendientes de manera transaccional. Acordar invalidación de sesiones anteriores (el JWT actual es sin estado) antes de prometerla; cubrir backend y frontend, errores y concurrencia. No mezclar con HU 3.1.
+Implementada/publicada en B: sesión y contraseña actual, validación/confirmación, rechazo de reutilización, bcrypt y versión de sesión persistente. Invalidación de JWT anteriores y concurrencia probadas; C incorpora también invalidación de recuperaciones pendientes. Falta revisión/integración y recorrido manual final; no mezclar commits con HU 3.1.
 
-HU 2.4 ya está integrada: conservar borrado local/guardas; un JWT emitido todavía no se revoca en backend. No reimplementarla.
+HU 2.4 ya está integrada: conservar borrado local/guardas. El cierre local por sí solo no revoca JWT; B/C sí invalidan versiones anteriores tras cambiar/restablecer contraseña. No reimplementar HU 2.4.
 
 ### Sprint 3 después de HU 3.1
 

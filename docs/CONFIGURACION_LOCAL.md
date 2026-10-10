@@ -4,7 +4,7 @@ Línea base comprobada en Windows 11 con Node 22.20.0, npm 10.9.3, PostgreSQL 18
 
 ## 1. Clonar ambos repositorios
 
-**Vigencia:** HU 3.1 y las correcciones Web del 07/10 corresponden a las ramas `feature/hu-3-1-mapa-lugares`. Mientras sus PR no estén integrados, clonar `develop` reproduce la base anterior, no el incremento en revisión. Para revisar ese incremento, descargar explícitamente la rama de ambos repositorios después de publicarla. No se reejecutó una clonación limpia del incremento; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
+**Vigencia:** HU 3.1 y los incrementos A/B/C siguen en ramas dependientes de revisión, sin integrar. Clonar `develop` reproduce la base anterior, no las migraciones/pantallas descritas aquí. Para revisar el par final A/B/C publicado, usar `feature/hu-2-1-2-recuperacion` en ambos clones; sus padres y pruebas constan en ESTADO_ACTUAL. No se reejecutó una clonación limpia del incremento; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
 
 ```powershell
 $workspaceRoot = Join-Path $env:USERPROFILE 'Documents\CrowdRadar-SW2'
@@ -13,6 +13,17 @@ Set-Location $workspaceRoot
 git clone -b develop https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git CrowdRadar-Backend
 git clone -b develop https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
 ```
+
+Solo para revisar A/B/C, con ambos clones limpios y las ramas ya publicadas:
+
+```powershell
+git -C CrowdRadar-Backend fetch origin
+git -C CrowdRadar-FrontEnd fetch origin
+git -C CrowdRadar-Backend switch --track origin/feature/hu-2-1-2-recuperacion
+git -C CrowdRadar-FrontEnd switch --track origin/feature/hu-2-1-2-recuperacion
+```
+
+Si esa rama local ya existe, usar `git switch feature/hu-2-1-2-recuperacion` y actualizar únicamente con `git pull --ff-only origin feature/hu-2-1-2-recuperacion`, sin sobrescribir cambios. Después de los merges autorizados, la base diaria volverá a ser develop.
 
 ## 2. Backend y base de datos
 
@@ -54,6 +65,18 @@ Los fixtures solo admiten PostgreSQL local con `crowdradar_dev` o `crowdradar_hu
 Después de aplicar HU 2.3, inicia sesión de nuevo: los JWT sin `sessionVersion` no se aceptan. El cambio exitoso de contraseña invalida todas las versiones anteriores y exige login en cada cliente; recargar Flutter también pierde su sesión local en memoria. La UI utiliza `POST /api/auth/password/change` con contraseña actual, nueva y confirmación. No hace falta una nueva variable de entorno ni instalar paquetes para este incremento.
 
 La configuración opcional `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA` y `CORS_ORIGINS` está descrita en el README y `.env.example`. Mantén TLS verificado para una futura base remota autorizada. No hay despliegue en esta tarea.
+
+### Recuperación de contraseña — hito C
+
+Al actualizar este incremento, `npm run db:migrate` aplica además `003-password-recovery`: dos tablas nuevas para hashes de enlaces y límites persistentes, sin modificar usuarios ni reescribir 001/002. El arranque exige ese esquema y sigue sin ejecutar DDL. `npm run test:db:recovery` aplica/comprueba 003 exclusivamente en `crowdradar_auth_test` local, conservando los datos de otras ejecuciones.
+
+`PASSWORD_RESET_URL=http://localhost:5500/#/reset-password` define la base local confiable. El servicio añade el token a la query del fragmento; no utiliza cabeceras del cliente. Fuera de desarrollo/pruebas locales se exige HTTPS. No se admiten credenciales, query ni rutas distintas en la URL configurada. Un proveedor habilitado debe validar su URL al construir el servicio; sin proveedor, la API y el cambio autenticado arrancan aunque falte esa variable.
+
+El envío real está deshabilitado: todavía no se eligieron proveedor, remitente ni credenciales. No hay variables SMTP ni un flag de prueba que capture enlaces en el servidor normal. `/password/forgot` devuelve 503 `RECOVERY_UNAVAILABLE` de manera uniforme para cualquier correo. Para completar la entrega real falta elegir esos datos e implementar/verificar el adaptador; configurar la URL por sí sola no produce un 202 ni entrega correo. Las contraseñas y enlaces nunca se escriben en documentos/logs.
+
+Las pruebas construyen `PasswordRecoveryService` con `delivery.sendResetLink({email,resetUrl})` y `delivery.sendPasswordChangedNotification({email})`, y lo inyectan mediante `createApp({recoveryService})`. El transporte de memoria existe solo bajo `test/helpers`; se consulta después de `drainDeliveries()` dentro del proceso de prueba. Los runners QA separan sus presupuestos de abuso mediante un namespace de claves exclusivo de cada ejecución, conservando SQL/umbrales reales. Esto no se aplica al arranque normal.
+
+No declarar HU 2.1/Sprint 2 terminados con un correo capturado: todavía faltan entrega real y recorrido manual de las plataformas afectadas.
 
 ## 3. Android y Flutter
 

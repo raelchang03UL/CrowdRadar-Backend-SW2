@@ -1,7 +1,12 @@
 import User from "../models/User.js";
 import sequelize from "../config/database.js";
+import recoveryRepository from "./PasswordRecoveryRepository.js";
 
 class UserRepository {
+
+    async invalidatePasswordResetTokens(id, transaction) {
+        await recoveryRepository.invalidateForUser(id, transaction);
+    }
 
     async create(data) {
         return await User.create(data);
