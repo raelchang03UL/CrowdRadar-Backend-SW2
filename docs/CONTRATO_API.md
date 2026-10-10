@@ -18,10 +18,33 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
 | GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| POST `/api/places/:placeId/reports` | JWT; `{level}` con `TRANQUILO`, `MODERADO` o `SATURADO` | 201 `{message: "Reporte enviado correctamente.", data: {id,placeId,level,createdAt}}` | 400 lugar/nivel inválido; 401 sesión; 404 lugar inexistente o inactivo; 409 cooldown; 503 indisponibilidad |
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
-`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. No hay dirección, saturación ni endpoint de detalle todavía.
+`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. El reporte de saturación acepta únicamente lugares activos.
+
+### HU: reportar saturación
+
+El endpoint autenticado `POST /api/places/:placeId/reports` registra un reporte asociado al usuario del JWT y al lugar indicado. El cuerpo no admite propiedades adicionales:
+
+```json
+{
+  "level": "MODERADO"
+}
+```
+
+Los niveles válidos son exactamente `TRANQUILO`, `MODERADO` y `SATURADO`. Se conservan los reportes históricos. El mismo usuario no puede reportar nuevamente el mismo lugar mientras no haya transcurrido `REPORT_COOLDOWN_MINUTES` desde su último reporte; el valor predeterminado es 3 minutos. La restricción se aplica por usuario y lugar, no globalmente, y también protege solicitudes concurrentes.
+
+| HTTP | `code` | Significado |
+| --- | --- | --- |
+| 400 | `INVALID_PLACE` / `INVALID_REPORT_LEVEL` | Identificador de lugar o nivel inválido |
+| 401 | `SESSION_INVALID` | JWT ausente, inválido, expirado o usuario no disponible |
+| 404 | `PLACE_NOT_FOUND` | Lugar inexistente o inactivo |
+| 409 | `REPORT_COOLDOWN` | El usuario ya reportó ese lugar dentro del periodo configurado |
+| 503 | `SERVICE_UNAVAILABLE` | Error de persistencia; no exponer detalles internos |
+
+La respuesta exitosa muestra el mensaje de confirmación y devuelve el identificador, lugar, nivel y fecha de creación del reporte. La interfaz Flutter presenta las tres opciones y conserva la sesión; ante un 409 informa que debe esperar antes de volver a reportar.
 
 ## Validación y errores: distinguir API de interfaz
 
@@ -81,4 +104,4 @@ JWT dura dos horas, HS256, con `id` y `sessionVersion` enteros. Cada ruta proteg
 
 Antes de implementar una nueva HU, acordar ruta/método, entrada/validación, salida, códigos de error, autenticación y casos negativos con la persona del otro componente. Enlazar los PR. Preferir cambios aditivos compatibles; si se rompe un campo/ruta, definir transición y orden de integración. Registrar el par probado, no solo el SHA del repo actual.
 
-Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda, filtros, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda, filtros ni endpoint de detalle. Los reportes de saturación sí están disponibles mediante el endpoint documentado arriba.
