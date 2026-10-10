@@ -1,6 +1,6 @@
 # CrowdRadar Backend
 
-API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación tiene envío real deshabilitado hasta elegir proveedor/remitente; su flujo se prueba mediante correo en memoria exclusivo de pruebas. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
+API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
 
 Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
 
@@ -82,7 +82,7 @@ npm run dev
 | `POST` | `/api/auth/register` | No | Registrar un ciudadano. |
 | `POST` | `/api/auth/login` | No | Validar credenciales y obtener JWT. |
 | `POST` | `/api/auth/password/change` | Bearer JWT | Verificar contraseña actual, cambiarla e invalidar todas las sesiones anteriores. |
-| `POST` | `/api/auth/password/forgot` | No | Solicitar enlace con respuesta uniforme; sin proveedor devuelve 503. |
+| `POST` | `/api/auth/password/forgot` | No | Solicitar enlace con respuesta uniforme (202); sin `SMTP_*` devuelve 503. |
 | `POST` | `/api/auth/password/reset/validate` | No | Validar enlace antes del formulario, sin consumirlo. |
 | `POST` | `/api/auth/password/reset` | No | Restablecer una vez, invalidar sesiones y exigir login. |
 | `GET` | `/api/users/profile` | Bearer JWT | Consultar el perfil autenticado. |
@@ -116,7 +116,7 @@ Authorization: Bearer <token>
 
 HU 2.3: enviar `currentPassword`, `newPassword` y `confirmPassword` al cambio de contraseña. La nueva debe tener mínimo 8 caracteres Unicode, no ser solo espacios, no superar 72 bytes UTF-8 y ser diferente de la actual. El éxito no devuelve JWT: vuelve a login. Cada petición protegida comprueba la versión de sesión persistida; todos los JWT anteriores quedan rechazados, incluso en otros clientes y después de reiniciar el backend. Los JWT antiguos sin versión tampoco se aceptan: inicia sesión nuevamente tras actualizar. El cierre local HU 2.4 por sí solo continúa sin revocar JWT.
 
-HU 2.1–2.2: URL local confiable `PASSWORD_RESET_URL=http://localhost:5500/#/reset-password`, con query del token dentro del fragmento Flutter. HTTPS fuera de desarrollo/pruebas loopback. Configurar esa URL no habilita envío: falta elegir proveedor, remitente y credenciales; no se inventan SMTP ni un modo de captura en producción. La solicitud normal responde 503 `RECOVERY_UNAVAILABLE` sin consultar cuentas ni almacenar tokens. El 202 uniforme y el recorrido completo solo están comprobados con transporte exclusivo de pruebas. Ver [contrato](docs/CONTRATO_API.md) y [configuración](docs/CONFIGURACION_LOCAL.md).
+HU 2.1–2.2: URL local confiable `PASSWORD_RESET_URL="http://localhost:5500/#/reset-password"` (entre comillas: sin ellas `.env` corta el valor en `#`), con query del token dentro del fragmento Flutter. HTTPS fuera de desarrollo/pruebas loopback. Configurar esa URL no habilita envío: hacen falta además las variables `SMTP_*` de Brevo descritas en la configuración local. Sin ellas, la solicitud responde 503 `RECOVERY_UNAVAILABLE` sin consultar cuentas ni almacenar tokens. No existe modo de captura en producción. Ver [contrato](docs/CONTRATO_API.md) y [configuración](docs/CONFIGURACION_LOCAL.md).
 
 ## Pruebas
 

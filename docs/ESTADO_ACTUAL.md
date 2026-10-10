@@ -1,5 +1,19 @@
 # Estado actual
 
+## Correo SMTP (Brevo) para HU 2.1–2.2, 10/10/2026
+
+Rama `feature/hu-2-1-correo-smtp`, padre C `9ee244eb7c94983cb951bfe06e723565c2e66b72`; frontend compañero `fix/web-referrer-mapa` desde C `652ea26`. Decisión del responsable del Sprint 2: primero Gmail; la cuenta del proyecto no permitió contraseñas de aplicación y se usa Brevo por SMTP, sin cambiar código (adaptador SMTP genérico). Se añade `nodemailer@10.0.10` (sin dependencias propias, sin avisos de `npm audit`; versión publicada el 14/09/2026, elegida por antigüedad frente a 10.0.16 de tres días). `SMTP_*` habilita el adaptador solo en `startServer`; sin ellas el 503 uniforme no cambia. Configuración incompleta/URL no confiable detiene el arranque con mensaje público; fallos de entrega registran solo el código. Contrato HTTP sin cambios.
+
+- `npm test`: 58 aprobadas, 0 fallidas, también con el `.env` local con SMTP (7 nuevas: configuración, `.env.example` leído por dotenv, contenido/escape del correo, aviso sin enlace, log sin datos, arranque sin red). `node --check` de 52 JS y `git diff --check` correctos.
+- Hallazgo corregido: `.env.example` (heredado de C) dejaba `PASSWORD_RESET_URL` sin comillas y dotenv la cortaba en `#`; con correo habilitado el arranque se detenía. Ahora va entre comillas y una prueba lo vigila.
+- Hallazgo de entorno: `smtp-relay.brevo.com` presentó desde Perú un certificado solo válido para `*.sendinblue.com` (`ESOCKET`). Con `smtp-relay.sendinblue.com` (misma IP) TLS y autenticación verificadas sin desactivar comprobaciones.
+- Recepción real 10/10: solicitud desde Flutter Web → 1 token emitido para la cuenta del responsable → correo «CrowdRadar: restablece tu contraseña» recibido en su bandeja de Gmail (remitente reescrito por Brevo a `brevosend.com`).
+- `test:db:auth`, `test:db:recovery` y `test:db:places` aprobados en PostgreSQL 18 aislado de esta PC (Node 24.19.0). La comprobación de base limpia de auth solo corre al crear su base; ya existía en este rerun.
+- `npm audit` total: 10 avisos preexistentes (1 crítico `proxy-addr`, 5 altos, 4 moderados), ninguno de `nodemailer`; sin corrección en este alcance.
+- Recorrido Chrome 10/10 con el correo real: enlace → formulario → nueva contraseña → login con aviso «Contraseña restablecida» → mapa; el mismo enlace reabierto muestra «El enlace no es válido o ha expirado» sin formulario.
+- Aviso «CrowdRadar: tu contraseña fue cambiada» recibido tras el restablecimiento.
+- **Pendiente:** recorrido Android; revisión e integración de la cadena. HU 2.1–2.2 no se declaran terminadas hasta entonces.
+
 ## Hito C — HU 2.1–2.2, avance verificable, 08/10/2026
 
 Rama `feature/hu-2-1-2-recuperacion`, padre B backend `97e607ed22b48561bed30a4e821099f76360210d`; frontend compañero parte de B `1e62c754682f3abe2b166b178d44b7e6e7d1fad0`. HU 3.1/PR #26 y #9 continúan abiertos en borrador; las bases no están integradas. No se abrió otro PR ni se modificaron main/develop, Issues o Project.
