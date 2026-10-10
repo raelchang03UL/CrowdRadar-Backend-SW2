@@ -1,0 +1,30 @@
+# npm run test:db:auth — backend 5fd8d4b, PostgreSQL 18 aislado, 10/10/2026 16:46
+> crowdradar-backend@1.0.0 test:db:auth
+> node scripts/verify-auth-db.js
+PASS: actualización aditiva, usuarios/columnas previas conservados e historial único.
+PASS: PostgreSQL rechaza versión negativa; rollback sin modificar usuarios.
+Servidor ejecutándose en el puerto 0
+Recuperación de contraseña: envío por correo habilitado.
+PASS: HTTP real registro/login/cambio concurrente; un ganador, JWT anterior rechazado y login nuevo correcto.
+PASS: fallo después de guardar revierte hash y versión juntos.
+exit=0
+
+# npm run test:db:recovery — backend 5fd8d4b, PostgreSQL 18 aislado, 10/10/2026 16:47
+> crowdradar-backend@1.0.0 test:db:recovery
+> node scripts/verify-recovery-db.js
+PASS: 003 aditiva/idempotente, usuarios preservados e historial único.
+PASS: validación sin consumo; reset HTTP concurrente con un ganador; JWT viejo rechazado, login nuevo y aviso postcommit.
+PASS: nueva solicitud y cambio autenticado invalidan enlaces pendientes transaccionalmente.
+PASS: validaciones no consumen; fallo posterior al UPDATE revierte hash/versión/token; expiración al esperar lock rechazada.
+PASS: límites email normalizado/forgot IP/reset IP sobreviven nueva instancia; correos ambiguos no eligen cuenta ni filtran existencia.
+PASS: recuperación PostgreSQL aislada completa; ningún correo real enviado ni secreto impreso.
+exit=0
+
+# npm run test:db:places — backend 5fd8d4b, PostgreSQL 18 aislado, 10/10/2026 16:47
+> crowdradar-backend@1.0.0 test:db:places
+> node scripts/verify-places-db.js
+PASS: migración idempotente, historial único, datos y estructura users intactos.
+PASS: PostgreSQL rechaza rango inválido, NaN e infinito (4 casos, rollback).
+PASS: fixture explícito de 3 lugares, coordenadas determinísticas y sin duplicados.
+PASS: lugar inactivo no aparece en la consulta activa; fila de prueba revertida.
+exit=0
