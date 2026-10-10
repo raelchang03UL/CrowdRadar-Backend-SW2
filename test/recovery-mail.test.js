@@ -59,6 +59,24 @@ test("Gmail usa TLS, quita espacios de la contraseña de aplicación y remitente
     assert.equal(mailConfiguration({ ...gmail, SMTP_HOST: "smtp.example.test" }).password, gmail.SMTP_PASSWORD);
 });
 
+test("Brevo exige MAIL_FROM: ausente o vacío detiene el arranque sin revelar la clave", () => {
+    const secret = "xsmtpsib-clave-que-no-debe-salir";
+    const brevo = { ...gmail, SMTP_HOST: "smtp-relay.sendinblue.com", SMTP_PORT: "587", SMTP_USER: "login@smtp-brevo.com", SMTP_PASSWORD: secret };
+    for (const env of [brevo, { ...brevo, MAIL_FROM: "   " }, { ...brevo, SMTP_HOST: "smtp-relay.brevo.com" }]) {
+        assert.throws(() => mailConfiguration(env), (error) => {
+            assert.equal(error.code, "CONFIG_INVALID");
+            assert.match(error.message, /MAIL_FROM/);
+            assert.doesNotMatch(error.message, new RegExp(secret));
+            return true;
+        });
+    }
+
+    const valid = mailConfiguration({ ...brevo, MAIL_FROM: "CrowdRadar <remitente@example.test>" });
+    assert.equal(valid.from, "CrowdRadar <remitente@example.test>");
+    assert.equal(valid.secure, false);
+    assert.equal(valid.password, secret);
+});
+
 test("correo de recuperación contiene el enlace escapado y el aviso no incluye enlaces", async () => {
     const sent = [];
     const delivery = createRecoveryMailDelivery({ sendMail: async (message) => { sent.push(message); }, from: "CrowdRadar <equipo.qa@example.test>" });

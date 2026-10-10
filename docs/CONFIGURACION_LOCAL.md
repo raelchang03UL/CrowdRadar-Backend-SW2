@@ -4,7 +4,7 @@ Línea base comprobada en Windows 11 con Node 22.20.0, npm 10.9.3, PostgreSQL 18
 
 ## 1. Clonar ambos repositorios
 
-**Vigencia:** HU 3.1 y los incrementos A/B/C siguen en ramas dependientes de revisión, sin integrar. Clonar `develop` reproduce la base anterior, no las migraciones/pantallas descritas aquí. Para revisar el par final A/B/C publicado, usar `feature/hu-2-1-2-recuperacion` en ambos clones; sus padres y pruebas constan en ESTADO_ACTUAL. No se reejecutó una clonación limpia del incremento; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
+**Vigencia (10/10/2026):** `develop` ya integra HU 3.1, el pulido A, HU 2.3 (B) y HU 2.1–2.2 (C): backend #26, #29 y #30; frontend #9, #11, #12 y #13. Clonar `develop` incluye las migraciones 001–003 y sus pantallas. Siguen en revisión, sin integrar, el envío real de correo (backend #31, `feature/hu-2-1-correo-smtp`) y el arreglo del mapa Web (frontend #14, `fix/web-referrer-mapa`): hasta su merge, `develop` responde 503 uniforme en la recuperación y el mapa Web muestra las teselas bloqueadas. No se reejecutó una clonación limpia del conjunto integrado; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
 
 ```powershell
 $workspaceRoot = Join-Path $env:USERPROFILE 'Documents\CrowdRadar-SW2'
@@ -14,16 +14,16 @@ git clone -b develop https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git
 git clone -b develop https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
 ```
 
-Solo para revisar A/B/C, con ambos clones limpios y las ramas ya publicadas:
+Solo para revisar el correo y el mapa antes de su merge, con ambos clones limpios:
 
 ```powershell
 git -C CrowdRadar-Backend fetch origin
 git -C CrowdRadar-FrontEnd fetch origin
-git -C CrowdRadar-Backend switch --track origin/feature/hu-2-1-2-recuperacion
-git -C CrowdRadar-FrontEnd switch --track origin/feature/hu-2-1-2-recuperacion
+git -C CrowdRadar-Backend switch --track origin/feature/hu-2-1-correo-smtp
+git -C CrowdRadar-FrontEnd switch --track origin/fix/web-referrer-mapa
 ```
 
-Si esa rama local ya existe, usar `git switch feature/hu-2-1-2-recuperacion` y actualizar únicamente con `git pull --ff-only origin feature/hu-2-1-2-recuperacion`, sin sobrescribir cambios. Después de los merges autorizados, la base diaria volverá a ser develop.
+Si esas ramas locales ya existen, usar `git switch` y actualizar únicamente con `git pull --ff-only`, sin sobrescribir cambios. Para cualquier tarea nueva, la base es `develop`.
 
 ## 2. Backend y base de datos
 

@@ -2,6 +2,8 @@ import { trustedResetUrl } from "./passwordRecovery.js";
 
 // Entrega SMTP de recuperación (Brevo, Gmail u otro proveedor). Sin variables SMTP_* queda deshabilitada: 503 uniforme.
 const required = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD"];
+// El login SMTP de Brevo (…@smtp-brevo.com) no es un remitente válido: exige MAIL_FROM verificado.
+const isBrevo = (host) => /(^|\.)(brevo|sendinblue)\.com$/i.test(host);
 
 export class MailConfigurationError extends Error {
     constructor(message) {
@@ -28,6 +30,9 @@ export function mailConfiguration(env = process.env) {
     try { resetUrl = trustedResetUrl(env.PASSWORD_RESET_URL.trim(), env); } catch (error) { throw new MailConfigurationError(error.message); }
     const host = env.SMTP_HOST.trim();
     const user = env.SMTP_USER.trim();
+    if (isBrevo(host) && !filled("MAIL_FROM")) {
+        throw new MailConfigurationError("Con Brevo, MAIL_FROM es obligatorio: usa el remitente verificado en Senders (el login SMTP no es una dirección válida).");
+    }
     return {
         host,
         port,

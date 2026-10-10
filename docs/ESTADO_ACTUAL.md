@@ -12,6 +12,7 @@ Rama `feature/hu-2-1-correo-smtp`, padre C `9ee244eb7c94983cb951bfe06e723565c2e6
 - `npm audit` total: 10 avisos preexistentes (1 crítico `proxy-addr`, 5 altos, 4 moderados), ninguno de `nodemailer`; sin corrección en este alcance.
 - Recorrido Chrome 10/10 con el correo real: enlace → formulario → nueva contraseña → login con aviso «Contraseña restablecida» → mapa; el mismo enlace reabierto muestra «El enlace no es válido o ha expirado» sin formulario.
 - Aviso «CrowdRadar: tu contraseña fue cambiada» recibido tras el restablecimiento.
+- Correcciones de la revisión de Rael (10/10): con host Brevo/Sendinblue, `MAIL_FROM` ausente o vacío detiene el arranque con `CONFIG_INVALID` (otros proveedores conservan el remitente por defecto); README y CONFIGURACION_LOCAL reflejan que HU 3.1 y A/B/C ya están en `develop` y que el correo (#31) y el mapa (#14) siguen en revisión. `npm test` 59/59, `test:db:recovery` 6/6, `git diff --check` correcto.
 - **Pendiente:** recorrido Android; revisión e integración de la cadena. HU 2.1–2.2 no se declaran terminadas hasta entonces.
 
 ## Hito C — HU 2.1–2.2, avance verificable, 08/10/2026
