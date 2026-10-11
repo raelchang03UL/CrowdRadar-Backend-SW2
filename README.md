@@ -1,5 +1,13 @@
 # CrowdRadar Backend
 
+## HU 3.3 — información del lugar (rama de revisión)
+
+Rama `feature/hu-3-3-detalles-lugar`, desde `develop`. Añade GET autenticado `/api/places/:id` y la dirección opcional del lugar. El frontend compañero muestra nombre, dirección, categoría y referencia desde el marcador; no incluye búsqueda por nombre en este incremento.
+
+Antes de ejecutar: `npm run db:migrate` aplica `004-places-direccion`, aditiva e idempotente. Las direcciones desconocidas permanecen null; el fixture solo completa sus tres lugares demostrativos con direcciones ilustrativas, sin reemplazar datos existentes. `npm run test:db:places` valida PostgreSQL aislado y `npm run test:local:places` valida HTTP/DB exclusivamente en `crowdradar_dev` local con una cuenta activa.
+
+Contrato en [CONTRATO_API](docs/CONTRATO_API.md). Publicar el código no acredita integración, catálogo real ni aceptación de la historia.
+
 API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. Desde el 10/10/2026 `develop` integra HU 3.1, HU 2.3 y HU 2.1–2.2 (PR #26, #29 y #30); el envío SMTP descrito aquí entra con el PR #31, y hasta entonces `develop` responde 503 uniforme en la recuperación. Verifica la rama del PR que revisas.
 
 Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
