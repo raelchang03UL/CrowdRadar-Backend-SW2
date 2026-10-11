@@ -75,6 +75,14 @@ Para desarrollo con recarga automática:
 npm run dev
 ```
 
+## HU 3.5 — filtrar lugares por categoría
+
+En `feature/hu-3-5-filtro-categoria`, `GET /api/places/categories` devuelve `{data: ["Cultura", "Parque", ...]}` con las categorías existentes de lugares activos, únicas y ordenadas. No se inventa un catálogo. Ambas rutas exigen JWT.
+
+`GET /api/places?categoria=Parque` devuelve solo los lugares activos de esa categoría exacta, en orden de ID. La categoría se recorta y admite hasta 80 caracteres Unicode; sin parámetro, vacío o espacios muestra todos. Una categoría sin coincidencias devuelve 200 con `data: []`. Repetidos/propiedades extra devuelven 400; fallos de consulta, 503 público. No hay cambios de esquema ni dependencias.
+
+Esta rama parte de `develop`, no incorpora los PR pendientes de HU 3.3/3.4. Antes de integrar búsqueda y filtro, coordinar el controlador/servicio/repositorio compartidos y decidir con frontend la combinación de criterios; no suponer que `nombre` ya está admitido aquí. Ver [contrato](docs/CONTRATO_API.md) y [pruebas locales](docs/ESTADO_ACTUAL.md).
+
 ## Endpoints actuales en esta rama
 
 | Método | Ruta | Autenticación | Propósito |
@@ -87,7 +95,8 @@ npm run dev
 | `POST` | `/api/auth/password/reset` | No | Restablecer una vez, invalidar sesiones y exigir login. |
 | `GET` | `/api/users/profile` | Bearer JWT | Consultar el perfil autenticado. |
 | `PUT` | `/api/users/profile` | Bearer JWT | Actualizar nombre, apellido, teléfono o distrito. |
-| `GET` | `/api/places` | Bearer JWT | Listar lugares activos con coordenadas válidas. |
+| `GET` | `/api/places` | Bearer JWT | Listar lugares activos con coordenadas válidas; filtro exacto `categoria` opcional. |
+| `GET` | `/api/places/categories` | Bearer JWT | Consultar categorías únicas de lugares activos. |
 
 `GET /api/places` devuelve `{ "data": [...] }`, con `id`, `nombre`, `categoria`, `referencia`, `latitud`, `longitud` y `demostrativo`. Vacío: HTTP 200 y `data: []`. Sin autorización: 401. Fallo de datos/consulta: 503 con un mensaje público, sin detalles internos. No hay endpoint de alta/edición de lugares en esta HU.
 
@@ -132,7 +141,7 @@ La suite cubre autorización, lugares, ciclo de migración/arranque, configuraci
 npm run test:db:places
 ```
 
-Esta comprobación requiere PostgreSQL local y permiso de crear bases: crea o reutiliza exclusivamente `crowdradar_hu31_test`, nunca usa `DB_NAME` como destino. Verifica idempotencia, preservación de una tabla `users` centinela, restricciones SQL, fixture repetible y exclusión de inactivos. Las inserciones negativas se revierten mediante transacción; la base aislada se conserva para inspección. No la uses para datos personales.
+Esta comprobación requiere PostgreSQL local y permiso de crear bases: crea o reutiliza exclusivamente `crowdradar_hu31_test`, nunca usa `DB_NAME` como destino. Verifica idempotencia, preservación de una tabla `users` centinela, restricciones SQL, fixture repetible y exclusión de inactivos. Incluye HU 3.5 con repositorio ORM y HTTP real sobre PostgreSQL; solo la consulta de sesión se dobla, porque `users` centinela no es el esquema de autenticación. Comprueba catálogo, igualdad literal, cambio/quitar filtro, ausencia de coincidencias y 400/401. Sus fixtures adicionales se revierten y se comparan las filas de lugares/usuarios antes y después. La base aislada se conserva para inspección. No la uses para datos personales.
 
 ```powershell
 npm run test:db:auth
