@@ -1,5 +1,13 @@
 # Contrato API compartido
 
+## HU 3.4 — búsqueda por nombre para revisión
+
+Rama `feature/hu-3-4-busqueda-lugares`, dependiente de HU 3.3. GET autenticado `/api/places?nombre=<texto>` admite un único parámetro `nombre`: texto recortado de hasta 160 caracteres. Rechaza parámetros extra/repetidos/no textuales con 400 y mensaje público. JWT obligatorio; 401 sin sesión y 503 si falla la carga.
+
+Búsqueda literal completa/parcial, insensible a mayúsculas PostgreSQL ILIKE. `%`, `_` y barra inversa no funcionan como comodines del usuario. Devuelve todas las coincidencias activas en orden ascendente de ID, sin paginación en este catálogo pequeño. Sin nombre o con nombre vacío devuelve todos; sin coincidencias, 200 `{data: []}`. DTO idéntico al de HU 3.3. Frontend muestra estado sin resultados, limpiar, reintentar conservando la consulta y navegación a detalle.
+
+Para revisión aislada, la base inicial del PR es `feature/hu-3-3-detalles-lugar`; retarget a `develop` después de integrar la pareja HU 3.3. No cerrar automáticamente frontend #5.
+
 ## HU 3.3 — contrato para revisión
 
 Rama `feature/hu-3-3-detalles-lugar`, coordinada con la rama homónima del frontend. GET `/api/places/:id` exige JWT y devuelve `{data: lugar}` solo para un lugar activo. El ID es entero PostgreSQL distinto de cero, también negativo para los fixtures: 400 si es inválido, 404 si no está disponible, 401 sin sesión y 503 con mensaje público si falla la consulta.
@@ -23,12 +31,12 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
-| GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| GET `/api/places` | JWT; `nombre` opcional, único y hasta 160 caracteres | 200 `{data: lugar[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
 | GET `/api/places/:id` | JWT; ID entero no cero | 200 `{data: lugar}` | 400 ID; 401 sesión; 404 no disponible; 503 mensaje público |
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
-`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` y `direccion` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. La dirección opcional y el detalle pertenecen a HU 3.3; no hay saturación ni búsqueda en esta rama.
+`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` y `direccion` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. La dirección opcional y el detalle pertenecen a HU 3.3; HU 3.4 incorpora búsqueda por nombre. No hay saturación ni filtros de categoría.
 
 ## Validación y errores: distinguir API de interfaz
 
@@ -88,4 +96,4 @@ JWT dura dos horas, HS256, con `id` y `sessionVersion` enteros. Cada ruta proteg
 
 Antes de implementar una nueva HU, acordar ruta/método, entrada/validación, salida, códigos de error, autenticación y casos negativos con la persona del otro componente. Enlazar los PR. Preferir cambios aditivos compatibles; si se rompe un campo/ruta, definir transición y orden de integración. Registrar el par probado, no solo el SHA del repo actual.
 
-Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. HU 3.3 añade `/api/places/:id`; todavía no hay búsqueda, filtros, reportes ni saturación en esta rama. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. HU 3.3 añade `/api/places/:id` y HU 3.4 la búsqueda por nombre en el listado; todavía no hay filtros, reportes ni saturación en esta rama. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.

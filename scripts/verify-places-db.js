@@ -67,6 +67,10 @@ try {
     // Usa el repositorio real sobre PostgreSQL aislado, sin sync ni DDL implícito.
     const modelo = db.define("PlaceDbTest", Place.getAttributes(), { tableName: "places", timestamps: false });
     const repository = createPlaceRepository(modelo);
+    assert.equal((await repository.findActive("demo")).length, 3);
+    assert.equal((await repository.findActive("DEMO · PARQUE CENTRAL")).length, 1);
+    assert.equal((await repository.findActive("Central")).length, 1);
+    assert.equal((await repository.findActive("sin coincidencias")).length, 0);
     assert.equal((await repository.findActiveById(-103)).direccion, demoPlaces[0].direccion);
     assert.equal(await repository.findActiveById(2147483647), null);
     const tx = await db.transaction();
@@ -77,8 +81,13 @@ try {
             findAll: (options) => modelo.findAll({ ...options, transaction: tx }),
             findOne: (options) => modelo.findOne({ ...options, transaction: tx })
         });
+        for (const nombre of ["%", "_", "\\", "50%_\\", "' OR 1=1 --"]) {
+            const matches = await transactionalRepository.findActive(nombre);
+            assert.equal(matches.length, nombre.startsWith("'") ? 0 : 1);
+        }
         assert.equal(await transactionalRepository.findActiveById(-997), null);
+        assert.equal((await transactionalRepository.findActive("demo")).length, 3);
         assert.equal((await transactionalRepository.findActiveById(-998)).direccion, null);
     } finally { await tx.rollback(); }
-    console.log("PASS: repositorio real: detalle, dirección opcional e inactivos (fixtures temporales revertidos).");
+    console.log("PASS: repositorio real: búsqueda completa/parcial/mayúsculas, comodines literales, inyección, todos los resultados, detalle e inactivos (fixtures temporales revertidos).");
 } finally { await db.close(); }

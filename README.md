@@ -1,5 +1,11 @@
 # CrowdRadar Backend
 
+## HU 3.4 — búsqueda por nombre (revisión dependiente)
+
+Rama `feature/hu-3-4-busqueda-lugares`, basada en HU 3.3. GET `/api/places?nombre=<texto>` busca el nombre completo o parcial sin distinguir mayúsculas, devuelve todas las coincidencias activas y trata `%`, `_` y barra inversa como texto literal. Sin criterio devuelve todos; sin coincidencias devuelve `[]`.
+
+Los PR de búsqueda se comparan inicialmente contra `feature/hu-3-3-detalles-lugar` para mostrar solo HU 3.4. Integrar/validar primero la pareja HU 3.3 y después cambiar la base de estos PR a `develop`. No incorpora migraciones ni dependencias adicionales. Contrato y pruebas en sus documentos/PR.
+
 ## HU 3.3 — información del lugar (rama de revisión)
 
 Rama `feature/hu-3-3-detalles-lugar`, desde `develop`. Añade GET autenticado `/api/places/:id` y la dirección opcional del lugar. El frontend compañero muestra nombre, dirección, categoría y referencia desde el marcador; no incluye búsqueda por nombre en este incremento.

@@ -1,8 +1,12 @@
 import Place from "../models/Place.js";
+import { Op } from "sequelize";
+
+export const literalNamePattern = (nombre) => `%${nombre.replace(/[\\%_]/g, "\\$&")}%`;
 
 export const createPlaceRepository = (model = Place) => ({
-    async findActive() {
+    async findActive(nombre = "") {
         const where = { activo: true };
+        if (nombre) where.nombre = { [Op.iLike]: literalNamePattern(nombre) };
         return model.findAll({ where, order: [["id", "ASC"]], raw: true });
     },
     async findActiveById(id) {
