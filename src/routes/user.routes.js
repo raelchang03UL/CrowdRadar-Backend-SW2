@@ -21,4 +21,10 @@ router.put(
     UserController.updateProfile
 );
 
+router.get(
+    "/reports",
+    authMiddleware,
+    UserController.getReports
+);
+
 export default router;

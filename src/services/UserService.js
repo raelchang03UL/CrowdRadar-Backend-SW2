@@ -1,4 +1,5 @@
 import UserRepository from "../repositories/UserRepository.js";
+import ReportRepository from "../repositories/ReportRepository.js";
 
 class UserService {
 
@@ -24,6 +25,15 @@ class UserService {
 
         return user;
 
+    }
+
+    async getReports(id) {
+        const reports = await ReportRepository.findByUserId(id);
+        return reports.map((report) => ({
+            ...report,
+            id: Number(report.id),
+            placeId: Number(report.placeId)
+        }));
     }
 
 }

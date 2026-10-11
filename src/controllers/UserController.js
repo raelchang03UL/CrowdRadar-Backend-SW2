@@ -46,6 +46,18 @@ class UserController {
 
     }
 
+    async getReports(req, res) {
+        try {
+            return res.status(200).json({
+                data: await UserService.getReports(req.user.id)
+            });
+        } catch {
+            return res.status(503).json({
+                message: "No se pudo cargar el historial de reportes. Inténtalo de nuevo."
+            });
+        }
+    }
+
 }
 
 export default new UserController();

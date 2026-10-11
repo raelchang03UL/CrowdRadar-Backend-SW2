@@ -8,6 +8,7 @@ import userRoutes from "./src/routes/user.routes.js";
 import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
+import { assertReportsSchemaReady } from "./src/database/migrateReports.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 
@@ -36,6 +37,7 @@ export const startServer = async ({ port = PORT } = {}) => {
     // Toda creación/cambio de esquema es explícita: npm run db:migrate.
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
+    await assertReportsSchemaReady(sequelize);
 
     return app.listen(port, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);

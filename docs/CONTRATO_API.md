@@ -16,6 +16,7 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | POST `/api/auth/password/reset/validate` | Público; `{token}` | 200 `{valid: true}`; no consume ni envía correo | 400 enlace inválido/expirado/usado; 429 abuso; 503 servicio |
 | POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
+| GET `/api/users/reports` | JWT | 200 `{data: reporte[]}`; vacío `[]` | 401 token; 503 error de consulta |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
 | GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
 
@@ -81,4 +82,10 @@ JWT dura dos horas, HS256, con `id` y `sessionVersion` enteros. Cada ruta proteg
 
 Antes de implementar una nueva HU, acordar ruta/método, entrada/validación, salida, códigos de error, autenticación y casos negativos con la persona del otro componente. Enlazar los PR. Preferir cambios aditivos compatibles; si se rompe un campo/ruta, definir transición y orden de integración. Registrar el par probado, no solo el SHA del repo actual.
 
-Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda, filtros, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda ni filtros. El historial de reportes está disponible en la ruta documentada arriba; la creación de reportes pertenece a otra historia de usuario.
+### Historial de reportes
+
+`GET /api/users/reports` devuelve únicamente los reportes del usuario autenticado,
+ordenados del más reciente al más antiguo. Cada elemento incluye `id`, `createdAt`,
+`level`, `placeId` y `placeName`. Los niveles válidos son `TRANQUILO`, `MODERADO`
+y `SATURADO`. Un usuario sin reportes recibe HTTP 200 con `data: []`.
