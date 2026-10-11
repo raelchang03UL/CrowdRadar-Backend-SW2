@@ -1,10 +1,18 @@
 # CrowdRadar Backend
 
-Esta rama de revisión añade HU 3.2: consulta autenticada de una estimación ciudadana de saturación por lugar, con política provisional aprobada por el usuario y pendiente de acuerdo/revisión del equipo. No incorpora registro de reportes (HU 4.1), filtros ni métricas de confianza.
+Esta rama de revisión añade HU 3.6 sobre HU 3.2: filtrar lugares por la misma estimación ciudadana de saturación. Conserva la política provisional aprobada por el usuario y pendiente de acuerdo/revisión del equipo. No incorpora registro de reportes (HU 4.1) ni métricas de confianza.
 
 API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. La base `develop` comprobada el 11/10/2026 (`46267e7`) ya integra HU 3.1, HU 2.3, HU 2.1–2.2 y envío SMTP (PR #26, #29, #30 y #31). Verifica Git y la rama del PR que revisas; esto no declara HU 3.2 integrada.
 
 Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+
+## HU 3.6 — filtro de saturación
+
+Rama `feature/hu-3-6-filtro-saturacion`, dependiente de `feature/hu-3-2-consulta-saturacion` (padre backend `0605b51fb5aa6933de9b587e9ad9c73f5e46c2d1`). [Issue frontend #7](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/issues/7). Revisar el par y primero la dependencia HU 3.2; no se declara integrado en `develop`.
+
+`GET /api/places?nivel=TRANQUILO|MODERADO|SATURADO` exige JWT y devuelve el DTO histórico de lugares. Sin `nivel`, vacío o espacios conserva Todos. Con un nivel, una consulta batch utiliza la política/evaluación existentes de HU 3.2; empate e información insuficiente no coinciden con ningún nivel. Entrada inválida devuelve 400 público; sin coincidencias, 200 con `data: []`. Cambiar/quitar el filtro vuelve a consultar; no calcula distancias ni promete monitoreo automático.
+
+Sin dependencias, variables o migraciones nuevas. Se requiere el esquema de reportes del padre HU 3.2 y su coordinación compartida con HU 4.1. Prueba adicional: `npm run test:db:saturation-filter`, exclusivamente sobre la base local aislada ya preparada, sin migrar ni confirmar fixtures. [Contrato](docs/CONTRATO_API.md) y [validaciones](docs/ESTADO_ACTUAL.md).
 
 ## Requisitos
 
