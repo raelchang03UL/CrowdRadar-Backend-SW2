@@ -1,6 +1,8 @@
 # CrowdRadar Backend
 
-API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. Desde el 10/10/2026 `develop` integra HU 3.1, HU 2.3 y HU 2.1–2.2 (PR #26, #29 y #30); el envío SMTP descrito aquí entra con el PR #31, y hasta entonces `develop` responde 503 uniforme en la recuperación. Verifica la rama del PR que revisas.
+Esta rama de revisión añade HU 3.2: consulta autenticada de una estimación ciudadana de saturación por lugar, con política provisional aprobada por el usuario y pendiente de acuerdo/revisión del equipo. No incorpora registro de reportes (HU 4.1), filtros ni métricas de confianza.
+
+API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. La base `develop` comprobada el 11/10/2026 (`46267e7`) ya integra HU 3.1, HU 2.3, HU 2.1–2.2 y envío SMTP (PR #26, #29, #30 y #31). Verifica Git y la rama del PR que revisas; esto no declara HU 3.2 integrada.
 
 Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
 
@@ -50,7 +52,7 @@ La línea base de desarrollo se verificó con Node.js 22.20.0, npm 10.9.3 y Post
 npm start
 ```
 
-Antes del primer arranque y de actualizar este incremento, ejecuta `npm run db:migrate`. Aplica `001-create-places`, `002-users-session-version` y `003-password-recovery`: 002 crea `users` en una base limpia o añade la versión de sesión a su esquema histórico reconocido; 003 añade tablas de tokens/límites, sin borrar usuarios. El arranque solo autentica y verifica el esquema; **no ejecuta DDL ni `User.sync()`**. Si falta la migración, se detiene con instrucciones. La respuesta de control está en `GET http://localhost:3000/`.
+Antes del primer arranque y de actualizar este incremento, ejecuta `npm run db:migrate`. Aplica `001-create-places`, `002-users-session-version`, `003-password-recovery` y `004-saturation-reports`: 002 crea `users` en una base limpia o añade la versión de sesión a su esquema histórico reconocido; 003 añade tablas de tokens/límites y 004 el almacenamiento compartido de reportes, sin borrar usuarios. El arranque solo autentica y verifica el esquema; **no ejecuta DDL ni `User.sync()`**. Si falta la migración, se detiene con instrucciones. La respuesta de control está en `GET http://localhost:3000/`.
 
 Los fixtures admiten únicamente `crowdradar_dev` o `crowdradar_hu31_test` en PostgreSQL local. El comando de migración es explícito y portable; bloquea la base de entrega, bases de sistema y hosts Supabase. En esta tarea todas las conexiones reales fueron locales. No se realizó despliegue.
 
@@ -88,6 +90,7 @@ npm run dev
 | `GET` | `/api/users/profile` | Bearer JWT | Consultar el perfil autenticado. |
 | `PUT` | `/api/users/profile` | Bearer JWT | Actualizar nombre, apellido, teléfono o distrito. |
 | `GET` | `/api/places` | Bearer JWT | Listar lugares activos con coordenadas válidas. |
+| `GET` | `/api/places/:id/saturation` | Bearer JWT | Consultar el nivel estimado con reportes recientes de personas distintas. |
 
 `GET /api/places` devuelve `{ "data": [...] }`, con `id`, `nombre`, `categoria`, `referencia`, `latitud`, `longitud` y `demostrativo`. Vacío: HTTP 200 y `data: []`. Sin autorización: 401. Fallo de datos/consulta: 503 con un mensaje público, sin detalles internos. No hay endpoint de alta/edición de lugares en esta HU.
 
@@ -117,6 +120,20 @@ Authorization: Bearer <token>
 HU 2.3: enviar `currentPassword`, `newPassword` y `confirmPassword` al cambio de contraseña. La nueva debe tener mínimo 8 caracteres Unicode, no ser solo espacios, no superar 72 bytes UTF-8 y ser diferente de la actual. El éxito no devuelve JWT: vuelve a login. Cada petición protegida comprueba la versión de sesión persistida; todos los JWT anteriores quedan rechazados, incluso en otros clientes y después de reiniciar el backend. Los JWT antiguos sin versión tampoco se aceptan: inicia sesión nuevamente tras actualizar. El cierre local HU 2.4 por sí solo continúa sin revocar JWT.
 
 HU 2.1–2.2: URL local confiable `PASSWORD_RESET_URL="http://localhost:5500/#/reset-password"` (entre comillas: sin ellas `.env` corta el valor en `#`), con query del token dentro del fragmento Flutter. HTTPS fuera de desarrollo/pruebas loopback. Configurar esa URL no habilita envío: hacen falta además las variables `SMTP_*` de Brevo descritas en la configuración local. Sin ellas, la solicitud responde 503 `RECOVERY_UNAVAILABLE` sin consultar cuentas ni almacenar tokens. No existe modo de captura en producción. Ver [contrato](docs/CONTRATO_API.md) y [configuración](docs/CONFIGURACION_LOCAL.md).
+
+## HU 3.2 — consulta de saturación
+
+La propuesta local cuenta el último reporte de cada persona durante los 30 minutos anteriores a la consulta (ambos límites incluidos, reportes futuros excluidos). Exige tres personas distintas; gana el nivel con más votos (`TRANQUILO`, `MODERADO` o `SATURADO`). Si faltan personas o hay empate, devuelve `level: null` con el motivo correspondiente. No exige usuarios simultáneamente conectados, no mide aforo y no pondera confianza. La actualización ocurre al consultar/reintentar, no mediante tiempo real. El [contrato](docs/CONTRATO_API.md) contiene el DTO y errores.
+
+Reutiliza **sin cambios** únicamente `src/database/migrateReports.js` de la rama publicada `feature/hu-4-1-nivel-saturacion`, commit `d49578cfdff7ef5bdc77c97c14207642715f41b1`; no copia el POST ni el formulario de ese compañero. Antes de integrar, el equipo debe coordinar ese almacenamiento compartido y aprobar la política. `004-saturation-reports` y la migración independiente `004-places-direccion` tienen nombres de historial distintos: no se renumeran ni se reescriben migraciones aplicadas.
+
+Sin reportes reales de HU 4.1, un lugar activo muestra información insuficiente. `db:seed:demo` sigue cargando solo lugares y **nunca niveles ficticios**. La prueba siguiente crea reportes únicamente dentro de una transacción aislada que revierte.
+
+```powershell
+npm run test:db:saturation
+```
+
+Reutiliza exclusivamente `crowdradar_auth_test` en PostgreSQL local; la base debe existir (el runner auth la prepara). Aplica migraciones explícitas, verifica preservación/idempotencia y usa HTTP/JWT/SQL reales sobre fixtures revertibles. No borra tablas/filas ni confirma reportes de prueba. Las secuencias PostgreSQL pueden avanzar aun con rollback. No equivale a recorrido Web ni Android.
 
 ## Pruebas
 
