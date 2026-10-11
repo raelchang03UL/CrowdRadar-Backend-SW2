@@ -1,4 +1,5 @@
 import UserRepository from "../repositories/UserRepository.js";
+import { karmaPointsPerReport } from "../config/environment.js";
 
 class UserService {
 
@@ -14,6 +15,12 @@ class UserService {
 
     }
 
+    async getKarmaPoints(id) {
+        const user = await UserRepository.findKarmaPoints(id);
+        if (!user) throw new Error("Usuario no encontrado.");
+        return Number(user.karmaPoints);
+    }
+
     async updateProfile(id, data) {
 
         const user = await UserRepository.update(id, data);
@@ -24,6 +31,19 @@ class UserService {
 
         return user;
 
+    }
+
+    async addKarmaPoints(id, points) {
+        if (!Number.isSafeInteger(points) || points < 0) {
+            throw new Error("Los puntos de karma no son válidos.");
+        }
+        const karmaPoints = await UserRepository.addKarmaPoints(id, points);
+        if (karmaPoints === null) throw new Error("Usuario no encontrado.");
+        return karmaPoints;
+    }
+
+    async awardReportKarma(id) {
+        return this.addKarmaPoints(id, karmaPointsPerReport());
     }
 
 }

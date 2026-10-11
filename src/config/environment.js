@@ -13,6 +13,15 @@ export function databaseConfiguration(env = process.env) {
     };
 }
 
+export function karmaPointsPerReport(env = process.env) {
+    const value = env.KARMA_POINTS_PER_REPORT ?? "10";
+    const points = Number(value);
+    if (!Number.isSafeInteger(points) || points < 0) {
+        throw new Error("KARMA_POINTS_PER_REPORT debe ser un entero mayor o igual que cero.");
+    }
+    return points;
+}
+
 export function validateEnvironment(env = process.env) {
     const required = env.DATABASE_URL ? ["JWT_SECRET"] : ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST", "JWT_SECRET"];
     const missing = required.filter((name) => env[name] === undefined || (name !== "DB_PASSWORD" && !env[name].trim()));
