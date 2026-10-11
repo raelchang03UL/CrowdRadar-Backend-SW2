@@ -1,0 +1,73 @@
+# npm test — backend 5fd8d4b (feature/hu-2-1-correo-smtp), 10/10/2026 16:46, Node v24.19.0, Windows 11
+
+> crowdradar-backend@1.0.0 test
+> node --test
+
+✔ HU 2.3 migración limpia usa DDL explícito transaccional e historial único (1.433ms)
+✔ HU 2.3 migración previa solo añade la columna, no actualiza usuarios (0.4144ms)
+✔ HU 2.3 migración rechaza esquema desconocido o columna sin historial (0.6807ms)
+✔ HU 2.3 arranque exige migración sin DDL ni error interno (0.4886ms)
+✔ HU 2.3 prueba DB rechaza destinos históricos, remotos y desarrollo (0.3795ms)
+✔ HU 2.3 cambia hash/version y rechaza JWT anterior en perfil y lugares (412.8715ms)
+✔ HU 2.3 rechaza actual incorrecta sin cambiar hash/version (21.1361ms)
+✔ HU 2.3 valida campos, confirmación, Unicode y no reutilización (111.3539ms)
+✔ HU 2.3 rechaza sesión ausente, expirada, legacy y usuario inactivo (92.1514ms)
+✔ HU 2.3 revalida versión bajo lock y no sobrescribe otro cambio (14.6198ms)
+✔ HU 2.3 falla cerrado ante DB sin filtrar detalles internos (93.3447ms)
+✔ HU 2.3 login rechaza límite bcrypt y no expone fallo DB en login/registro (47.7498ms)
+Servidor ejecutándose en el puerto 0
+Recuperación de contraseña: envío por correo habilitado.
+✔ arranque remoto no usa allowlist ni ejecuta ningún DDL (38.0051ms)
+✔ migración explícita portable conserva transacción e idempotencia (0.8512ms)
+✔ políticas demo y prueba aislada rechazan destinos protegidos antes de conectar (0.7633ms)
+✔ CLI de migración conserva barreras para entrega, sistema y Supabase (0.5167ms)
+✔ CORS admite preflight Web JSON y Authorization sin omitir JWT (29.8974ms)
+✔ demo sin email/contraseña válidos falla antes de consultar DB (2.5171ms)
+✔ demo rechaza remoto, Supabase y entrega incluso con credenciales presentes (0.3873ms)
+✔ demo usa registro real con bcrypt, repite sin cambios y no sobrescribe cuentas (245.2236ms)
+✔ DB acepta configuración por variables sin fijar host/proveedor (1.1557ms)
+✔ DATABASE_URL y TLS verificado son opcionales, sin permitir URL malformada ni TLS inseguro (1.5847ms)
+✔ CORS configurable admite orígenes explícitos y Android, sin cookies ni wildcard (0.6311ms)
+✔ test\helpers\memoryRecoveryDelivery.js (76.2077ms)
+✔ registro rechaza contraseña vacía/corta y límite bcrypt UTF-8 antes de consultar DB (1.3813ms)
+✔ recuperación deshabilitada es uniforme y no consulta cuentas ni genera tokens (620.2216ms)
+✔ solicitud es uniforme, normaliza correo, guarda solo hash y no espera proveedor (408.393ms)
+✔ enlace confiable usa query dentro fragmento GoRouter y token aleatorio 32 bytes (204.4219ms)
+✔ validar no consume ni envía correo; inválido, expirado y usado son indistinguibles (220.3099ms)
+✔ restablecimiento concurrente tiene un ganador, incrementa versión y notifica sin JWT (354.3386ms)
+✔ nueva solicitud invalida enlace anterior sin cambiar contraseña (414.5248ms)
+✔ validación de contraseña no consume token; rollback conserva hash/versión/token (279.2884ms)
+✔ límites por email normalizado/IP y reset IP rechazan abuso antes de consultar tokens (811.9489ms)
+✔ límite de solicitud por IP cuenta también cuentas inexistentes (2245.885ms)
+✔ errores DB y proveedor no exponen datos ni existencia de cuenta (608.6591ms)
+✔ URL rechaza hosts HTTP externos, credenciales y producción HTTP, admite HTTPS (0.9108ms)
+✔ HTTP público valida contrato/headers y no deriva enlace o IP de cabeceras no confiables (375.025ms)
+✔ migración003 aditiva e idempotente exige002 y no modifica users (0.6106ms)
+✔ arranque recuperación usa solo SELECT y oculta detalles sin migración (0.1961ms)
+✔ HU 3.1 exige token y rechaza token inválido (32.7239ms)
+✔ HU 3.1 devuelve lista vacía autenticada (10.4679ms)
+✔ HU 3.1 entrega coordenadas y campos mínimos sin datos internos (5.9044ms)
+✔ HU 3.1 no expone coordenadas inválidas (88.2156ms)
+✔ HU 3.1 error de repositorio devuelve mensaje público sin excepción (16.1428ms)
+✔ HU 3.1 fixture rechaza entrega y host externo antes de conectar (1.0142ms)
+✔ HU 3.1 repositorio solicita solo activos en orden determinístico (0.292ms)
+✔ HU 3.1 modelo rechaza coordenadas inválidas sin conectar DB (3.5336ms)
+✔ sin variables SMTP la entrega queda deshabilitada (1.0485ms)
+✔ configuración SMTP incompleta o inválida detiene el arranque sin revelar la contraseña (0.8506ms)
+✔ .env.example conserva el fragmento #/reset-password al leerse con dotenv (0.5524ms)
+✔ Gmail usa TLS, quita espacios de la contraseña de aplicación y remitente por defecto (0.833ms)
+✔ correo de recuperación contiene el enlace escapado y el aviso no incluye enlaces (0.5962ms)
+✔ fallo del proveedor registra solo el código y propaga el error (0.8172ms)
+✔ arranque con SMTP construye el servicio con entrega y URL confiable, sin conectar (0.9522ms)
+✔ HU 1.2 registra al ciudadano y cifra la contraseña (159.382ms)
+✔ HU 1.1 inicia sesión, genera JWT y rechaza una contraseña inválida (231.75ms)
+✔ HU 1.3 muestra el perfil únicamente con un token válido (164.6324ms)
+✔ HU 1.4 actualiza el perfil y conserva los cambios en la consulta siguiente (213.4313ms)
+ℹ tests 58
+ℹ suites 0
+ℹ pass 58
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8058.9018
