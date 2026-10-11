@@ -35,6 +35,12 @@ try {
     });
     assert.equal((await request("", false)).status, 401);
     assert.equal((await request("/-103", false)).status, 401);
+    assert.equal((await request("?nombre=demo", false)).status, 401);
+    for (const [nombre, count] of [["demo", 3], ["DEMO · PARQUE CENTRAL", 1], ["Central", 1], ["sin coincidencias", 0], ["%", 0]]) {
+        const response = await request(`?nombre=${encodeURIComponent(nombre)}`);
+        assert.equal(response.status, 200);
+        assert.equal((await response.json()).data.length, count);
+    }
     const response = await request("/-103");
     assert.equal(response.status, 200);
     const { data } = await response.json();
@@ -44,7 +50,7 @@ try {
     assert.equal(data.activo, undefined);
     assert.equal((await request("/2147483647")).status, 404);
     assert.equal((await request("/abc")).status, 400);
-    console.log("PASS: Express + autenticación + repositorio + PostgreSQL reales: detalle, dirección y errores 400/401/404.");
+    console.log("PASS: Express + autenticación + repositorio + PostgreSQL reales: mapa, nombre completo/parcial/mayúsculas, sin resultados, dirección y errores 400/401/404.");
 } catch {
     // No imprime filas, SQL, hashes de contraseña ni JWT si falla una aserción.
     console.error("FAIL: comprobación local de lugares. Revisa migraciones, cuenta local y catálogo demostrativo.");
