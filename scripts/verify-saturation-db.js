@@ -13,8 +13,9 @@ import { migrateReports, reportsMigration, assertReportsSchemaReady } from "../s
 const database = "crowdradar_auth_test";
 assertIsolatedAuthTestDatabase({ config: { database, host: process.env.DB_HOST } });
 process.env.DB_NAME = database;
-delete process.env.DATABASE_URL;
+process.env.DATABASE_URL = "";
 const { default: sequelize } = await import("../src/config/database.js");
+assertIsolatedAuthTestDatabase(sequelize);
 const { default: User } = await import("../src/models/User.js");
 const { default: repository } = await import("../src/repositories/SaturationQueryRepository.js");
 const { default: service } = await import("../src/services/SaturationQueryService.js");
@@ -27,8 +28,8 @@ const run = `${Date.now()}-${randomBytes(6).toString("hex")}`;
 let transaccion, server;
 let etapa = "migración";
 try {
-    await sequelize.authenticate();
     assertIsolatedAuthTestDatabase(sequelize);
+    await sequelize.authenticate();
     await migratePlaces(sequelize);
     await migrateAuth(sequelize);
     await migrateRecovery(sequelize);
