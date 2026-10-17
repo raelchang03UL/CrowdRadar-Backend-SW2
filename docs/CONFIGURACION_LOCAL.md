@@ -4,7 +4,7 @@ Línea base comprobada en Windows 11 con Node 22.20.0, npm 10.9.3, PostgreSQL 18
 
 ## 1. Clonar ambos repositorios
 
-**Vigencia (10/10/2026):** `develop` ya integra HU 3.1, el pulido A, HU 2.3 (B) y HU 2.1–2.2 (C): backend #26, #29 y #30; frontend #9, #11, #12 y #13. Clonar `develop` incluye las migraciones 001–003 y sus pantallas. Siguen en revisión, sin integrar, el envío real de correo (backend #31, `feature/hu-2-1-correo-smtp`) y el arreglo del mapa Web (frontend #14, `fix/web-referrer-mapa`): hasta su merge, `develop` responde 503 uniforme en la recuperación y el mapa Web muestra las teselas bloqueadas. No se reejecutó una clonación limpia del conjunto integrado; la prueba histórica permanece en ESTADO_ACTUAL. Cada integrante usa su PostgreSQL y secretos locales.
+**Vigencia backend (11/10/2026):** la base `develop` observada (`46267e7`) integra HU 3.1, HU 2.3, HU 2.1–2.2 y envío SMTP (backend #26, #29, #30 y #31). Incluye migraciones 001–003; `004-saturation-reports` es todavía parte de este incremento local HU 3.2, no de aquella base compartida. El frontend tiene su propio historial: comprobar la rama/par que se revisa, sin asumir integración conjunta automática. Los padres/pruebas históricas permanecen en ESTADO_ACTUAL; no se reejecutó una clonación limpia del conjunto. Cada integrante usa su PostgreSQL y secretos locales.
 
 ```powershell
 $workspaceRoot = Join-Path $env:USERPROFILE 'Documents\CrowdRadar-SW2'
@@ -14,16 +14,7 @@ git clone -b develop https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git
 git clone -b develop https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
 ```
 
-Solo para revisar el correo y el mapa antes de su merge, con ambos clones limpios:
-
-```powershell
-git -C CrowdRadar-Backend fetch origin
-git -C CrowdRadar-FrontEnd fetch origin
-git -C CrowdRadar-Backend switch --track origin/feature/hu-2-1-correo-smtp
-git -C CrowdRadar-FrontEnd switch --track origin/fix/web-referrer-mapa
-```
-
-Si esas ramas locales ya existen, usar `git switch` y actualizar únicamente con `git pull --ff-only`, sin sobrescribir cambios. Para cualquier tarea nueva, la base es `develop`.
+Para cualquier tarea nueva, comprobar ambos árboles y usar `develop` como base. Para revisar un PR pendiente, descargar explícitamente su rama con el árbol limpio y confirmar primero si ya está integrado. Actualizar únicamente con `git pull --ff-only`, sin sobrescribir cambios; una rama publicada no sustituye el par integrado.
 
 ## 2. Backend y base de datos
 
@@ -88,6 +79,19 @@ El puerto 465 usa TLS directo; cualquier otro exige STARTTLS. La entrega es así
 Las pruebas construyen `PasswordRecoveryService` con `delivery.sendResetLink({email,resetUrl})` y `delivery.sendPasswordChangedNotification({email})`, y lo inyectan mediante `createApp({recoveryService})`. El transporte de memoria existe solo bajo `test/helpers`; se consulta después de `drainDeliveries()` dentro del proceso de prueba. Los runners QA separan sus presupuestos de abuso mediante un namespace de claves exclusivo de cada ejecución, conservando SQL/umbrales reales. Esto no se aplica al arranque normal.
 
 No declarar HU 2.1/Sprint 2 terminados con un correo capturado: todavía faltan entrega real y recorrido manual de las plataformas afectadas.
+
+### HU 3.2 — almacenamiento compartido y consulta
+
+Este incremento local exige ejecutar `npm run db:migrate` antes de iniciar: añade `004-saturation-reports` después de 001–003 y el arranque verifica su existencia únicamente con SELECT. La migración es el archivo exacto `src/database/migrateReports.js` de `feature/hu-4-1-nivel-saturacion`, commit `d49578cfdff7ef5bdc77c97c14207642715f41b1`; requiere coordinar su integración con HU 4.1, sin copiar su endpoint POST ni cambiar su historial. `004-saturation-reports` y `004-places-direccion` son claves de historial independientes; conservar ambos nombres, sin renumerar migraciones aplicadas.
+
+No se añade variable, paquete ni seed de niveles. La lista sigue siendo compatible; GET `/api/places/:id/saturation` consulta la estimación con JWT y muestra falta de información si no hay tres personas recientes. Regla provisional: 30 minutos, último reporte por persona, nivel más votado y empate sin nivel; aprobación del usuario no sustituye el acuerdo del equipo. Ver [contrato](CONTRATO_API.md).
+
+```powershell
+# Con PostgreSQL local y crowdradar_auth_test ya preparada por el runner auth:
+npm run test:db:saturation
+```
+
+El runner rechaza destinos externos antes de conectar y fija exclusivamente `crowdradar_auth_test`, sin usar `DB_NAME` como destino ni crear/eliminar bases. Aplica migraciones explícitas, compara filas/historial previos, prueba SQL/HTTP/JWT con fixtures en una transacción y la revierte por completo. Las secuencias pueden avanzar; ninguna fila falsa se confirma. Ejecutar secuencialmente con otros runners que usen esa base para que las comparaciones de preservación no se superpongan. Android sigue sin validar por decisión del usuario; no se instala SDK/emulador ni se usa teléfono para este incremento.
 
 ## 3. Android y Flutter
 
