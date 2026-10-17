@@ -1,5 +1,13 @@
 # Configuración local desde una clonación limpia
 
+## Actualización HU 3.3 — dirección y detalle
+
+En `feature/hu-3-3-detalles-lugar`, ejecutar `npm run db:migrate` antes de consultar lugares: aplica `004-places-direccion` sin reescribir 001–003 ni modificar las filas anteriores. No se migra al arrancar. Las direcciones no registradas permanecen null.
+
+El seed opcional `npm run db:seed:demo` completa solo direcciones null de sus tres IDs negativos reservados, identificadas como ilustrativas/no verificadas; conserva una dirección ya registrada. `npm run test:db:places` usa únicamente `crowdradar_hu31_test`; `npm run test:local:places` exige `crowdradar_dev` local y una cuenta activa, no crea usuarios ni envía correo.
+
+Frontend y backend deben usar la pareja de ramas de HU 3.3; integrar backend compatible antes del frontend. No hay variables o dependencias nuevas.
+
 Línea base comprobada en Windows 11 con Node 22.20.0, npm 10.9.3, PostgreSQL 18, Java 21.0.7, Flutter 3.41.9/Dart 3.11.5 y Android SDK Platform/Build-Tools 36. Los SDK van fuera de los repositorios. No uses la base `crowdradar_sprint1` ni Supabase para desarrollo.
 
 ## 1. Clonar ambos repositorios

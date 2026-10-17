@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import pg from "pg";
 import { Sequelize, QueryTypes } from "sequelize";
 import { migratePlaces } from "../src/database/migratePlaces.js";
+import { migratePlaceDetails, placeDetailsMigration } from "../src/database/migratePlaceDetails.js";
+import { createPlaceRepository } from "../src/repositories/PlaceRepository.js";
+import Place from "../src/models/Place.js";
 import { seedPlacesDemo, demoPlaces } from "../src/database/seedPlacesDemo.js";
 import { assertIsolatedPlacesTestDatabase } from "../src/database/databaseSafety.js";
 
@@ -31,6 +34,13 @@ try {
     assert.deepEqual(await select("SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' ORDER BY ordinal_position"), columnsBefore);
     assert.equal((await select("SELECT * FROM public.crowdradar_migrations WHERE name = '001-create-places'")).length, 1);
     console.log("PASS: migración idempotente, historial único, datos y estructura users intactos.");
+    const placesBefore = await select("SELECT id, nombre, categoria, referencia, latitud, longitud, activo, demostrativo FROM public.places ORDER BY id");
+    await migratePlaceDetails(db);
+    assert.equal(await migratePlaceDetails(db), false);
+    assert.equal((await select(`SELECT name FROM public.crowdradar_migrations WHERE name = '${placeDetailsMigration}'`)).length, 1);
+    assert.deepEqual(await select("SELECT id, nombre, categoria, referencia, latitud, longitud, activo, demostrativo FROM public.places ORDER BY id"), placesBefore);
+    assert.deepEqual(await select("SELECT * FROM public.users ORDER BY id"), before);
+    console.log("PASS: dirección aditiva, migración 004 idempotente; lugares y usuarios anteriores preservados.");
     for (const [latitud, longitud] of [[91, 0], [0, 181], [NaN, 0], [0, Infinity]]) {
         const transaction = await db.transaction();
         try {
@@ -54,4 +64,21 @@ try {
         assert.equal(inactive.length, 0);
     } finally { await transaction.rollback(); }
     console.log("PASS: lugar inactivo no aparece en la consulta activa; fila de prueba revertida.");
+    // Usa el repositorio real sobre PostgreSQL aislado, sin sync ni DDL implícito.
+    const modelo = db.define("PlaceDbTest", Place.getAttributes(), { tableName: "places", timestamps: false });
+    const repository = createPlaceRepository(modelo);
+    assert.equal((await repository.findActiveById(-103)).direccion, demoPlaces[0].direccion);
+    assert.equal(await repository.findActiveById(2147483647), null);
+    const tx = await db.transaction();
+    try {
+        await modelo.create({ id: -998, nombre: "Literal 50%_\\ ruta", categoria: "Prueba", direccion: null, latitud: 0, longitud: 0, activo: true, demostrativo: false }, { transaction: tx });
+        await modelo.create({ id: -997, nombre: "Demo oculto", categoria: "Prueba", latitud: 0, longitud: 0, activo: false, demostrativo: false }, { transaction: tx });
+        const transactionalRepository = createPlaceRepository({
+            findAll: (options) => modelo.findAll({ ...options, transaction: tx }),
+            findOne: (options) => modelo.findOne({ ...options, transaction: tx })
+        });
+        assert.equal(await transactionalRepository.findActiveById(-997), null);
+        assert.equal((await transactionalRepository.findActiveById(-998)).direccion, null);
+    } finally { await tx.rollback(); }
+    console.log("PASS: repositorio real: detalle, dirección opcional e inactivos (fixtures temporales revertidos).");
 } finally { await db.close(); }

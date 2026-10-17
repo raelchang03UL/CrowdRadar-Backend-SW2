@@ -1,5 +1,13 @@
 # Estado actual
 
+## HU 3.3 — consulta de detalles, 10/10/2026
+
+Incremento en `feature/hu-3-3-detalles-lugar`, desde develop `46267e7`, para backend #7. Consulta autenticada por ID activo, DTO público con dirección opcional, errores 400/401/404/503 y migración aditiva `004-places-direccion`. El mapa y las migraciones previas se conservan; no incluye búsqueda por nombre.
+
+Frontend compañero en la rama homónima: marcador → Ver detalles, carga/error/reintento, nombre/dirección/categoría/referencia y descarte tras cambio de sesión. Las direcciones de los fixtures son ilustrativas, no verificadas; una dirección real ausente no se inventa. Pruebas y par de commits se registran en los PR. Revisión humana, aceptación del catálogo y Android quedan pendientes; no se declara integrado ni terminado.
+
+Las secciones siguientes conservan la evidencia histórica de otras tareas.
+
 ## Correo SMTP (Brevo) para HU 2.1–2.2, 10/10/2026
 
 Rama `feature/hu-2-1-correo-smtp`, padre C `9ee244eb7c94983cb951bfe06e723565c2e66b72`; frontend compañero `fix/web-referrer-mapa` desde C `652ea26`. Decisión del responsable del Sprint 2: primero Gmail; la cuenta del proyecto no permitió contraseñas de aplicación y se usa Brevo por SMTP, sin cambiar código (adaptador SMTP genérico). Se añade `nodemailer@10.0.10` (sin dependencias propias, sin avisos de `npm audit`; versión publicada el 14/09/2026, elegida por antigüedad frente a 10.0.16 de tres días). `SMTP_*` habilita el adaptador solo en `startServer`; sin ellas el 503 uniforme no cambia. Configuración incompleta/URL no confiable detiene el arranque con mensaje público; fallos de entrega registran solo el código. Contrato HTTP sin cambios.
