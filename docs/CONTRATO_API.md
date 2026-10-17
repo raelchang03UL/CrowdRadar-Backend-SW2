@@ -4,6 +4,8 @@ Fuente canónica backend para coordinar con Flutter. Refleja HU 3.1 y los increm
 
 Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`. JSON UTF-8. Rutas protegidas reciben `Authorization: Bearer <token>`. No incluir token real en este archivo ni evidencias.
 
+**Incremento local HU 3.5, 11/10/2026:** esta rama añade filtro `categoria` y catálogo de categorías sobre `develop`. No contiene los PR todavía pendientes de HU 3.3/3.4; al integrar sus rutas compartidas se requiere coordinación y regresión, no reemplazar un incremento con otro.
+
 ## Rutas actuales
 
 | Método/ruta | Entrada | Éxito | Fallos actuales |
@@ -17,11 +19,20 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
-| GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| GET `/api/places` | JWT; `categoria` opcional | 200 `{data: lugar[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
+| GET `/api/places/categories` | JWT; sin parámetros | 200 `{data: string[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
 `lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. No hay dirección, saturación ni endpoint de detalle todavía.
+
+### HU 3.5: categoría
+
+`categoria` es una sola cadena recortada de hasta 80 caracteres Unicode. Solo se admite esta propiedad, una sola vez; arreglos/repetidos/otras propiedades son 400 con `{message: "La categoría debe ser un único texto de hasta 80 caracteres."}`. Ausente, vacío o espacios desactiva el filtro. La coincidencia es igualdad literal y sensible a mayúsculas: elegir el texto exacto devuelto por el catálogo, no comodines. `%`, `_`, `\\` y apóstrofes siguen siendo texto; el acceso usa igualdad ORM, no concatenación SQL. Una categoría desconocida devuelve 200 `{data: []}`.
+
+El catálogo procede de los lugares activos en PostgreSQL, no de valores hardcodeados: categorías únicas agrupadas y ordenadas por la DB, sin campos internos ni etiquetas vacías. Una etiqueta corrupta (no textual, vacía, con espacios exteriores o mayor a 80) causa 503 público en lugar de ofrecer una opción que no pueda seleccionarse por igualdad. El catálogo no recibe parámetros; si existen, responde 400 `{message: "La consulta de categorías no admite parámetros."}`. Fallos de catálogo: 503 `{message: "No se pudieron cargar las categorías. Inténtalo de nuevo."}`; el filtro conserva el 503 público de lugares. Ambas rutas comprueban JWT/usuario/versión antes de consultar.
+
+No admite `nombre` en esta rama: la combinación futura búsqueda/filtro debe acordarse al integrar HU 3.4. No hay migraciones ni campos nuevos. Los lugares demostrativos mantienen `demostrativo=true` y no se presentan como monitoreo real.
 
 ## Validación y errores: distinguir API de interfaz
 
@@ -81,4 +92,4 @@ JWT dura dos horas, HS256, con `id` y `sessionVersion` enteros. Cada ruta proteg
 
 Antes de implementar una nueva HU, acordar ruta/método, entrada/validación, salida, códigos de error, autenticación y casos negativos con la persona del otro componente. Enlazar los PR. Preferir cambios aditivos compatibles; si se rompe un campo/ruta, definir transición y orden de integración. Registrar el par probado, no solo el SHA del repo actual.
 
-Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. No hay `/api/places/:id`, búsqueda, filtros, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. Esta rama añade únicamente filtro por categoría; no hay `/api/places/:id`, búsqueda por nombre, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
