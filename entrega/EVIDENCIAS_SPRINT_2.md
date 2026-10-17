@@ -1,6 +1,6 @@
 # Evidencias reales del Sprint 2
 
-Fecha de verificación: 10/10/2026. Estado: **en curso** — funcionalidad verificada en Web; quedan PR por integrar y Android (ver «Pendientes»). Este registro se completa al cerrar el Sprint; no reescribe las evidencias del Sprint 1.
+Fechas de verificación: 10/10/2026 y reverificación del 16/10/2026. Estado: **en curso** — todo integrado en `develop` y verificado en Web; quedan Android, la aceptación formal del criterio de HU 2.1 y el cierre de Issues (ver «Pendientes»). Este registro se completa al cerrar el Sprint; no reescribe las evidencias del Sprint 1.
 
 ## Numeración de sprints
 
@@ -37,12 +37,12 @@ Orden acordado: un PR por entrega, con merge commit y sin borrar ramas.
 | Pulido visual A | — | #11 | Integrado |
 | HU 2.3 (B) | #29 | #12 | Integrado |
 | HU 2.1–2.2 (C) | #30 | #13 | Integrado |
-| Correo SMTP (Brevo) | #31 | — | En revisión: Rael pidió correcciones puntuales (`MAIL_FROM` obligatorio con Brevo, guías actualizadas), entregadas en un commit nuevo |
-| Referer del mapa Web | — | #14 | Aprobado por Rael; pendiente de merge coordinado |
-| Error persistente al cambiar contraseña | — | #15 | Aprobado por Rael; pendiente de merge coordinado |
-| Evidencias de entrega (este registro) | #32 | — | En revisión |
+| Correo SMTP (Brevo) | #31 | — | Integrado el 10/10/2026, con las correcciones pedidas por Rael (`MAIL_FROM` obligatorio con Brevo, guías actualizadas) |
+| Referer del mapa Web | — | #14 | Integrado el 10/10/2026 |
+| Error persistente al cambiar contraseña | — | #15 | Integrado el 11/10/2026 |
+| Evidencias de entrega (este registro) | #32 | — | Integrado el 11/10/2026 |
 
-`develop` tras los merges: backend `7f32e62`, frontend `cffd3d5`. Par final probado: backend `5fd8d4b` (`feature/hu-2-1-correo-smtp`) / frontend `a1808d2` (`fix/web-referrer-mapa`).
+`develop` tras los merges de HU 2.1–2.3: backend `7f32e62`, frontend `cffd3d5`. Par probado el 10/10: backend `5fd8d4b` (`feature/hu-2-1-correo-smtp`) / frontend `a1808d2` (`fix/web-referrer-mapa`). `develop` tras #31, #14, #15 y #32: backend `46267e7`, frontend `dfdb753`; es el par de la reverificación del 16/10.
 
 ## Entorno
 
@@ -113,12 +113,43 @@ Además, el cambio invalida las sesiones abiertas: una segunda pestaña con la s
 | Sin sesión, las funciones protegidas piden login | Cumple: `/#/profile` y `/#/map` redirigen a login | `08_guarda_profile_sin_sesion.png`, `09_guarda_map_sin_sesion.png` |
 | Tras cerrar, redirige a login | Cumple | Recorrido |
 
+## Reverificación en clon nuevo (16/10/2026)
+
+Clon nuevo de ambos repositorios en otra PC, en `develop` sin cambios locales: backend `46267e7`, frontend `dfdb753`.
+
+| Componente | Versión |
+| --- | --- |
+| Sistema | Windows 11 Home (build 26200) |
+| Node.js | 22.23.2 |
+| PostgreSQL | 18, base de desarrollo `crowdradar_dev` (migraciones aplicadas, 3 lugares demo) |
+| Flutter | 3.41.9 (commit `00b0c91`) |
+| Navegador | Google Chrome, Flutter Web en `http://localhost:5500/#/` |
+| Correo | Brevo por SMTP, `smtp-relay.sendinblue.com:587`, remitente verificado propio |
+
+| Comprobación | Resultado |
+| --- | --- |
+| Backend `npm test` | 59/59 aprobadas |
+| Frontend `flutter test --no-pub` | 226 aprobadas, 2 opt-in omitidas |
+| Arranque del backend con SMTP | «Recuperación de contraseña: envío por correo habilitado.» |
+| `POST /api/auth/password/forgot` | 202 con la respuesta uniforme |
+
+Recorrido manual de HU 2.1–2.2 con correo real (capturas en `evidencias/sprint2/capturas/reverificacion_2026_10_16/`):
+
+| Paso | Resultado | Evidencia |
+| --- | --- | --- |
+| Solicitud de recuperación desde Web | Llegó «CrowdRadar: restablece tu contraseña» con el enlace (vigencia 15 min, un solo uso) | `01_correo_recuperacion.png` |
+| Enlace del correo abre el formulario y guarda la nueva contraseña | Cumple; luego se inició sesión con la nueva | `02_formulario_restablecer.png` (contraseña de una cuenta de prueba) |
+| Aviso de cambio | Llegó «CrowdRadar: tu contraseña fue cambiada» indicando el cierre de sesiones | `03_aviso_contrasena_cambiada.png` |
+| Reabrir el enlace ya usado | «El enlace no es válido o ha expirado. Solicita uno nuevo.» sin formulario | `04_enlace_reutilizado.png` (token oculto en la URL) |
+
+HU 2.3 y HU 2.4 no se volvieron a capturar en esta reverificación; rigen las evidencias del 10/10.
+
 ## Hallazgos y correcciones
 
 1. **Mapa Web bloqueado.** La meta `no-referrer` añadida con la recuperación hacía que OpenStreetMap sirviera «Access blocked» en todas las teselas (`02_mapa_bloqueado_antes.png`). Comprobado descargando las mismas teselas con y sin Referer. Corregido con `strict-origin-when-cross-origin` (PR #14); el token de recuperación va tras `#` y nunca viaja en el Referer (`14_mapa_despues.jpg`).
 2. **`PASSWORD_RESET_URL` recortada.** Sin comillas, dotenv trataba `#/reset-password` como comentario; con correo habilitado el arranque se detenía. Corregido en `.env.example` con una prueba que lo vigila (PR #31).
 3. **Certificado de Brevo.** Desde Perú, `smtp-relay.brevo.com` presentó un certificado solo válido para `*.sendinblue.com` y la conexión se rechazó (`ESOCKET`). Se usa `smtp-relay.sendinblue.com` (misma IP), con verificación TLS completa.
-4. **Error persistente al cambiar contraseña.** «La contraseña actual no es correcta.» seguía visible al corregir los campos (`05`, `06`). Corregido en frontend #15 (`fix/hu-2-3-error-cambio-password`), aprobado por Rael y pendiente de merge.
+4. **Error persistente al cambiar contraseña.** «La contraseña actual no es correcta.» seguía visible al corregir los campos (`05`, `06`). Corregido en frontend #15 (`fix/hu-2-3-error-cambio-password`), aprobado por Rael e integrado el 11/10/2026.
 5. **Pestaña con sesión invalidada.** Muestra «Tu sesión no está disponible» con «Reintentar» en lugar de volver a login (`07`). La seguridad se cumple (el backend rechaza el JWT anterior); falta el manejo global del 401, que toca `SessionService` y el router y requiere acuerdo del equipo.
 
 ## Decisiones
@@ -129,7 +160,6 @@ Además, el cambio invalida las sesiones abiertas: una segunda pestaña con la s
 
 ## Pendientes
 
-- Revisión de las correcciones de #31 y de #32; merge coordinado de #31, #14, #15 y #32.
 - Aceptación formal del criterio uniforme de HU 2.1 por el Product Owner o el equipo.
 - Android: no se probó en esta PC (sin SDK). Queda como pendiente explícito; el enlace del correo abre la versión Web, no la app nativa.
 - Manejo global del 401 (hallazgo 5).
