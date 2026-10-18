@@ -57,7 +57,7 @@ const app = createApp();
 
 const PORT = process.env.PORT || 3000;
 
-export const startServer = async ({ port = PORT } = {}) => {
+export const startServer = async ({ port = PORT, host } = {}) => {
     validateEnvironment();
     // Solo el servidor real construye la entrega SMTP; importar app.js (pruebas) nunca envía correo.
     const recoveryService = recoveryServiceFromEnvironment();
@@ -72,7 +72,7 @@ export const startServer = async ({ port = PORT } = {}) => {
     await assertValidationSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
-    return server.listen(port, () => {
+    return server.listen(port, host, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
         console.log(recoveryService ? "Recuperación de contraseña: envío por correo habilitado." : "Recuperación de contraseña: sin correo configurado (503 uniforme).");
     });

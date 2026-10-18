@@ -14,4 +14,4 @@ for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL
 const { default: db } = await import("../src/config/database.js");
 assertIsolatedConsolidationDatabase(db);
 const { startServer } = await import("../app.js");
-await startServer({ port: 3033 });
+await startServer({ port: 3033, host: "127.0.0.1" });

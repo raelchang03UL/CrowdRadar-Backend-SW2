@@ -36,7 +36,9 @@ test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
             return [{ name: "002-users-session-version" }, { name: "004-saturation-reports" }, { name: "005-reconcile-report-schema" }, { name: "006-report-karma-ledger" }, { name: "007-report-validation" }];
         };
         User.sync = () => assert.fail("Arranque no debe sincronizar modelos");
-        server = await startServer({ port: 0 });
+        server = await startServer({ port: 0, host: "127.0.0.1" });
+        if (!server.listening) await new Promise(resolve => server.once("listening", resolve));
+        assert.equal(server.address().address, "127.0.0.1");
         const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), { message: "CrowdRadar API" });
