@@ -41,6 +41,14 @@ try{
     assert.equal((await call(path+'/own-validation',{token:a.token})).status,403);
     assert.equal((await call(path+'/own-validation',{token:author.token})).status,200);
     assert.equal((await call(path)).status,401);
+    const {default:jwt}=await import('jsonwebtoken');
+    const expired=jwt.sign({...jwt.decode(a.token),exp:1},process.env.JWT_SECRET);
+    const stale=jwt.sign({...jwt.decode(a.token),sessionVersion:jwt.decode(a.token).sessionVersion+1},process.env.JWT_SECRET);
+    assert.equal((await call(path,{token:expired})).status,401);
+    assert.equal((await call(path,{token:stale})).status,401);
+    const listed=(await (await call('/api/reports',{token:a.token})).json()).data;
+    assert.ok(listed.length<=50&&listed.some(item=>item.id===id));
+    assert.ok(listed.every(item=>!('email' in item)&&!('userId' in item)));
     pass('autorización: sesión, recursos propios, autovoto y autodenuncia rechazados.');
     await db.query('UPDATE public.users SET karma_points=40 WHERE id=:id',{replacements:{id:a.user.id}});
     const simultaneous=await Promise.all([vote(a,'CONFIRM'),vote(a,'REJECT')]);assert.deepEqual(simultaneous.map(r=>r.status).sort(),[201,409]);
@@ -76,6 +84,9 @@ try{
     assert.equal(q.recommendations[0].hour,10);assert.equal(q.recommendations[0].quietDays,3);
     const compare=await call(analytics+'/comparison?'+range+'&compareFrom=2026-10-01&compareTo=2026-10-02',{token:a.token});assert.equal(compare.status,200);assert.equal((await compare.json()).data.comparable,false);
     const empty=await call(analytics+'/history?from=2026-09-01&to=2026-09-01',{token:a.token});assert.equal((await empty.json()).data.hasReports,false);
+    const positive=await call(analytics+'/comparison?'+range+'&compareFrom=2026-10-12&compareTo=2026-10-12',{token:a.token});
+    assert.equal(positive.status,200);const compared=(await positive.json()).data;
+    assert.equal(compared.comparable,true);assert.equal(compared.first.counts.TRANQUILO,3);assert.equal(compared.second.counts.TRANQUILO,1);
     assert.equal((await call(analytics+'/history?from=2026-02-31&to=2026-03-01',{token:a.token})).status,400);
     assert.equal((await call(analytics+'/history?'+range)).status,401);
     pass('SQL real:72 bloques Lima, conteos cronológicos, comparación insuficiente, recomendación3 días y vacíos honestos.');
