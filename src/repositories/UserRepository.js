@@ -20,6 +20,24 @@ class UserRepository {
         });
     }
 
+    async findKarmaPoints(id) {
+        return User.findByPk(id, {
+            attributes: ["id", "karmaPoints"],
+            raw: true
+        });
+    }
+
+    async addKarmaPoints(id, points, transaction) {
+        const user = await User.findByPk(id, {
+            transaction,
+            lock: transaction?.LOCK.UPDATE
+        });
+        if (!user) return null;
+        user.karmaPoints = Number(user.karmaPoints) + points;
+        await user.save({ transaction });
+        return Number(user.karmaPoints);
+    }
+
     async findByEmail(email) {
         return await User.findOne({
             where: {

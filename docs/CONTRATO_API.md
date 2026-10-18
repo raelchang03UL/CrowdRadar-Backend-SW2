@@ -38,6 +38,7 @@ Incremento local del 11/10/2026: HU 3.2 añade la consulta descrita abajo desde 
 | POST `/api/auth/password/reset/validate` | Público; `{token}` | 200 `{valid: true}`; no consume ni envía correo | 400 enlace inválido/expirado/usado; 429 abuso; 503 servicio |
 | POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
+| GET `/api/users/karma` | JWT | 200 `{data: {karmaPoints}}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
 | GET `/api/places` | JWT; `nombre` opcional, único y hasta 160 caracteres | 200 `{data: lugar[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
 | GET `/api/places/:id` | JWT; ID entero no cero | 200 `{data: lugar}` | 400 ID; 401 sesión; 404 no disponible; 503 mensaje público |
@@ -45,7 +46,7 @@ Incremento local del 11/10/2026: HU 3.2 añade la consulta descrita abajo desde 
 | GET `/api/places` | JWT; `categoria` opcional | 200 `{data: lugar[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
 | GET `/api/places/categories` | JWT; sin parámetros | 200 `{data: string[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
 
-`usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
+`usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status, `karmaPoints` y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
 `lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` y `direccion` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. La dirección opcional y el detalle pertenecen a HU 3.3; HU 3.4 incorpora búsqueda por nombre. No hay saturación ni filtros de categoría.
 

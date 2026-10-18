@@ -2,6 +2,15 @@ import UserService from "../services/UserService.js";
 
 class UserController {
 
+    async getKarma(req, res) {
+        try {
+            const karmaPoints = await UserService.getKarmaPoints(req.user.id);
+            return res.status(200).json({ data: { karmaPoints } });
+        } catch (error) {
+            return res.status(404).json({ message: error.message });
+        }
+    }
+
     async getProfile(req, res) {
 
         try {
