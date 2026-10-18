@@ -1,5 +1,14 @@
 const localHosts = ["localhost", "127.0.0.1", "::1"];
 
+export const consolidationTestDatabases = Object.freeze([
+    "crowdradar_consolidacion_fresh_20261017", "crowdradar_consolidacion_legacy_20261017"
+]);
+export function assertIsolatedConsolidationDatabase({ config: { database, host } }) {
+    if (!localHosts.includes(host) || !consolidationTestDatabases.includes(database)) {
+        throw new Error("QA de consolidación solo admite sus dos bases locales aisladas identificadas.");
+    }
+}
+
 export function assertIsolatedAuthTestDatabase({ config: { database, host } }) {
     if (!localHosts.includes(host) || database !== "crowdradar_auth_test") {
         throw new Error("La comprobación de autenticación solo admite crowdradar_auth_test en PostgreSQL local.");

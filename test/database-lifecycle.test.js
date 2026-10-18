@@ -33,7 +33,7 @@ test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
         sequelize.query = async (sql) => {
             assert.match(sql, /^SELECT /);
             calls.push("schema-read");
-            return [{ name: "002-users-session-version" }];
+            return [{ name: "002-users-session-version" }, { name: "004-saturation-reports" }, { name: "005-reconcile-report-schema" }, { name: "006-report-karma-ledger" }];
         };
         User.sync = () => assert.fail("Arranque no debe sincronizar modelos");
         server = await startServer({ port: 0 });

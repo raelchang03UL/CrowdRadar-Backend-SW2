@@ -11,7 +11,8 @@ import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
 import { assertPlaceDetailsSchemaReady } from "./src/database/migratePlaceDetails.js";
 
 
-import { assertReportsSchemaReady } from "./src/database/migrateReports.js";
+import { assertConsolidatedReportsSchemaReady } from "./src/database/migrateReportCompatibility.js";
+import { assertKarmaSchemaReady } from "./src/database/migrateKarma.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import reportRoutes from "./src/routes/report.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
@@ -56,7 +57,8 @@ export const startServer = async ({ port = PORT } = {}) => {
     await assertRecoverySchemaReady(sequelize);
     await assertPlaceDetailsSchemaReady(sequelize);
 
-    await assertReportsSchemaReady(sequelize);
+    await assertConsolidatedReportsSchemaReady(sequelize);
+    await assertKarmaSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
     return server.listen(port, () => {
