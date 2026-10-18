@@ -26,6 +26,8 @@ Para cualquier tarea nueva, comprobar ambos árboles y usar `develop` como base.
 
 ## 2. Backend y base de datos
 
+**Revisión HU 3.6:** la rama `feature/hu-3-6-filtro-saturacion` depende de HU 3.2 (padre backend `0605b51`). Para este par se usa también el frontend HU 3.6; los PR apuntan a sus padres HU 3.2 mientras no se integren. No hay paquetes, variables ni migraciones nuevas: requiere el esquema compartido de reportes ya indicado en HU 3.2. `npm run test:db:saturation-filter` solo verifica `crowdradar_auth_test` local previamente preparada; no crea bases ni migra, y revierte sus fixtures. No ejecutarlo en Sprint 1/Supabase. El recorrido Web puede usar datos transaccionales en esa base; esos datos QA no son niveles reales ni se confirman. Android queda pendiente para después.
+
 Inicia PostgreSQL 18. Desde `psql` o pgAdmin, crea **solo si no existe** la base de desarrollo:
 
 ```sql

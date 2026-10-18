@@ -8,6 +8,11 @@ router.get("/categories", authMiddleware, PlaceController.categories);
 router.get("/", authMiddleware, PlaceController.list);
 router.get("/:id", authMiddleware, PlaceController.detail);
 
+
+router.get("/", (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+}, authMiddleware, PlaceController.list);
 router.get("/:id/saturation", (req, res, next) => {
     res.set("Cache-Control", "no-store");
     next();

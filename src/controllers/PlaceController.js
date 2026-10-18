@@ -1,15 +1,19 @@
-import PlaceService from "../services/PlaceService.js";
+import PlaceService, { parseSaturationFilter } from "../services/PlaceService.js";
 
 export default {
     async list(req, res) {
+        let nivel;
+        try { nivel = parseSaturationFilter(req.query); } catch {
+            return res.status(400).json({ code: "SATURATION_FILTER_INVALID", message: "El filtro de saturación no es válido." });
+        }
         const { nombre = "", categoria = "" } = req.query;
-        if (Object.keys(req.query).some((key) => !["nombre", "categoria"].includes(key)) ||
+        if (Object.keys(req.query).some((key) => !["nombre", "categoria", "nivel"].includes(key)) ||
             typeof nombre !== "string" || [...nombre.trim()].length > 160 ||
             typeof categoria !== "string" || [...categoria.trim()].length > 80) {
             return res.status(400).json({ message: "La búsqueda admite nombre (160 caracteres) y categoría (80), una sola vez." });
         }
         try {
-            return res.status(200).json({ data: await PlaceService.listActive({ nombre: nombre.trim(), categoria: categoria.trim() }) });
+            return res.status(200).json({ data: await PlaceService.listActive({ nombre: nombre.trim(), categoria: categoria.trim(), nivel: nivel ?? "" }) });
         } catch {
             return res.status(503).json({ message: "No se pudieron cargar los lugares. Inténtalo de nuevo." });
         }

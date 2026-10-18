@@ -58,6 +58,8 @@ El catálogo procede de los lugares activos en PostgreSQL, no de valores hardcod
 No admite `nombre` en esta rama: la combinación futura búsqueda/filtro debe acordarse al integrar HU 3.4. No hay migraciones ni campos nuevos. Los lugares demostrativos mantienen `demostrativo=true` y no se presentan como monitoreo real.
 
 | GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+
+| GET `/api/places` | JWT; `nivel` opcional HU 3.6 | 200 `{data: lugar[]}`; vacío `[]` | 400 filtro; 401 token; 503 mensaje público de carga |
 | GET `/api/places/:id/saturation` | JWT; ID INTEGER con signo distinto de 0 | 200 `{data: saturacion}` | 400 ID; 401 sesión; 404 inexistente/inactivo; 503 servicio |
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
@@ -95,6 +97,16 @@ Política provisional aprobada por el usuario: mínimo tres personas; nivel más
 | 503 | `SERVICE_UNAVAILABLE` | Consulta o verificación de sesión indisponible; sin internos |
 
 La migración compartida conserva exactamente `src/database/migrateReports.js` de HU 4.1, commit `d49578cfdff7ef5bdc77c97c14207642715f41b1`, blob Git `da04019f28d6fbc4858cc53458ed09da2d9dd661`. Su integración debe coordinarse con el autor; no se implementa el POST de registro en HU 3.2. Sin reportes recientes, no se inventa un nivel.
+
+### HU 3.6: filtrar lugares por nivel
+
+Cambio aditivo sobre HU 3.2, no integrado aún: `GET /api/places?nivel=TRANQUILO|MODERADO|SATURADO`. Solo se admite la clave `nivel`, un valor textual único. Se recortan sus extremos; ausente, vacío o solo espacios significa Todos. Los tres valores son canónicos y en mayúsculas; valores desconocidos/minúsculos, duplicados, arrays y otras claves devuelven 400 `{code: "SATURATION_FILTER_INVALID", message: "El filtro de saturación no es válido."}` antes de consultar lugares. JWT/estado/versión se comprueban primero.
+
+Mantiene `{data: lugar[]}`, campos históricos, IDs negativos de demos, lugares activos y orden ascendente de ID; no añade el nivel al DTO ni expone personas/votos. Todos conserva el listado previo, incluidos lugares sin estimación. Un nivel incluye solo coincidencias con `evaluateSaturation` y `saturationPolicy` existentes de HU 3.2. Empate/insuficiencia quedan fuera; sin coincidencias devuelve 200 `{data: []}`, no 404. Una lectura SQL batch comparte snapshot/reloj PostgreSQL para todos los lugares; no hay una consulta por marcador ni otra política.
+
+Todas las respuestas del listado llevan `Cache-Control: no-store`, incluidos 400/401/503. El 503 del listado conserva `{message: "No se pudieron cargar los lugares. Inténtalo de nuevo."}`; la verificación de sesión conserva sus códigos existentes. Cambiar, actualizar o quitar filtro solicita otra lectura: no es suscripción en tiempo real y un nivel puede variar entre el listado y la consulta individual posterior.
+
+No se añade geolocalización/radio: «cercanos» no tiene distancia definida en la base ni en el contrato. El vacío informa ausencia en la consulta actual, sin afirmar proximidad. No hay migraciones ni variables nuevas; hereda el almacenamiento HU 3.2/HU 4.1 y la regla provisional pendiente de acuerdo del equipo. Revisar/integrar primero el padre HU 3.2 y después el par HU 3.6.
 
 ## Validación y errores: distinguir API de interfaz
 
@@ -159,3 +171,5 @@ Las rutas de recuperación están implementadas y probadas con correo en memoria
 Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. Esta rama añade únicamente filtro por categoría; no hay `/api/places/:id`, búsqueda por nombre, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
 
 Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. En esta rama existe la consulta de saturación HU 3.2; no incorpora `/api/places/:id`, búsqueda, filtros ni el registro de reportes. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. En esta rama existen la consulta HU 3.2 y el filtro HU 3.6; no incorpora `/api/places/:id`, búsqueda ni registro de reportes. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
