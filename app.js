@@ -10,8 +10,10 @@ import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
 import { assertPlaceDetailsSchemaReady } from "./src/database/migratePlaceDetails.js";
 
+
 import { assertReportsSchemaReady } from "./src/database/migrateReports.js";
 import placeRoutes from "./src/routes/place.routes.js";
+import reportRoutes from "./src/routes/report.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 import { mailConfiguration } from "./src/config/mail.js";
 import PasswordRecoveryService from "./src/services/PasswordRecoveryService.js";
@@ -33,6 +35,7 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
+    app.use("/api/places", reportRoutes);
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });

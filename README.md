@@ -22,7 +22,9 @@ Esta rama de revisión añade HU 3.6 sobre HU 3.2: filtrar lugares por la misma 
 
 API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. La base `develop` comprobada el 11/10/2026 (`46267e7`) ya integra HU 3.1, HU 2.3, HU 2.1–2.2 y envío SMTP (PR #26, #29, #30 y #31). Verifica Git y la rama del PR que revisas; esto no declara HU 3.2 integrada.
 
-Para colaborar con el equipo y usar IA sobre el código, empieza por [CONTRIBUTING.md](CONTRIBUTING.md) y [AGENTS.md](AGENTS.md). Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+Para colaborar con el equipo y usar IA sobre el código, empieza por [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [inicio del equipo](docs/INICIO_EQUIPO.md), que incluye un prompt sin tarea asignada. Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+
+**Descarga actual del equipo:** `integration/base-equipo` en backend y frontend contiene los avances A/B/C y las guías de inicio, pendientes de revisión/integración. Usarla para leer, ejecutar y revisar; iniciar tareas nuevas desde `develop` solo después de integrar y comprobar el par. Los comandos de clonación y el prompt están en la guía de inicio.
 
 ## HU 3.6 — filtro de saturación
 
