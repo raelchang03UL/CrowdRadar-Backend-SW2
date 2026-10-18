@@ -1,5 +1,11 @@
 # Estado actual
 
+## HU 3.4 — búsqueda por nombre, 10/10/2026
+
+Rama `feature/hu-3-4-busqueda-lugares`, posterior a HU 3.3, para frontend #5. Filtra lugares activos por nombre completo/parcial, sin distinguir mayúsculas; conserva todas las coincidencias y devuelve lista vacía cuando no hay ninguna. Límite de 160 caracteres, recorte, consultas literales y errores públicos.
+
+El PR depende de detalles y se compara inicialmente contra su rama para no duplicar el incremento HU 3.3. Integrar primero la pareja de detalles y retarget a develop antes de integrar búsqueda. No hay migración ni dependencias nuevas. Pruebas, par de commits y pendientes en los PR; la publicación no implica aceptación o cierre de la HU.
+
 ## HU 3.3 — consulta de detalles, 10/10/2026
 
 Incremento en `feature/hu-3-3-detalles-lugar`, desde develop `46267e7`, para backend #7. Consulta autenticada por ID activo, DTO público con dirección opcional, errores 400/401/404/503 y migración aditiva `004-places-direccion`. El mapa y las migraciones previas se conservan; no incluye búsqueda por nombre.

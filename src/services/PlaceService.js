@@ -12,8 +12,8 @@ function toPublicPlace(place) {
 }
 
 export default {
-    async listActive() {
-        const places = await PlaceRepository.findActive();
+    async listActive(nombre = "") {
+        const places = await PlaceRepository.findActive(nombre);
         return places.map(toPublicPlace);
     },
     async getActiveById(id) {
