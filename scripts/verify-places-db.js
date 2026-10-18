@@ -67,10 +67,10 @@ try {
     // Usa el repositorio real sobre PostgreSQL aislado, sin sync ni DDL implícito.
     const modelo = db.define("PlaceDbTest", Place.getAttributes(), { tableName: "places", timestamps: false });
     const repository = createPlaceRepository(modelo);
-    assert.equal((await repository.findActive("demo")).length, 3);
-    assert.equal((await repository.findActive("DEMO · PARQUE CENTRAL")).length, 1);
-    assert.equal((await repository.findActive("Central")).length, 1);
-    assert.equal((await repository.findActive("sin coincidencias")).length, 0);
+    assert.equal((await repository.findActive({ nombre: "demo" })).length, 3);
+    assert.equal((await repository.findActive({ nombre: "DEMO · PARQUE CENTRAL" })).length, 1);
+    assert.equal((await repository.findActive({ nombre: "Central" })).length, 1);
+    assert.equal((await repository.findActive({ nombre: "sin coincidencias" })).length, 0);
     assert.equal((await repository.findActiveById(-103)).direccion, demoPlaces[0].direccion);
     assert.equal(await repository.findActiveById(2147483647), null);
     const tx = await db.transaction();
@@ -82,12 +82,98 @@ try {
             findOne: (options) => modelo.findOne({ ...options, transaction: tx })
         });
         for (const nombre of ["%", "_", "\\", "50%_\\", "' OR 1=1 --"]) {
-            const matches = await transactionalRepository.findActive(nombre);
+            const matches = await transactionalRepository.findActive({ nombre: nombre });
             assert.equal(matches.length, nombre.startsWith("'") ? 0 : 1);
         }
         assert.equal(await transactionalRepository.findActiveById(-997), null);
-        assert.equal((await transactionalRepository.findActive("demo")).length, 3);
+        assert.equal((await transactionalRepository.findActive({ nombre: "demo" })).length, 3);
         assert.equal((await transactionalRepository.findActiveById(-998)).direccion, null);
     } finally { await tx.rollback(); }
     console.log("PASS: repositorio real: búsqueda completa/parcial/mayúsculas, comodines literales, inyección, todos los resultados, detalle e inactivos (fixtures temporales revertidos).");
+
+    {
+
+    // El modelo/API se importan solo después de fijar y comprobar el destino aislado.
+    // La tabla users centinela no es un esquema de autenticación: se dobla únicamente
+    // su consulta de sesión; lugares/repository/HTTP sí usan PostgreSQL real.
+    process.env.DB_NAME = database;
+    process.env.DATABASE_URL = "";
+    process.env.DB_SSL = "false";
+    process.env.JWT_SECRET = "hu35-isolated-runner-not-a-real-secret";
+    const { default: conexionPrueba } = await import("../src/config/database.js");
+    assertIsolatedPlacesTestDatabase(conexionPrueba);
+    const { default: Place } = await import("../src/models/Place.js");
+    const { default: repositorio } = await import("../src/repositories/PlaceRepository.js");
+    const { default: usuarios } = await import("../src/repositories/UserRepository.js");
+    const { default: jwt } = await import("../src/utils/jwt.js");
+    const { default: app } = await import("../app.js");
+    const lugaresAntes = await select("SELECT * FROM public.places ORDER BY id");
+    const sesionOriginal = usuarios.findSessionById;
+    const consultaOriginal = Place.findAll;
+    let transaccionCategoria, servidor;
+    try {
+        transaccionCategoria = await conexionPrueba.transaction();
+        const categoriaAlfa = "QA HU35 Alfa";
+        const categoriaBeta = "QA HU35 Beta";
+        const categoriaInactiva = "QA HU35 Solo inactivos";
+        for (const [id, categoria, activo] of [
+            [-350005, categoriaAlfa, true], [-350004, categoriaAlfa, true],
+            [-350003, categoriaBeta, true], [-350002, categoriaAlfa, false],
+            [-350001, categoriaInactiva, false]
+        ]) {
+            await conexionPrueba.query(`INSERT INTO public.places
+                (id, nombre, categoria, latitud, longitud, activo, demostrativo)
+                VALUES ($1, 'QA HU35 transaccional', $2, -12, -77, $3, FALSE)`,
+                { transaction: transaccionCategoria, bind: [id, categoria, activo] });
+        }
+        // Todas las consultas de lugares del recorrido comparten la transacción
+        // que se revierte al terminar; no se publican fixtures persistentes.
+        Place.findAll = (opciones) => consultaOriginal.call(Place, { ...opciones, transaction: transaccionCategoria });
+        const filtrados = await repositorio.findActive({ categoria: categoriaAlfa });
+        assert.deepEqual(filtrados.map(({ id }) => id), [-350005, -350004]);
+        assert.equal((await repositorio.findActive({ categoria: categoriaBeta })).length, 1);
+        assert.equal((await repositorio.findActive({ categoria: "QA HU35 inexistente" })).length, 0);
+        assert.equal((await repositorio.findActive({ categoria: "%"  })).length, 0);
+        assert.equal((await repositorio.findActive({ categoria: "QA HU35 Alfa' OR TRUE --" })).length, 0);
+        const categorias = (await repositorio.findActiveCategories()).map(({ categoria }) => categoria);
+        assert.equal(categorias.filter((categoria) => categoria === categoriaAlfa).length, 1);
+        assert.ok(categorias.includes(categoriaBeta));
+        assert.ok(!categorias.includes(categoriaInactiva));
+        assert.ok(categorias.every((categoria) => categoria.trim()));
+        assert.ok((await repositorio.findActive()).every(({ activo }) => activo));
+        console.log("PASS: HU 3.5 ORM real filtra por igualdad, activos/orden, catálogo único y SQL literal.");
+
+        usuarios.findSessionById = async () => ({ id: 1, status: "ACTIVO", rol: "USUARIO", sessionVersion: 0 });
+        servidor = app.listen(0);
+        const url = `http://127.0.0.1:${servidor.address().port}/api/places`;
+        const token = jwt.generateToken({ id: 1, sessionVersion: 0 });
+        const solicitar = (ruta, autenticado = true) => fetch(url + ruta,
+            { headers: autenticado ? { Authorization: `Bearer ${token}` } : {} });
+        assert.equal((await solicitar("/categories", false)).status, 401);
+        assert.equal((await solicitar("?categoria=" + encodeURIComponent(categoriaAlfa), false)).status, 401);
+        const catalogo = await solicitar("/categories");
+        assert.equal(catalogo.status, 200);
+        assert.deepEqual((await catalogo.json()).data, categorias);
+        for (const [categoria, ids] of [[categoriaAlfa, [-350005, -350004]], [categoriaBeta, [-350003]], ["QA HU35 inexistente", []]]) {
+            const respuesta = await solicitar("?categoria=" + encodeURIComponent(categoria));
+            assert.equal(respuesta.status, 200);
+            assert.deepEqual((await respuesta.json()).data.map(({ id }) => id), ids);
+        }
+        const sinFiltro = await solicitar("?categoria=");
+        assert.equal(sinFiltro.status, 200);
+        assert.equal((await sinFiltro.json()).data.length, (await repositorio.findActive()).length);
+        assert.equal((await solicitar("?categoria=Parque&categoria=Cultura")).status, 400);
+        assert.equal((await solicitar("?categoria=Parque&extra=1")).status, 400);
+        console.log("PASS: HU 3.5 HTTP + PostgreSQL real, cambio/quitar filtro, vacío, catálogo y 400/401 (sesión doblada).");
+    } finally {
+        if (servidor) await new Promise((resolve) => servidor.close(resolve));
+        Place.findAll = consultaOriginal;
+        usuarios.findSessionById = sesionOriginal;
+        if (transaccionCategoria) await transaccionCategoria.rollback();
+        await conexionPrueba.close();
+    }
+    assert.deepEqual(await select("SELECT * FROM public.places ORDER BY id"), lugaresAntes);
+    assert.deepEqual(await select("SELECT * FROM public.users ORDER BY id"), before);
+    console.log("PASS: HU 3.5 fixtures revertidos y datos de lugares/users conservados.");
+    }
 } finally { await db.close(); }

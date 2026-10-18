@@ -12,12 +12,20 @@ function toPublicPlace(place) {
 }
 
 export default {
-    async listActive(nombre = "") {
-        const places = await PlaceRepository.findActive(nombre);
-        return places.map(toPublicPlace);
+    async listActive(filters = {}) {
+        return (await PlaceRepository.findActive(filters)).map(toPublicPlace);
     },
     async getActiveById(id) {
         const place = await PlaceRepository.findActiveById(id);
         return place ? toPublicPlace(place) : null;
+    },
+    async listActiveCategories() {
+        return (await PlaceRepository.findActiveCategories()).map(({ categoria }) => {
+            if (typeof categoria !== "string" || !categoria.trim() ||
+                categoria !== categoria.trim() || [...categoria].length > 80) {
+                throw new Error("Categoría de lugar inválida.");
+            }
+            return categoria;
+        });
     }
 };

@@ -2,12 +2,14 @@ import PlaceService from "../services/PlaceService.js";
 
 export default {
     async list(req, res) {
-        const nombre = req.query.nombre ?? "";
-        if (Object.keys(req.query).some((key) => key !== "nombre") || typeof nombre !== "string" || nombre.trim().length > 160) {
-            return res.status(400).json({ message: "Busca por nombre usando hasta 160 caracteres." });
+        const { nombre = "", categoria = "" } = req.query;
+        if (Object.keys(req.query).some((key) => !["nombre", "categoria"].includes(key)) ||
+            typeof nombre !== "string" || [...nombre.trim()].length > 160 ||
+            typeof categoria !== "string" || [...categoria.trim()].length > 80) {
+            return res.status(400).json({ message: "La búsqueda admite nombre (160 caracteres) y categoría (80), una sola vez." });
         }
         try {
-            return res.status(200).json({ data: await PlaceService.listActive(nombre.trim()) });
+            return res.status(200).json({ data: await PlaceService.listActive({ nombre: nombre.trim(), categoria: categoria.trim() }) });
         } catch {
             return res.status(503).json({ message: "No se pudieron cargar los lugares. Inténtalo de nuevo." });
         }
@@ -23,6 +25,16 @@ export default {
             return res.status(200).json({ data: place });
         } catch {
             return res.status(503).json({ message: "No se pudo cargar la información del lugar. Inténtalo de nuevo." });
+        }
+    },
+    async categories(req, res) {
+        if (Object.keys(req.query).length) {
+            return res.status(400).json({ message: "La consulta de categorías no admite parámetros." });
+        }
+        try {
+            return res.status(200).json({ data: await PlaceService.listActiveCategories() });
+        } catch {
+            return res.status(503).json({ message: "No se pudieron cargar las categorías. Inténtalo de nuevo." });
         }
     }
 };

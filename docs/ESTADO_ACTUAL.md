@@ -14,6 +14,18 @@ Frontend compañero en la rama homónima: marcador → Ver detalles, carga/error
 
 Las secciones siguientes conservan la evidencia histórica de otras tareas.
 
+## HU 3.5 — filtro por categoría, revisión local 11/10/2026
+
+Rama `feature/hu-3-5-filtro-categoria`, base `develop` backend `46267e7c273d889a85710e33f32ff7a839f52ec9`. API autenticada `GET /api/places?categoria=...` por igualdad literal y catálogo `GET /api/places/categories` de categorías únicas activas ordenadas. Sin categoría/solo espacios se vuelve a la lista completa; sin coincidencias se devuelve 200 `[]`. Validación de parámetro único, hasta 80 caracteres Unicode, sin extras/arreglos/repetidos. DTO de lugares, esquema y dependencias no cambian.
+
+- `npm test`: **68/68 aprobadas**, 0 fallidas/omitidas; nueve casos nuevos cubren autorización, catálogo/vacío, cambios/quitar filtro, caso sensible, DTO, validaciones, límite Unicode, SQL literal y errores públicos. Primer intento sin `.env` falló en la prueba de arranque preexistente por variables requeridas; se repitió correctamente con configuración ficticia de pruebas, sin conexión DB de esa suite.
+- `npm run test:db:places`: **7 bloques PASS** en PostgreSQL local `crowdradar_hu31_test`. Conserva migración/centinela/restricciones/fixture de HU 3.1 y añade repositorio ORM real, catálogo único, filtro exacto/activo/orden/inyección, HTTP real con cambio/quitar/vacío y 400/401. Solo la consulta de sesión usa un doble porque `users` es una tabla centinela; no se afirma haber probado aquí autenticación contra PostgreSQL.
+- Fixtures nuevos de HU 3.5 exclusivamente dentro de una transacción revertida; comparación posterior confirma filas de `places` y `users` conservadas. Sin acceso a la base de entrega/Supabase, sin borrados ni migraciones nuevas.
+
+Recorrido con frontend compañero completado en IAB: build Web final de 99,0 s, login con autenticación/PostgreSQL reales en el entorno local, Parque → 1 marcador, Cultura → 1 marcador, quitar filtro → 3 marcadores y selección de lugar conservada. Detalle y captura en ESTADO_ACTUAL frontend; IAB no acredita Chrome normal.
+
+Pendientes: revisión humana e integración autorizada; Android omitido por decisión del usuario. La evidencia anterior registra el estado previo a publicación, cuando no se hicieron commit/push/PR ni cambios en Issues/Project. Para la publicación posterior consultar Git y los PR. Las HU 3.2/3.3/3.4 están en ramas separadas: esta rama no las copia ni las sustituye; coordinar mapa, rutas y queries al integrar saturación, búsqueda, filtro y detalle, conservando cada incremento y repitiendo regresiones.
+
 ## Correo SMTP (Brevo) para HU 2.1–2.2, 10/10/2026
 
 Rama `feature/hu-2-1-correo-smtp`, padre C `9ee244eb7c94983cb951bfe06e723565c2e66b72`; frontend compañero `fix/web-referrer-mapa` desde C `652ea26`. Decisión del responsable del Sprint 2: primero Gmail; la cuenta del proyecto no permitió contraseñas de aplicación y se usa Brevo por SMTP, sin cambiar código (adaptador SMTP genérico). Se añade `nodemailer@10.0.10` (sin dependencias propias, sin avisos de `npm audit`; versión publicada el 14/09/2026, elegida por antigüedad frente a 10.0.16 de tres días). `SMTP_*` habilita el adaptador solo en `startServer`; sin ellas el 503 uniforme no cambia. Configuración incompleta/URL no confiable detiene el arranque con mensaje público; fallos de entrega registran solo el código. Contrato HTTP sin cambios.
