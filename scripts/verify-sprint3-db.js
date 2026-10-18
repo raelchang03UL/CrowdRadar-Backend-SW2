@@ -6,9 +6,10 @@ import {QueryTypes} from "sequelize";
 import {assertIsolatedConsolidationDatabase} from "../src/database/databaseSafety.js";
 import {migrateValidation,assertValidationSchemaReady} from "../src/database/migrateValidation.js";
 const input=dotenv.parse(readFileSync(process.env.CROWDRADAR_QA_ENV_FILE));
+const qaDatabase=process.env.CROWDRADAR_S3_QA_DATABASE??'crowdradar_consolidacion_fresh_20261017';
 assert.ok(!input.DATABASE_URL && ['localhost','127.0.0.1','::1'].includes(input.DB_HOST),'Solo DB_* local.');
 Object.assign(process.env,{DB_HOST:input.DB_HOST,DB_PORT:input.DB_PORT??'5432',DB_USER:input.DB_USER,DB_PASSWORD:input.DB_PASSWORD,
-    DB_NAME:'crowdradar_consolidacion_fresh_20261017',DATABASE_URL:'',DB_SSL:'false',NODE_ENV:'test',JWT_SECRET:randomBytes(48).toString('hex')});
+    DB_NAME:qaDatabase,DATABASE_URL:'',DB_SSL:'false',NODE_ENV:'test',JWT_SECRET:randomBytes(48).toString('hex')});
 for(const key of ['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASSWORD','MAIL_FROM','PASSWORD_RESET_URL']) delete process.env[key];
 const {default:db}=await import('../src/config/database.js');
 assertIsolatedConsolidationDatabase(db);
@@ -16,7 +17,7 @@ const select=(sql,replacements={})=>db.query(sql,{replacements,type:QueryTypes.S
 let server;let blocks=0;
 const pass=(text)=>console.log(`PASS ${++blocks}: ${text}`);
 try{
-    const [identity]=await select('SELECT current_database() AS name');assert.equal(identity.name,'crowdradar_consolidacion_fresh_20261017');
+    const [identity]=await select('SELECT current_database() AS name');assert.equal(identity.name,qaDatabase);
     const baseline=await select('SELECT * FROM public.users ORDER BY id');
     await Promise.all([migrateValidation(db),migrateValidation(db)]);assert.equal(await migrateValidation(db),false);await assertValidationSchemaReady(db);
     pass('007 aditiva, idempotente/concurrente; destino QA identificado, sin datos históricos alterados.');
