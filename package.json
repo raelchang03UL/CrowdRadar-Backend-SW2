@@ -10,6 +10,7 @@
     "db:seed:demo": "node scripts/seed-places-demo.js",
     "db:seed:user-demo": "node scripts/seed-demo-user.js",
     "test:db:places": "node scripts/verify-places-db.js",
+    "test:local:places": "node scripts/verify-places-local.js",
     "test:db:auth": "node scripts/verify-auth-db.js",
     "test:db:recovery": "node scripts/verify-recovery-db.js"
   },

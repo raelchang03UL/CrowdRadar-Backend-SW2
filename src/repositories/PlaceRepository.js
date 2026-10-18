@@ -1,7 +1,13 @@
 import Place from "../models/Place.js";
 
-export default {
+export const createPlaceRepository = (model = Place) => ({
     async findActive() {
-        return Place.findAll({ where: { activo: true }, order: [["id", "ASC"]], raw: true });
+        const where = { activo: true };
+        return model.findAll({ where, order: [["id", "ASC"]], raw: true });
+    },
+    async findActiveById(id) {
+        return model.findOne({ where: { id, activo: true }, raw: true });
     }
-};
+});
+
+export default createPlaceRepository();
