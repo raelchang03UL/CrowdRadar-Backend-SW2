@@ -34,7 +34,7 @@ export default {
     async listActive(filters = {}) {
         const nivel = parseSaturationFilter(filters);
         const places = nivel === null ? await PlaceRepository.findActive(filters) :
-            await PlaceRepository.findActiveWithSaturation({ ...filters, windowMinutes: saturationPolicy.windowMinutes });
+            await PlaceRepository.findActiveWithSaturation({ nombre: filters.nombre ?? '', categoria: filters.categoria ?? '', nivel: filters.nivel, windowMinutes: saturationPolicy.windowMinutes });
         return (nivel === null ? places : places.filter((place) =>
             evaluateSaturation({ placeId: place.id, evaluatedAt: place.evaluatedAt, votes: place.votes }).level === nivel)).map(toPublicPlace);
     },

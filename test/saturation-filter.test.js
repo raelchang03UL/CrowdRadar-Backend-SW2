@@ -15,7 +15,7 @@ const tres = (nivel) => [1, 2, 3].map((id) => reporte(id, nivel));
 const lugar = (id, votes) => ({ id, nombre: `Lugar ${id}`, categoria: "Parque", referencia: null,
     latitud: -12, longitud: -77, demostrativo: true, activo: true, evaluatedAt: instante, votes });
 const dto = ({ id, nombre, categoria, referencia, latitud, longitud, demostrativo }) =>
-    ({ id, nombre, categoria, referencia, latitud, longitud, demostrativo });
+    ({ id, nombre, categoria, referencia, direccion: null, latitud, longitud, demostrativo });
 const originales = { todos: repositorio.findActive, niveles: repositorio.findActiveWithSaturation, sesion: repositorioUsuario.findSessionById };
 let servidor, base, lugares, consultasTodos, consultasNiveles;
 before(() => {
@@ -31,7 +31,7 @@ beforeEach(() => {
     repositorio.findActive = async () => { consultasTodos++; return lugares; };
     repositorio.findActiveWithSaturation = async (opciones) => {
         consultasNiveles++;
-        assert.deepEqual(opciones, { windowMinutes: saturationPolicy.windowMinutes });
+        assert.deepEqual(opciones, { nombre: "", categoria: "", nivel: opciones.nivel, windowMinutes: saturationPolicy.windowMinutes });
         return lugares;
     };
     repositorioUsuario.findSessionById = async () => ({ id: 1, status: "ACTIVO", rol: "USUARIO", sessionVersion: 0 });
@@ -50,7 +50,7 @@ test("HU 3.6 valida únicamente nivel, respeta mayúsculas y recorta sus extremo
     for (const nivel of ["", "  ", "\t\n"]) assert.equal(parseSaturationFilter({ nivel }), null);
     for (const nivel of ["TRANQUILO", "MODERADO", "SATURADO"]) assert.equal(parseSaturationFilter({ nivel: ` ${nivel} ` }), nivel);
     for (const consulta of [null, [], "TRANQUILO", { nivel: null }, { nivel: 3 }, { nivel: ["TRANQUILO"] },
-        { nivel: {} }, { nivel: "tranquilo" }, { nivel: "TODOS" }, { nivel: "TRAN QUILO" }, { categoria: "Parque" },
+        { nivel: {} }, { nivel: "tranquilo" }, { nivel: "TODOS" }, { nivel: "TRAN QUILO" }, { extra: "Parque" },
         { nivel: "TRANQUILO", extra: "x" }, { "nivel[]": "TRANQUILO" }, { nivel: "' OR 1=1 --" }]) {
         assert.throws(() => parseSaturationFilter(consulta), (error) => error.code === "SATURATION_FILTER_INVALID");
     }
@@ -99,8 +99,8 @@ test("HU 3.6 reutiliza último voto, votos distintos y nivel más votado de HU 3
     lugares = [lugar(1, [reporte(1, "TRANQUILO"), reporte(1, "TRANQUILO"), reporte(1, "TRANQUILO")]),
         lugar(2, [reporte(1, "TRANQUILO"), reporte(1, "SATURADO", "2026-10-11T14:59:00.000Z", 20),
             reporte(2, "SATURADO"), reporte(3, "MODERADO"), reporte(4, "TRANQUILO")])];
-    assert.deepEqual(await servicio.listActive("SATURADO"), [dto(lugares[1])]);
-    assert.deepEqual(await servicio.listActive("TRANQUILO"), []);
+    assert.deepEqual(await servicio.listActive({ nivel: "SATURADO" }), [dto(lugares[1])]);
+    assert.deepEqual(await servicio.listActive({ nivel: "TRANQUILO" }), []);
 });
 
 test("HU 3.6 comparte ventana inclusiva, excluye futuros y conserva precisión BIGSERIAL", async () => {
@@ -108,14 +108,14 @@ test("HU 3.6 comparte ventana inclusiva, excluye futuros y conserva precisión B
         reporte(1, "TRANQUILO", "2026-10-11T14:30:00.000Z", "9007199254740992"),
         reporte(2, "SATURADO", instante), reporte(3, "MODERADO"),
         reporte(4, "TRANQUILO", "2026-10-11T14:29:59.999Z"), reporte(5, "TRANQUILO", "2026-10-11T15:00:00.001Z")])];
-    assert.deepEqual(await servicio.listActive("SATURADO"), [dto(lugares[0])]);
-    assert.deepEqual(await servicio.listActive("TRANQUILO"), []);
+    assert.deepEqual(await servicio.listActive({ nivel: "SATURADO" }), [dto(lugares[0])]);
+    assert.deepEqual(await servicio.listActive({ nivel: "TRANQUILO" }), []);
 });
 
 test("HU 3.6 valores, duplicados, arrays y claves desconocidas fallan antes del repositorio", async () => {
     for (const consulta of ["?nivel=tranquilo", "?nivel=ALTO", "?nivel=TODOS", "?nivel=TRANQUILO&nivel=SATURADO",
         "?nivel=TRANQUILO&nivel=TRANQUILO", "?nivel[]=TRANQUILO", "?nivel[x]=TRANQUILO", "?extra=x",
-        "?nivel=SATURADO&categoria=Parque", "?nivel=%27%20OR%201=1--"]) {
+        "?nivel=SATURADO&extra=Parque", "?nivel=%27%20OR%201=1--"]) {
         const respuesta = await consultar(consulta);
         assert.equal(respuesta.status, 400);
         assert.equal(respuesta.headers.get("cache-control"), "no-store");
@@ -188,7 +188,7 @@ test("HU 3.6 repositorio usa un batch parametrizado y snapshot/reloj compartidos
             assert.match(sql, /LEFT JOIN ultimos ON ultimos.place_id = lugares.id/);
             assert.match(sql, /ORDER BY lugares.id ASC/);
             assert.doesNotMatch(sql, /level\s*=|COUNT\s*\(/i);
-            assert.deepEqual(opciones.replacements, { windowMinutes: 17 });
+            assert.deepEqual(opciones.replacements, { windowMinutes: 17, nombre: "", pattern: "%%", categoria: "" });
             assert.equal(opciones.transaction, transaccion);
             assert.equal(opciones.type, "SELECT");
             return lugares;
@@ -203,8 +203,8 @@ test("HU 3.6 repositorio usa un batch parametrizado y snapshot/reloj compartidos
 });
 
 test("HU 3.6 llamadas directas del servicio también rechazan filtros inválidos", async () => {
-    for (const nivel of ["tranquilo", "TODOS", "", [], {}]) {
-        await assert.rejects(servicio.listActive(nivel), (error) => error.code === "SATURATION_FILTER_INVALID");
+    for (const nivel of ["tranquilo", "TODOS", [], {}]) {
+        await assert.rejects(servicio.listActive({ nivel }), (error) => error.code === "SATURATION_FILTER_INVALID");
     }
     assert.equal(consultasTodos, 0);
     assert.equal(consultasNiveles, 0);

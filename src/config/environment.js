@@ -37,6 +37,7 @@ export function validateEnvironment(env = process.env) {
     if (missing.length) throw new Error(`Faltan variables de entorno requeridas: ${missing.join(", ")}. Copia .env.example como .env y completa los valores.`);
     if (env.DB_SSL && !["true", "false"].includes(env.DB_SSL)) throw new Error("DB_SSL debe ser true o false.");
     reportCooldownMinutes(env);
+    karmaPointsPerReport(env);
     if (env.DATABASE_URL) {
         let url;
         try { url = new URL(env.DATABASE_URL); } catch { throw new Error("DATABASE_URL no es una URL PostgreSQL válida."); }

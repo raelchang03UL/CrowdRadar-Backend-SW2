@@ -148,12 +148,12 @@ try {
 
     etapa = "actualización de reportes, exclusión y vacío";
     for (let persona = 0; persona < 3; persona++) await agregar(persona, "TRANQUILO", "MODERADO", "-1 second");
-    const tranquilos = filasFixtures(await servicio.listActive("TRANQUILO"));
+    const tranquilos = filasFixtures(await servicio.listActive({ nivel: "TRANQUILO" }));
     assert.deepEqual(tranquilos, []);
-    const moderados = filasFixtures(await servicio.listActive("MODERADO"));
+    const moderados = filasFixtures(await servicio.listActive({ nivel: "MODERADO" }));
     assert.deepEqual(moderados.map(({ id }) => id).sort((a, b) => a - b), [lugares.TRANQUILO.id, lugares.MODERADO.id].sort((a, b) => a - b));
     for (let persona = 0; persona < 3; persona++) await agregar(persona, "SATURADO", "MODERADO", "-1 millisecond");
-    assert.deepEqual(filasFixtures(await servicio.listActive("SATURADO")), []);
+    assert.deepEqual(filasFixtures(await servicio.listActive({ nivel: "SATURADO" })), []);
     assert.equal(filasFixtures(await servicio.listActive()).length, 7);
     // Consulta HTTP sin coincidencias: no simula repositorios ni confirma fixtures.
     const sinCoincidencias = await pedir("?nivel=TRANQUILO", vigente);

@@ -1,10 +1,13 @@
-import SaturationReportService from "../services/SaturationReportService.js";
+import SaturationReportService, { SaturationReportError } from "../services/SaturationReportService.js";
 
 export default {
     async create(req, res) {
         try {
+            if (!/^-?[1-9]\d*$/.test(req.params.placeId)) throw new SaturationReportError(400, "INVALID_PLACE", "El lugar indicado no es válido.");
             const report = await SaturationReportService.create({
                 userId: req.user.id,
+                sessionVersion: req.user.sessionVersion,
+                expiresAt: req.user.exp,
                 placeId: Number(req.params.placeId),
                 level: req.body.level
             });
@@ -14,11 +17,13 @@ export default {
                     id: report.id,
                     placeId: report.place_id,
                     level: report.level,
-                    createdAt: report.created_at
+                    createdAt: report.created_at,
+                    pointsAwarded: report.pointsAwarded,
+                    karmaPoints: report.karmaPoints
                 }
             });
         } catch (error) {
-            if (error.status) {
+            if (error instanceof SaturationReportError || error.code === "SESSION_INVALID") {
                 return res.status(error.status).json({ message: error.message, code: error.code });
             }
             return res.status(503).json({

@@ -5,7 +5,6 @@ import SaturationQueryController from "../controllers/SaturationQueryController.
 
 const router = Router();
 router.get("/categories", authMiddleware, PlaceController.categories);
-router.get("/", authMiddleware, PlaceController.list);
 router.get("/:id", authMiddleware, PlaceController.detail);
 
 

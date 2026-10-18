@@ -1,4 +1,4 @@
-import UserService from "../services/UserService.js";
+import UserService, { UserNotFoundError } from "../services/UserService.js";
 
 class UserController {
 
@@ -7,7 +7,7 @@ class UserController {
             const karmaPoints = await UserService.getKarmaPoints(req.user.id);
             return res.status(200).json({ data: { karmaPoints } });
         } catch (error) {
-            return res.status(404).json({ message: error.message });
+            return res.status(error instanceof UserNotFoundError ? 404 : 503).json({ message: error instanceof UserNotFoundError ? "Usuario no encontrado." : "No se pudo cargar tu karma. Inténtalo de nuevo." });
         }
     }
 
@@ -23,9 +23,7 @@ class UserController {
 
         } catch (error) {
 
-            return res.status(404).json({
-                message: error.message
-            });
+            return res.status(error instanceof UserNotFoundError ? 404 : 503).json({ message: error instanceof UserNotFoundError ? "Usuario no encontrado." : "No se pudo cargar tu perfil. Inténtalo de nuevo." });
 
         }
 
@@ -47,9 +45,7 @@ class UserController {
 
         } catch (error) {
 
-            return res.status(400).json({
-                message: error.message
-            });
+            return res.status(error instanceof UserNotFoundError ? 404 : 503).json({ message: error instanceof UserNotFoundError ? "Usuario no encontrado." : "No se pudo guardar tu perfil. Inténtalo de nuevo." });
 
         }
 
