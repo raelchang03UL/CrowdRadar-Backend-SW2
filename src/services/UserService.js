@@ -48,7 +48,7 @@ class UserService {
 
     async getReports(id) {
         const reports = await ReportRepository.findByUserId(id);
-        return reports.map((report) => ({ ...report, id: Number(report.id), placeId: Number(report.placeId) }));
+        return reports.map((report) => ({ ...report, id: String(report.id), placeId: Number(report.placeId) }));
     }
 
 
