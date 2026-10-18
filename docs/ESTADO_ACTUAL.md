@@ -1,5 +1,34 @@
 # Estado actual
 
+## Corte vigente local — R01 + Sprint 3, 18/10/2026
+
+Rama `feature/local-s03-validacion-analitica-20261017`, dependiente de R01 local. Par funcional comprobado: backend `5f933eac9a0095fb802f5d95a65ea563d15df9b0` / frontend `a5e33ac9078cc882474a6d22961f9502f61c6ac0`. Los commits documentales posteriores no cambian ese código. NO publicado, integrado en develop ni aceptado por el equipo.
+
+- R01 reutiliza aportes de Diego/Nick/Manu y corrige readiness, compatibilidad de migraciones, filtros combinados, premio atómico y errores/DTO. Identidades/autoría conservadas. Los árboles originales y experimento siguen fuera del candidato.
+- HU5.1–5.4: voto definitivo y denuncia únicos por persona/reporte; usuario activo autenticado; sin autovoto/autodenuncia; pesos fijados al votar, conteos/estado público y consulta propia autorizada. Denunciar no oculta/elimina y no implementa HU7.
+- HU6.1–6.3: bloques horarios Lima, períodos inclusivos de hasta 31 días, último voto/persona, mínimo 3 y empate insuficiente. Comparación de conteos, no promedios/aforos. Horarios con al menos 3 días suficientes y algún bloque tranquilo; proporciones ordenadas con empates. Reglas provisionales aprobadas por Rael, pendientes de validación grupal.
+- Node 22.20.0 / npm 10.9.3: `npm test` **138/138**, 0 fallidas/omitidas; sintaxis **90 JS** correcta; diff check correcto. Incluye HTTP y dobles, no SMTP real.
+- PostgreSQL 18: R01 **6/6 bloques** (desde cero y legacy); S3 **7/7 bloques en fresh y 7/7 en legacy** reales, repetidos tras corregir SQL. 007 aditiva/idempotente/concurrente; autorización, 201/409 simultáneos, peso congelado, denuncia sin eliminación, entradas/JSON/32 KB, 72 bloques históricos, comparación con datos/ausencia y JWT expirado/versión obsoleta y preservación de usuarios QA anteriores. No confundir bloques con cantidad de aserciones.
+- Bases exclusivas: crowdradar_consolidacion_fresh_20261017 y crowdradar_consolidacion_legacy_20261017; conservadas. Solo nuevas cuentas/datos sintéticos example.invalid, nunca visitas reales. No base personal, Sprint1 ni Supabase.
+- Configuración local probada: API y migrador seleccionan URLs/roles distintos; pool configurable y TLS con verificación. No se probaron roles, certificados o pooler remotos.
+- Web: ver estado frontend/capturas; validación, denuncia, estado propio, historial, comparación, horarios y API detenida con error/reintento seguro; smoke final tras reinicio. QA escucha solo en127.0.0.1:3033 (socket verificado), no en interfaces de red. Sin correo real; SMTP QA deshabilitado.
+
+### Dependencias y exposición pendiente
+
+Consulta npm audit del 18/10, sin fix/instalación: **10** paquetes señalados en todo el árbol (1 crítico, 5 altos, 4 moderados); **6** en producción (1 crítico, 1 alto, 4 moderados). No son 10 vulnerabilidades nuevas causadas por el incremento ni pruebas de explotabilidad.
+
+| Aviso / ruta | Evaluación en esta versión | Acción pendiente |
+| --- | --- | --- |
+| proxy-addr crítico vía Express, GHSA-jqcg-44mw-7w3h | No se configura trust proxy; recuperación usa socket IP. La precondición del aviso no se demostró activa, pero proxy/cloud puede cambiarla. | Actualización compatible aislada y pruebas de identidad/IP antes de exposición. |
+| fast-uri alto vía Ajv | Esquemas compilados son locales/estáticos; no se localizó resolución de URLs o fetch externos guiados por URI del cliente. No se declara inmunidad. | Revisar actualización transitoria compatible y tests de validación. |
+| qs moderado vía Express | Parser simple predeterminado; no express.urlencoded. Entradas complejas se rechazan en las rutas nuevas. | Repetir regresiones al actualizar Express/qs y fijar política de parser. |
+| moment, uuid → Sequelize moderados | No importación directa de moment ni UUID v3/v5/v6 con buffers del cliente localizada; se mantiene Sequelize. | Revisar alcanzabilidad transitiva y versión compatible, no aceptar downgrade sugerido automático. |
+| 4 altos adicionales de desarrollo | Fuera de la instalación omit=dev, no por ello ignorables en herramientas. | Tratar en paquete de dependencias autorizado. |
+
+Detalles exactos JSON/logs en build/qa, ignorados por Git. No se ejecutó audit fix --force ni cambiaron locks. Esto no es un escaneo exhaustivo de seguridad. Sin rate limit global nuevo para todas las rutas, sin prueba de carga ni durabilidad SMTP; son límites previos a nube, no resueltos por este incremento.
+
+Las secciones inferiores conservan cortes históricos; si dicen “pendiente”, se refieren a su versión/fecha.
+
 ## Corte local de consolidación Release 01 — 17/10/2026
 
 Rama `feature/local-r01-consolidacion-20261017`, no publicada; base Bffe9b19/Fdfdb753. Se reutilizaron los diez PR de Nick y las tres ramas independientes de Manu, preservando commits/autores. No se tocaron los árboles originales con borradores/experimento. No implica aceptación humana de17 HU.

@@ -1,11 +1,11 @@
 # Configuración local reproducible
 
-Corte17/10/2026. Node22.20.0/npm10.9.3,PostgreSQL18,Flutter3.41.9/Dart3.11.5; SDK fuera de Git. Este incremento R01 solo está en la rama local `feature/local-r01-consolidacion-20261017`, aún no en GitHub.
+Corte vigente 18/10/2026. Node22.20.0/npm10.9.3,PostgreSQL18,Flutter3.41.9/Dart3.11.5; SDK fuera de Git. Este incremento R01 + Sprint 3 solo está en la rama local `feature/local-s03-validacion-analitica-20261017`, aún no en GitHub.
 
 ## 1. Elegir la versión, no pisar cambios
 
 Clonar GitHub con `-b develop` obtiene únicamente lo publicado. Para reproducir esta revisión antes de publicarla, clonar la rama local desde los repositorios de esta PC en carpetas NUEVAS (sustituye destino):
-`git clone -b feature/local-r01-consolidacion-20261017 <ruta-repositorio-local> <nuevo-clon>`.
+`git clone -b feature/local-s03-validacion-analitica-20261017 <ruta-repositorio-local> <nuevo-clon>`.
 Hacerlo en ambos componentes. No usar reset/stash/limpieza sobre los borradores originales.
 
 En un equipo nuevo, las dependencias se instalan desde los locks mediante npm ci / flutter pub get, con autorización de quien opera. En esta tarea solo se reutilizaron paquetes existentes; no se certificó instalación limpia en otra PC/Linux.
@@ -15,13 +15,34 @@ En un equipo nuevo, las dependencias se instalan desde los locks mediante npm ci
 1. PostgreSQL local y archivo privado con DB_HOST,DB_PORT,DB_USER,DB_PASSWORD. Nunca pegarlo en chat/Git. No usar DATABASE_URL remota.
 2. Definir CROWDRADAR_QA_ENV_FILE con la ruta del archivo privado; ejecutar `npm run test:db:consolidation`.
 3. El runner identifica y crea exclusivamente crowdradar_consolidacion_fresh_20261017 y crowdradar_consolidacion_legacy_20261017; se niega a adoptar bases existentes. Prueba desde cero/legacy,idempotencia,concurrencia,preservación,HTTP,rollback. No borra bases; no usar una base personal para repetirlo. Para una nueva ejecución local, revisar explícitamente otro par de destinos/guardas o usar una instancia PostgreSQL QA limpia, sin eliminar lo anterior automáticamente.
-4. `npm run qa:serve` usa solo la base fresh ya probada,API3033,SMTP deshabilitado. No copia.env ni altera datos personales. CORS exacto permite Web5533/5534.
+4. Tras la consolidación, ejecutar `npm run test:db:sprint3`: prepara 007 en fresh y añade solo cuentas/observaciones QA nuevas en cada ejecución; 7 bloques PostgreSQL/HTTP reales. Para repetir sobre legacy, definir CROWDRADAR_S3_QA_DATABASE=crowdradar_consolidacion_legacy_20261017 (la guarda solo acepta las dos bases QA); se verificó 7/7 también allí. Luego `npm run qa:serve` usa solo la base fresh ya probada,API en127.0.0.1:3033 (solo esta PC),SMTP deshabilitado. No copia.env ni altera datos personales. CORS exacto permite Web5533/5534.
 5. En frontend: `flutter build web --no-pub --dart-define=API_BASE_URL=http://localhost:3033`; servir build/web localmente en5533. El servidor estático QA utilizado se conserva fuera de los repositorios en tmp/consolidacion-20261017/serve-web.mjs. No es un despliegue Vercel.
 6. Crear cuenta sintética propia por UI, entrar→lugar→reporte→perfil/historial. No hay credencial predeterminada. SMTP real requiere autorización y configuración por separado.
 
-El runner CLI normal ahora prepara001–006;005 reconoce explícitamente las dos historias publicadas de reportes y conserva sus claves/filas,006 añade karma yledger. Reportes antiguos empiezan sin premio retrospectivo. Si encuentra un esquema desconocido o una columna karma sin historial, detenerse y revisar; no borrar/adoptar automáticamente. Arranque soloSELECT/readiness.
+El runner CLI normal ahora prepara 001–007;005 reconoce explícitamente las dos historias publicadas de reportes y conserva sus claves/filas,006 añade karma yledger. Reportes antiguos empiezan sin premio retrospectivo. Si encuentra un esquema desconocido o una columna karma sin historial, detenerse y revisar; no borrar/adoptar automáticamente. 007 añade votos/denuncias e índice horario. Arranque solo SELECT/readiness.
+
+Las reglas aprobadas para este incremento son cooldown3 minutos y premio10 puntos. Aunque la configuración histórica permita otros valores, cambiarlos requiere acuerdo explícito del equipo; no es una preferencia visual.
 
 Las instrucciones siguientes describen la ejecución general de la base, no prueban una instalación nueva realizada hoy.
+
+## Preparación de nube — NO desplegada ni autorizada
+
+Arquitectura propuesta: navegador/Android → API propia HTTPS/JWT → PostgreSQL NUEVO; recuperación → adaptador SMTP/Brevo existente. Flutter recibe solo API_BASE_URL pública. Ninguna clave DB, JWT_SECRET, SMTP, anon/service-role de Supabase se compila en el frontend. No se usa Supabase Auth ni acceso directo a tablas desde el navegador.
+
+Preparado y probado localmente: DATABASE_URL para API; MIGRATION_DATABASE_URL solo para CLI (fallback local a DB_*); DB_POOL_MAX/MIN/IDLE_MS/ACQUIRE_MS acotados, migrador max1; DB_SSL=true + DB_SSL_CA con rejectUnauthorized:true. La API no lee la URL del migrador. Tests no prueban permisos efectivos ni TLS remoto. Migraciones históricas y databaseSafety intactos: Supabase sigue bloqueado, sin bypass.
+
+Pasos humanos mínimos, DESPUÉS de revisión y aprobación del proyecto/destino exactos:
+
+1. Elegir un proyecto NUEVO y región, verificar condiciones/cuotas vigentes y aprobar presupuesto cero. No reutilizar Supabase histórico ni prometer gratuidad ilimitada.
+2. Preparar roles separados: migrador propietario DDL; API sin superusuario/CREATEDB/DDL y con acceso solo a tablas/secuencias necesarias (incluidos límites de recuperación, ledger y votos). Probar permisos efectivos y denegaciones antes de cargar datos; no otorgar DELETE general por comodidad. Es un plan, no grants aplicados.
+3. Copiar conexiones desde el panel, sin adivinar host. Evaluar pooler de transacción para API (inicialmente DB_POOL_MAX=1 por instancia) y directa/session para migración; comprobar compatibilidad del driver con prepared statements/estado de sesión. Nuestros locks y SET LOCAL son transaccionales; no se probaron sobre pooler remoto. Aplicar CA/TLS verificado; nunca rejectUnauthorized:false.
+4. Deshabilitar Data API y comprobar que tablas internas no son accesibles vía REST/GraphQL; revisar grants por defecto y roles anon/authenticated. El navegador usa exclusivamente nuestra API. No afirmar que RLS por sí sola reemplaza autorización de Express.
+5. Frontend estático: compilar localmente con API_BASE_URL=https://dominio-API-aprobado y publicar SOLO build/web en el proyecto Vercel autorizado, conservando referrer strict-origin-when-cross-origin. GoRouter usa fragmentos. SDK/build no van al Git del código. Aquí se compiló y sirvió localmente, no se ejecutó Vercel CLI ni un build cloud.
+6. API en Vercel **BLOQUEADA, no compatible aún demostrada**: default export de app.js evita startServer/readiness/SMTP; falta inicialización única fail-closed, presupuesto de conexiones, pruebas de frío/caliente y ciclo de vida. No se añadió un archivo de despliegue que oculte esa brecha.
+7. Correo serverless **BLOQUEADO**: queueDelivery vive en RAM tras 202, sin reintentos/durabilidad. Elegir paquete acotado (p. ej. outbox transaccional + trabajador aprobado) y probar fallos/reintentos/idempotencia antes de publicar. waitUntil solo prolonga trabajo, no garantiza entrega durable. Conservar el adaptador SMTP y probar Brevo/remitente verificado solo con autorización expresa.
+8. Configurar secretos SOLO servidor, CORS con origen HTTPS exacto, URL reset HTTPS y política de proxy explícita basada en la plataforma (no trust proxy=true genérico). Validar límites distribuidos: recuperación ya persiste en PostgreSQL; falta estrategia general antiabuso/carga. Resolver los avisos compatibles de dependencias en paquete autorizado y probar el par antes de habilitar tráfico.
+
+Referencias oficiales verificadas el 18/10/2026: [Express en Vercel](https://vercel.com/docs/frameworks/backend/express), [conexiones/pooling/TLS Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres), [deshabilitar Data API](https://supabase.com/docs/guides/api/securing-your-api#disable-the-data-api). Son guías del proveedor, no evidencia de un despliegue nuestro. No se crearon cuentas, proyectos, roles remotos ni servicios.
 
 ## 2. Backend y base de datos
 

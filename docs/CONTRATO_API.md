@@ -1,6 +1,6 @@
 # Contrato API compartido
 
-Corte local 17/10/2026: rama `feature/local-r01-consolidacion-20261017`, NO publicada. Origin/develop ya integra autenticación, recuperación SMTP y mapa; esta rama reúne los aportes de Nick/Manu y sus correcciones. Pruebas/limitaciones en ESTADO_ACTUAL. Una clonación de GitHub todavía no contiene el incremento local.
+Corte local 18/10/2026: rama `feature/local-s03-validacion-analitica-20261017` (R01 + Sprint 3), NO publicada. Origin/develop ya integra autenticación, recuperación SMTP y mapa; esta rama reúne los aportes de Nick/Manu y sus correcciones. Pruebas/limitaciones en ESTADO_ACTUAL. Una clonación de GitHub todavía no contiene el incremento local.
 
 JSON UTF-8; JWT Bearer en rutas protegidas. Ejecución QA: http://localhost:3033; configuración habitual por entorno. El cliente nunca conecta directamente a PostgreSQL.
 
@@ -33,7 +33,32 @@ Saturación: snapshot con placeId,level nullable,reportCount,minimumReports=3,wi
 
 Reporte: nivel TRANQUILO/MODERADO/SATURADO. Errores INVALID_PLACE/INVALID_REPORT_LEVEL (400),PLACE_NOT_FOUND(404),REPORT_COOLDOWN(409),SESSION_INVALID(401),SERVICE_UNAVAILABLE(503). Un reporte por usuario/lugar cada3 minutos según reloj SQL. Se revalida usuario/versión bajo lock. Reporte, ledger único por reporte y +10 karma se confirman en la misma transacción; fallo revierte los tres. Duplicado/rechazo no premia. Recompensa real:pointsAwarded,karmaPoints enteros. Flutter no inventa10 si faltan esos campos.
 
-Historial propio: id,createdAt,level,placeId,placeName; parámetros de otro usuario no cambian la identidad JWT. Sin reportes:200 []. No equivale todavía a estado de validación HU5.3. Perfil excluye hashes/versiones; karma se devuelve como entero seguro (0..9007199254740991), nunca como BIGINT textual ni número truncado.
+Historial propio: id como texto BIGINT,createdAt,level,placeId,placeName; parámetros de otro usuario no cambian la identidad JWT. Sin reportes:200 []. El estado de validación HU5.3 se consulta por las rutas nuevas de reportes. Perfil excluye hashes/versiones; karma se devuelve como entero seguro (0..9007199254740991), nunca como BIGINT textual ni número truncado.
+
+## Rutas Sprint 3 — HU5 y HU6
+
+Solo usuarios activos autenticados, Cache-Control:no-store, JSON UTF-8. Ninguna ruta acepta actor/peso/karma enviados por el cliente. Rutas de reportes no admiten query; las analíticas solo los parámetros indicados.
+
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/reports | data: últimos 50 reportes de lugares activos, orden createdAt/id descendente |
+| GET /api/reports/:id | data: reporte + conteos/estado/confiabilidad; no correo ni autor identificable |
+| GET /api/reports/:id/own-validation | Mismo DTO, pero solo autor; ajeno 403 REPORT_FORBIDDEN |
+| POST /api/reports/:id/validations | Solo {decision:CONFIRM o REJECT}; 201 data:{decision}; elección definitiva |
+| POST /api/reports/:id/denunciations | Solo {reason?:texto hasta 500 caracteres}; 201 data:{report_id:texto}; no ocultar/eliminar |
+| GET /api/places/:id/history?from=AAAA-MM-DD&to=AAAA-MM-DD | data:{placeId,placeName,period,blocks,counts,sufficient,insufficient,hasReports} |
+| GET /api/places/:id/comparison?from=...&to=...&compareFrom=...&compareTo=... | data:{placeId,timezone,first,second,comparable} |
+| GET /api/places/:id/quiet-hours?from=...&to=... | data:{placeId,period,minimumDays:3,reason,recommendations} |
+
+Reporte: id es string decimal positivo hasta 9223372036854775807 (no convertir a Number); placeId entero, placeName, level, createdAt UTC, isOwn, ownDecision nullable, alreadyDenounced, confirmations/rejections enteros, reliability. Sin validaciones: ambos conteos cero, no confiabilidad ficticia.
+
+Reliability: {level:ALTO/MEDIO/BAJO/null,reason:INSUFFICIENT_VALIDATIONS/null,minimumValidators:3,confirmWeight,totalWeight}. Política provisional aprobada: mínimo 3 personas; cada peso = 1 + min(floor(karma/10),4), congelado al votar; apoyo >=2/3 ALTO, <=1/3 BAJO, intermedio MEDIO. No probabilidad certificada. Un voto y una denuncia por persona/reporte, protegidos por PK y transacción; autor recibe 403 SELF_PARTICIPATION. No premios por validar/denunciar. 409 ALREADY_VALIDATED/ALREADY_DENOUNCED; no sobrescribir primera participación.
+
+Historial: fechas reales e inclusivas en America/Lima, de 1 a 31 días por período, final SQL exclusivo. Cada bloque incluye start/end UTC, level nullable, reportCount y reason. Último reporte/persona dentro de esa hora; mínimo 3 y empate de máximos insuficiente. Los bloques sin datos siguen visibles en el resumen; no equivalen a TRANQUILO. Máximo 10000 observaciones distintas por consulta; 422 PERIOD_TOO_DENSE pide acortar período, no devuelve análisis truncado.
+
+Comparación conserva ambas series/conteos; comparable solo si cada período tiene al menos un bloque suficiente. No normaliza períodos de distinta duración ni promedia categorías. Recomendación exige 3 días suficientes por hora de Lima y al menos un bloque tranquilo; ordena proporción quietDays/days, conserva empates (rank), excluye horas con cero bloques tranquilos. Vacío reason INSUFFICIENT_HISTORY o NO_QUIET_HOURS, nunca una recomendación inventada.
+
+Entradas inválidas: 400 REPORT_ID_INVALID/REPORT_INPUT_INVALID/DECISION_INVALID/REASON_INVALID/PERIOD_INVALID/QUERY_INVALID; recurso ausente/inactivo 404; JWT/estado/versión/expiración inválida 401; falla interna 503 público. Cuerpo global máximo 32 KB (413 BODY_TOO_LARGE); JSON malformado 400 INVALID_JSON. Se revalida la sesión bajo lock antes de escribir. No moderación HU7 ni aceptación humana implícita.
 
 ## Validación y errores: distinguir API de interfaz
 

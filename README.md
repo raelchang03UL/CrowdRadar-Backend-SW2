@@ -1,8 +1,8 @@
 # CrowdRadar Backend
 
-Incremento **solo local** del Release 01, 17/10/2026, en `feature/local-r01-consolidacion-20261017`. Reutiliza HU3.2–3.6 de Nick y HU4.1–4.3 de Manu sobre origin/develop; conserva sus commits/autores. No está publicado ni aceptado formalmente. HU1.x/2.x, SMTP de Diego y mapa ya estaban integrados.
+Incremento **solo local** R01 + Sprint 3 del 18/10/2026, en `feature/local-s03-validacion-analitica-20261017`, dependiente de `feature/local-r01-consolidacion-20261017`. No está publicado, integrado en develop ni aceptado formalmente. Reutiliza a Diego/Nick/Manu conservando sus commits/autores.
 
-Añade consulta/detalle/búsqueda/categoría/saturación combinables, reporte atómico con karma e historial propio. El arranque comprueba esquemas con SELECT; nunca migra automáticamente. Antes de ejecutar: migraciones explícitas001–006. Dos variantes históricas de reportes se concilian mediante005 sin cambiar sus identidades ni borrar datos. No se concede karma por reportes antiguos.
+Consolida lugares/filtros, reporte atómico, karma e historial propio; añade HU5.1–5.4 (votos, confiabilidad, estado y denuncia) y HU6.1–6.3 (historial horario, comparación y horarios). Sin HU7/8 ni reescritura de SMTP. Arranque solo SELECT/readiness; migraciones explícitas 001–007 antes de servir. 005 concilia reportes históricos y 006 no inventa premios retrospectivos.
 
 Lee [CONTRIBUTING](CONTRIBUTING.md), [contrato](docs/CONTRATO_API.md), [configuración](docs/CONFIGURACION_LOCAL.md), [arquitectura](docs/ARQUITECTURA.md) y [estado/pruebas](docs/ESTADO_ACTUAL.md). No uses el ZIP histórico ni el experimento visual como este incremento.
 

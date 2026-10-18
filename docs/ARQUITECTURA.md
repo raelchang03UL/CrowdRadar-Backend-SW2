@@ -1,30 +1,40 @@
 # Arquitectura backend
 
-Corte local R01,17/10/2026; código no publicado. API monolítica por capas: app/rutas/JWT→controladores→servicios→repositorios/modelos→PostgreSQL. Se conserva Express,Sequelize,JWT,bcrypt ySMTP de Diego. No se implementan microservicios ni Supabase Auth.
+Corte local del 18/10/2026. Rama `feature/local-s03-validacion-analitica-20261017`, dependiente de la consolidación R01. No publicada, integrada en develop ni aceptada formalmente. Se conservan Express, Sequelize, PostgreSQL, JWT, bcrypt y el SMTP de Diego.
 
-## Responsabilidades y decisiones
+## Responsabilidades comprobadas
 
-- Composición en app.js: CORS exacto,JSON,rutas e inyección del servicio de recuperación. startServer valida entorno,autentica ycomprueba esquema conSELECT antes de escuchar. CLI de migraciones separado; nunca DDL por arranque/petición.
-- Controladores traducenHTTP/DTO/errores públicos. Auth yperfil no devuelven detalles SQL; hashes yversiones no pertenecen al perfil. BIGINT karma se valida/normaliza a entero seguro.
-- Servicios conservan reglas: bcrypt8 caracteres/72bytes; JWT2h/versión persistida; token de reset aleatorio/hash/15min/uso único. Cambio/reset bloquean usuario,invalidan enlaces yversiones en una transacción. Logout sigue siendo local.
-- PlaceService valida coordenadas yDTO; búsqueda/categoría/nivel forman una consulta AND. SaturationQueryService es función de política compartida: último reporte/persona,3 personas/30min,empate insuficiente. No calcula aforo.
-- SaturationReportRepository: usuario FOR UPDATE,revalidar sesión,lockusuario-lugar,validar lugar/cooldown con relojSQL,INSERT reporte/ledgerPK yUPDATEkarma en una transacción. Alternativa premiar después desdeUserService permitía escrituras parciales; se retira ese helper no usado yse conserva la consulta dekarma deManu. Coste: lock más largo yorden consistente conauth. Concurrencia/rollback reales probados.
-- ReportRepository siempre filtra por usuario de JWT. Sin moderación ni acceso ciudadano a recursos administrativos.
+- `app.js` compone CORS exacto, JSON limitado a 32 KB, rutas y manejo público de errores. `startServer` valida configuración y comprueba esquema mediante SELECT antes de escuchar; no ejecuta DDL. El export por defecto no pasa por ese arranque: no usarlo como prueba de compatibilidad serverless.
+- Rutas/controladores traducen HTTP, JWT, entradas y errores. Los nuevos adaptadores de validación/historial son breves y delegan negocio a servicios; no se movieron carpetas para uniformar nombres.
+- Servicios conservan reglas y DTO. `ReportValidationService` decide permisos/forma, conteos y confiabilidad; `PlaceHistoryService` decide períodos, bloques y recomendaciones. Reutiliza la evaluación pura de saturación con política horaria explícita; la consulta actual conserva 30 minutos. Ninguna política llega del cliente.
+- Repositorios contienen SQL parametrizado, locks y transacciones. `ReportValidationRepository` limita primero los 50 reportes recientes, luego agrega sus votos, sin una consulta por elemento. Historial limita personas/bloques a 10001 filas, rechaza más de 10000 y usa statement_timeout local de 5 segundos.
+- `SaturationReportRepository`: usuario FOR UPDATE, revisión de sesión bajo lock, lock usuario/lugar, lugar activo, cooldown con reloj SQL, reporte + ledger único + karma en una transacción. Fallos revierten todo. No se conceden premios retrospectivos.
+- `ReportValidationRepository`: revalida actor activo/versión/expiración dentro de transacción; impide autovoto/autodenuncia. PK compuesta impide duplicados concurrentes. Peso fijado al votar; votar no concede karma. Denunciar no oculta ni elimina.
+- Autenticación mantiene bcrypt (8 caracteres/72 bytes), JWT de 2 horas/versionado, reset aleatorio con hash/15 minutos/uso único. Cambio/reset invalidan sesiones en la transacción; logout sigue siendo local. Perfil usa DTO explícito; BIGINT de IDs es texto y karma se normaliza a entero seguro.
 
-## Patrones y límites
+## Decisiones y patrones
 
-Repository es patrón de acceso a datos existente, noGoF; facilita dobles,SQL parametrizado ytransacciones explícitas. No se añade GenericRepository ni se ocultan locks. createSaturationReportRepository es construcción/composición inyectable, noFactoryMethod por nombre.
+| Estado / clasificación | Problema, participantes y HU | Alternativa, beneficio, coste y prueba |
+| --- | --- | --- |
+| Existente: capas, arquitectura | app/rutas/controladores → servicios → repositorios/modelos; HU1–6 | ORM/SMTP dentro de rutas sería corto, pero mezclaría negocio y transporte. Se conservan fronteras/imports, sin migración masiva por funcionalidad. AuthService aún utiliza modelo: no se afirma DIP/DDD completo. |
+| Reutilizado/ampliado: Repository, acceso a datos, no GoF | Place/Report/Validation/History repositories; HU3–6 | SQL directo en servicios dispersaría autorización y locks. Centraliza consultas/atomicidad; cuesta mantener orden de bloqueos y dobles. Pruebas PostgreSQL reales y HTTP. No GenericRepository. |
+| Existente: Adapter de objeto, GoF | PasswordRecoveryService → sendResetLink/sendPasswordChangedNotification → RecoveryMailDelivery → Nodemailer | Aísla SMTP y permite dobles frente a correo dentro del negocio. Coste: mantener contrato de promesas/errores y operación del proveedor. Tests de fallo/configuración; SMTP real no repetido. |
+| Corregido: readiness específico, no patrón GoF | app.js + assertPlaceDetails/ConsolidatedReports/Karma/ValidationSchemaReady | Solo README no evita aceptar tráfico con esquema ausente. SELECT falla cerrado sin migrar al arrancar. Tests de esquema ausente/presente y no-DDL. No SchemaManager dinámico. |
+| Reutilizado: composición/inyección | createApp, createPlaceRepository, createSaturationReportRepository, createMigrationConnection | Funciones de construcción, no Factory Method por llamarse create. Permiten dobles y roles distintos sin jerarquías. Coste: contratos explícitos; tests de configuración/rollback. |
+| Local: política pura compartida | evaluateSaturation + historyPolicy; HU3.2/6.x | Copiar la fórmula divergiría. Parametrización interna evita duplicar reglas; no necesita Strategy polimórfica. Tests de mínimo, último voto y empate. |
 
-Adapter SMTP de objeto existente: PasswordRecoveryService→contrato sendResetLink/sendPasswordChangedNotification→RecoveryMailDelivery→Nodemailer. Frente aSMTP dentro del negocio, aísla transporte ypermite dobles. El coste es mantener ambos métodos/promesas/errores. ColaRAM sin reintentos ni durabilidad; no se reimplementó al consolidar.
+Cohesión/SRP: presentación de HTTP no contiene fórmulas/SQL; persistencia no decide mensajes visuales. DRY no elimina validación backend porque haya formularios. ISP/LSP se comprueban con los dos métodos del adaptador y dobles compatibles, no con una cuota de interfaces. KISS/YAGNI: sin microservicios, event bus, repositorio genérico ni módulos HU7/8 adelantados.
 
-Readiness específico frente aSchemaManager dinámico: sigue los guardsauth/recovery ycomprueba historial/columnas. C1 corrigió disponibilidad falsa de detalle. No se añadieron capas ni se movieron carpetas para aparentarSOLID. Cubit es presentación reactiva frontend,noGoFState; funcionescreate no demuestranFactoryMethod.
+## Evolución de esquema y conexiones
 
-## Esquema e integridad
+Migraciones históricas conservadas. 005 concilia ambas identidades publicadas de reportes sin fingir que se aplicó la otra; 006 añade karma/ledger sin retroactividad; 007 agrega votos, denuncias e índice horario. No se reescriben migraciones aplicadas ni se borran filas/bases.
 
-001places,002usuarios/versión,003recuperación y004direccion/reportes conservan sus migraciones publicadas. Dos identidades004 de reportes:005 transición explícita normaliza tipo/FK/índice sin borrarfilas ni marcar la004canónica comoejecutada enlegacy.006 añade karma yledger único porreporte; no inventa premios retrospectivos. Runner protegido por databaseSafety; las bases históricas/Supabase siguen bloqueadas.
+API lee DATABASE_URL o DB_*. Solo CLI lee MIGRATION_DATABASE_URL; pool de migración de una conexión y pool API acotado/configurable. TLS mantiene rejectUnauthorized:true y CA opcional. Esto prueba selección de configuración, no permisos efectivos de un rol remoto. databaseSafety conserva las barreras históricas/Supabase; no se habilitó destino remoto.
 
-## Evidencia y alcance
+## Seguridad y límites reales
 
-130 pruebas Node HTTP/dobles y6bloques PostgreSQL18 real en dosbases nuevas: creación/legacy,idempotencia,concurrencia,preservación,201/409,rollback ysesión. Ver ESTADO_ACTUAL para versiones/límites. No acreditaSMTP real,Android ni despliegue. Audit heredado10avisos pendiente de corrección compatible.
+JSON 32 KB, errores sin SQL/secretos, consultas parametrizadas, JWT/versión/estado, PK de participación y transacciones. Recuperación usa límites persistentes PostgreSQL y socket IP; no confía X-Forwarded-For. Login/lecturas/votos no tienen un límite global antiabuso nuevo. CORS no es autorización. Probar carga/índices y presupuesto de conexiones antes de exponer.
 
-[UML editable](modelos/consolidacion.puml): componentes ysecuencia de reporte. Fuente revisada, no renderizada conPlantUML en esta sesión; no se instaló un renderizador. Para futura nube ver CONFIGURACION_LOCAL/plan; no afirmar compatibilidad serverless porque existaexportdefaultapp.
+SMTP usa cola RAM sin reintentos durables; 202 no acredita recepción. Ni waitUntil ni un proceso persistente solucionan por sí solos durabilidad. Ver preparación de nube y bloqueos en CONFIGURACION_LOCAL y avisos de dependencias en ESTADO_ACTUAL. No se promete ausencia de errores ni protección absoluta.
+
+[UML editable](modelos/consolidacion.puml): componentes, secuencia atómica y validación. Fuente revisada, no renderizada por PlantUML (no se instaló herramienta). Estado y pruebas identifican el par funcional.
