@@ -2,6 +2,22 @@ import { QueryTypes } from "sequelize";
 
 export const placeDetailsMigration = "004-places-direccion";
 
+// Readiness solo de lectura: nunca adopta ni modifica un esquema al arrancar.
+export async function assertPlaceDetailsSchemaReady(sequelize) {
+    try {
+        const applied = await sequelize.query(
+            "SELECT name FROM public.crowdradar_migrations WHERE name = :name",
+            { replacements: { name: placeDetailsMigration }, type: QueryTypes.SELECT }
+        );
+        if (!applied.length) throw new Error("missing");
+        await sequelize.query("SELECT direccion FROM public.places LIMIT 0");
+    } catch {
+        const error = new Error("Falta el esquema de detalle de lugares. Ejecuta npm run db:migrate antes de iniciar.");
+        error.code = "SCHEMA_NOT_READY";
+        throw error;
+    }
+}
+
 // Migración aditiva: conserva el catálogo y no inventa direcciones antiguas.
 export async function migratePlaceDetails(sequelize) {
     return sequelize.transaction(async (transaction) => {

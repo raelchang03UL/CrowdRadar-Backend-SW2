@@ -1,6 +1,36 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { migratePlaceDetails, placeDetailsMigration } from "../src/database/migratePlaceDetails.js";
+import * as details from "../src/database/migratePlaceDetails.js";
+
+test("detalle: readiness exige historial y columna sin DDL", async () => {
+    const queries = [];
+    await details.assertPlaceDetailsSchemaReady({ query: async (sql, options) => {
+        queries.push(sql);
+        assert.match(sql, /^SELECT /);
+        if (sql.startsWith("SELECT name")) {
+            assert.equal(options.replacements.name, placeDetailsMigration);
+            return [{ name: placeDetailsMigration }];
+        }
+        assert.match(sql, /SELECT direccion FROM public\.places LIMIT 0/);
+        return [];
+    } });
+    assert.equal(queries.length, 2);
+});
+
+for (const scenario of ["historial ausente", "columna ausente", "conexión caída"]) {
+    test(`detalle: readiness falla cerrado con ${scenario}`, async () => {
+        const queries = [];
+        await assert.rejects(details.assertPlaceDetailsSchemaReady({ query: async (sql) => {
+            queries.push(sql);
+            assert.match(sql, /^SELECT /);
+            if (scenario === "conexión caída") throw new Error("private connection details");
+            if (sql.startsWith("SELECT name")) return scenario === "historial ausente" ? [] : [{ name: placeDetailsMigration }];
+            throw new Error("private SQL details");
+        } }), (error) => error.code === "SCHEMA_NOT_READY" && /npm run db:migrate/.test(error.message) && !/private/.test(error.message));
+        assert.ok(queries.length > 0);
+    });
+}
 
 test("HU 3.3 migración aditiva confirma dirección e historial en una transacción", async () => {
     const sentencias = [], transaction = {};

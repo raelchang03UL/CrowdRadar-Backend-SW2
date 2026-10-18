@@ -6,6 +6,22 @@ import User from "../src/models/User.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { assertLocalDevelopmentDatabase, assertIsolatedPlacesTestDatabase, assertMigrationTarget } from "../src/database/databaseSafety.js";
 
+test("arranque rechaza esquema de detalle incompleto antes de aceptar tráfico", async () => {
+    const original = { authenticate: sequelize.authenticate, query: sequelize.query };
+    const queries = [];
+    try {
+        sequelize.authenticate = async () => {};
+        sequelize.query = async (sql, options) => {
+            queries.push(sql);
+            assert.match(sql, /^SELECT /);
+            if (options?.replacements?.name === "004-places-direccion") return [];
+            return [{ name: "ready" }];
+        };
+        await assert.rejects(startServer({ port: 0 }), { code: "SCHEMA_NOT_READY" });
+        assert.ok(queries.some((sql) => sql.includes("crowdradar_migrations")));
+    } finally { Object.assign(sequelize, original); }
+});
+
 test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
     const original = { config: { ...sequelize.config }, authenticate: sequelize.authenticate, transaction: sequelize.transaction, query: sequelize.query, sync: User.sync };
     const calls = [];
