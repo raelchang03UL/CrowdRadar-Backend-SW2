@@ -1,5 +1,15 @@
 export function databaseConfiguration(env = process.env) {
-    const options = { dialect: "postgres", logging: false };
+    const integer = (key, fallback, min, max) => {
+        const value = env[key] === undefined ? fallback : Number(env[key]);
+        if (!Number.isInteger(value) || value < min || value > max) throw new Error(`${key} fuera del rango permitido.`);
+        return value;
+    };
+    const maximum = integer("DB_POOL_MAX", 5, 1, 20);
+    const minimum = integer("DB_POOL_MIN", 0, 0, maximum);
+    const options = { dialect: "postgres", logging: false, pool: {
+        max: maximum, min: minimum, idle: integer("DB_POOL_IDLE_MS", 10000, 1000, 60000),
+        acquire: integer("DB_POOL_ACQUIRE_MS", 10000, 1000, 60000)
+    } };
     if (env.DB_SSL === "true") {
         options.dialectOptions = { ssl: { rejectUnauthorized: true } };
         if (env.DB_SSL_CA) options.dialectOptions.ssl.ca = env.DB_SSL_CA.replace(/\\n/g, "\n");
