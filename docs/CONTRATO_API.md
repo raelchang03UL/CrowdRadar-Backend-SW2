@@ -39,6 +39,8 @@ Incremento local del 11/10/2026: HU 3.2 añade la consulta descrita abajo desde 
 | POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | GET `/api/users/karma` | JWT | 200 `{data: {karmaPoints}}` | 401 token; 404 usuario/error del servicio |
+
+| GET `/api/users/reports` | JWT | 200 `{data: reporte[]}`; vacío `[]` | 401 token; 503 error de consulta |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
 | GET `/api/places` | JWT; `nombre` opcional, único y hasta 160 caracteres | 200 `{data: lugar[]}`; vacío `[]` | 400 consulta; 401 token; 503 mensaje público de carga |
 | GET `/api/places/:id` | JWT; ID entero no cero | 200 `{data: lugar}` | 400 ID; 401 sesión; 404 no disponible; 503 mensaje público |
@@ -205,3 +207,11 @@ Las rutas de recuperación están implementadas y probadas con correo en memoria
 Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. En esta rama existen la consulta HU 3.2 y el filtro HU 3.6; no incorpora `/api/places/:id`, búsqueda ni registro de reportes. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
 
 Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda, filtros ni endpoint de detalle. Los reportes de saturación sí están disponibles mediante el endpoint documentado arriba.
+
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda ni filtros. El historial de reportes está disponible en la ruta documentada arriba; la creación de reportes pertenece a otra historia de usuario.
+### Historial de reportes
+
+`GET /api/users/reports` devuelve únicamente los reportes del usuario autenticado,
+ordenados del más reciente al más antiguo. Cada elemento incluye `id`, `createdAt`,
+`level`, `placeId` y `placeName`. Los niveles válidos son `TRANQUILO`, `MODERADO`
+y `SATURADO`. Un usuario sin reportes recibe HTTP 200 con `data: []`.
