@@ -1,6 +1,6 @@
 # Arquitectura backend
 
-Descripción de HU 3.1 y los incrementos A/B/C al08/10/2026 en ramas dependientes de revisión. El par C usa `feature/hu-2-1-2-recuperacion`; padres B y pruebas en ESTADO_ACTUAL. Confirmar Git y el estado de integración al reutilizarla. No constituye prueba de despliegue ni entrega real de correo.
+Descripción de HU 3.1, los incrementos A/B/C y el incremento de revisión HU 3.2. La base `develop` comprobada el 11/10/2026 (`46267e7`) ya incluye HU 3.1, A/B/C y SMTP (PR backend #26, #29, #30 y #31). Padres y pruebas históricas se conservan en ESTADO_ACTUAL. Confirmar Git y la integración al reutilizarla: HU 3.2 está pendiente de integrar, y una descripción de arquitectura no constituye prueba de despliegue ni entrega real de correo.
 
 ## Responsabilidades
 
@@ -27,6 +27,14 @@ El repositorio aplica límites por IP/correo normalizado con UPSERT transacciona
 El [contrato API](CONTRATO_API.md) define el intercambio con Flutter. No devolver modelos completos nuevos por comodidad ni aceptar campos de rol/estado desde formularios ciudadanos.
 
 ## Configuración y persistencia
+
+### Incremento local HU 3.2 (11/10/2026)
+
+`SaturationQueryController` → `SaturationQueryService` → `SaturationQueryRepository` separa HTTP, política provisional y lectura SQL. El GET protegido no registra reportes. Una CTE usa el reloj PostgreSQL de una sola sentencia para consultar lugar activo y último voto por persona en la ventana inclusiva de 30 minutos; excluye futuros y ordena fecha/ID de forma determinística. El servicio entrega DTO explícito sin identidades y aplica mínimo tres personas/nivel más votado/empate sin nivel. No añade ponderación de confianza ni afirma aforo/tiempo real.
+
+Se reutiliza solo la migración inmutable de almacenamiento HU 4.1, `src/database/migrateReports.js` en `d49578cfdff7ef5bdc77c97c14207642715f41b1` (blob `da04019f28d6fbc4858cc53458ed09da2d9dd661`). El runner explícito aplica `004-saturation-reports`; el arranque únicamente verifica historial y columnas. Integración y política deben revisarse con el equipo, sin tomar la autoría del POST de HU 4.1 ni renumerar las claves `004-saturation-reports`/`004-places-direccion`.
+
+`npm run test:db:saturation` usa exclusivamente la base local aislada de auth: SQL/JWT/HTTP reales con usuarios/lugares/reportes revertidos por transacción y comparaciones de preservación. El runner inyecta esa transacción en las lecturas de sus fixtures, no en el servidor normal; no confirma datos ficticios. Las pruebas Node separadas cubren también frontera inclusiva, futuros, errores públicos y precisión de IDs BIGSERIAL.
 
 `src/config/environment.js` configura DB por `DB_*` o `DATABASE_URL`, TLS opcional con certificado verificado y CORS por orígenes exactos. `.env` es privado. `app.js` autentica conexión, verifica esquema de autenticación y escucha HTTP; nunca ejecuta DDL ni sincroniza modelos.
 

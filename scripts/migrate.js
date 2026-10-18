@@ -2,6 +2,7 @@ import sequelize from "../src/config/database.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { migrateAuth, authMigration } from "../src/database/migrateAuth.js";
 import { migrateRecovery, recoveryMigration } from "../src/database/migrateRecovery.js";
+import { migrateReports, reportsMigration } from "../src/database/migrateReports.js";
 import { assertMigrationTarget } from "../src/database/databaseSafety.js";
 import { migratePlaceDetails, placeDetailsMigration } from "../src/database/migratePlaceDetails.js";
 
@@ -15,6 +16,9 @@ try {
     console.log(recoveryApplied ? `${recoveryMigration} aplicada.` : `${recoveryMigration} ya aplicada; sin cambios.`);
     const detailsApplied = await migratePlaceDetails(sequelize);
     console.log(detailsApplied ? `${placeDetailsMigration} aplicada.` : `${placeDetailsMigration} ya aplicada; sin cambios.`);
+
+    const reportsApplied = await migrateReports(sequelize);
+    console.log(reportsApplied ? `${reportsMigration} aplicada.` : `${reportsMigration} ya aplicada; sin cambios.`);
 } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

@@ -12,7 +12,8 @@
     "test:db:places": "node scripts/verify-places-db.js",
     "test:local:places": "node scripts/verify-places-local.js",
     "test:db:auth": "node scripts/verify-auth-db.js",
-    "test:db:recovery": "node scripts/verify-recovery-db.js"
+    "test:db:recovery": "node scripts/verify-recovery-db.js",
+    "test:db:saturation": "node scripts/verify-saturation-db.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",

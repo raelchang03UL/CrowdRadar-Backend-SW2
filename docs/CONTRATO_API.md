@@ -20,6 +20,12 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 
 **Incremento local HU 3.5, 11/10/2026:** esta rama añade filtro `categoria` y catálogo de categorías sobre `develop`. No contiene los PR todavía pendientes de HU 3.3/3.4; al integrar sus rutas compartidas se requiere coordinación y regresión, no reemplazar un incremento con otro.
 
+Fuente canónica backend para coordinar con Flutter. La base `develop` comprobada el 11/10/2026 (`46267e7`) ya incluye HU 3.1, los incrementos A/B/C y SMTP (PR backend #26, #29, #30 y #31). Los padres y pruebas de aquellas ramas se conservan como antecedentes históricos en ESTADO_ACTUAL; no representan un bloqueo actual de esa base. No es un catálogo de endpoints futuros. Al publicar un cambio de contrato, registrar ambos SHA y pruebas en los PR relacionados cuando sus bases permitan abrirlos.
+
+Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`. JSON UTF-8. Rutas protegidas reciben `Authorization: Bearer <token>`. No incluir token real en este archivo ni evidencias.
+
+Incremento local del 11/10/2026: HU 3.2 añade la consulta descrita abajo desde `develop` backend `46267e7c273d889a85710e33f32ff7a839f52ec9`. Su política es una propuesta aprobada por el usuario, **no un acuerdo del equipo ni un cambio ya integrado**. El almacenamiento se reutiliza de HU 4.1 sin añadir su ruta de registro.
+
 ## Rutas actuales
 
 | Método/ruta | Entrada | Éxito | Fallos actuales |
@@ -50,6 +56,45 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 El catálogo procede de los lugares activos en PostgreSQL, no de valores hardcodeados: categorías únicas agrupadas y ordenadas por la DB, sin campos internos ni etiquetas vacías. Una etiqueta corrupta (no textual, vacía, con espacios exteriores o mayor a 80) causa 503 público en lugar de ofrecer una opción que no pueda seleccionarse por igualdad. El catálogo no recibe parámetros; si existen, responde 400 `{message: "La consulta de categorías no admite parámetros."}`. Fallos de catálogo: 503 `{message: "No se pudieron cargar las categorías. Inténtalo de nuevo."}`; el filtro conserva el 503 público de lugares. Ambas rutas comprueban JWT/usuario/versión antes de consultar.
 
 No admite `nombre` en esta rama: la combinación futura búsqueda/filtro debe acordarse al integrar HU 3.4. No hay migraciones ni campos nuevos. Los lugares demostrativos mantienen `demostrativo=true` y no se presentan como monitoreo real.
+
+| GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| GET `/api/places/:id/saturation` | JWT; ID INTEGER con signo distinto de 0 | 200 `{data: saturacion}` | 400 ID; 401 sesión; 404 inexistente/inactivo; 503 servicio |
+
+`usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
+
+`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. El listado no añade dirección ni saturación; la consulta HU 3.2 usa una ruta separada y no requiere el endpoint de detalle pendiente de integración.
+
+### HU 3.2: consultar nivel de saturación
+
+`GET /api/places/:id/saturation` no recibe cuerpo ni necesita parámetros query. ID decimal canónico en `[-2147483648,2147483647]`, excepto cero; admite los IDs negativos de demostración. El JWT se verifica antes de consultar. Solo lugares activos; inexistente e inactivo tienen el mismo 404. Todas las respuestas de esta ruta llevan `Cache-Control: no-store`.
+
+```json
+{
+  "data": {
+    "placeId": -310001,
+    "level": "MODERADO",
+    "reportCount": 3,
+    "windowMinutes": 30,
+    "minimumReports": 3,
+    "reason": null,
+    "evaluatedAt": "2026-10-11T15:00:00.000Z",
+    "updatedAt": "2026-10-11T14:55:00.000Z"
+  }
+}
+```
+
+El ejemplo ilustra el contrato, no reportes persistidos ni una medición real. `evaluatedAt` procede del reloj PostgreSQL de la misma lectura que consulta lugar/reportes, en ISO UTC. La ventana inclusiva es `[evaluatedAt - 30 minutos, evaluatedAt]`; excluye futuros. Cuenta únicamente el último reporte válido por persona; igual `created_at` se desempata mediante mayor ID BIGSERIAL. `reportCount` es el número de personas distintas, no filas ni personas conectadas simultáneamente. `updatedAt` es la fecha más reciente de los votos contabilizados, también si son insuficientes o empatan; solo es null cuando `reportCount` es 0. No devuelve identidad de los reportantes.
+
+Política provisional aprobada por el usuario: mínimo tres personas; nivel más votado entre `TRANQUILO`, `MODERADO` y `SATURADO` (no exige mayoría absoluta). Menos de tres devuelve `level: null`, `reason: "INSUFFICIENT_REPORTS"`; con tres o más y empate máximo devuelve `level: null`, `reason: "TIE"`. Ambos casos son HTTP 200, no errores. Con nivel conocido, `reason` es null. No se calcula confianza, aforo ni validación de reportes; cada consulta es una estimación ciudadana y no promete actualización automática en tiempo real.
+
+| HTTP | `code` | Significado |
+| --- | --- | --- |
+| 400 | `PLACE_ID_INVALID` | ID fuera de formato/rango o cero |
+| 401 | `SESSION_INVALID` | Reglas de sesión existentes: JWT/estado/versión |
+| 404 | `PLACE_NOT_FOUND` | Lugar inexistente o inactivo |
+| 503 | `SERVICE_UNAVAILABLE` | Consulta o verificación de sesión indisponible; sin internos |
+
+La migración compartida conserva exactamente `src/database/migrateReports.js` de HU 4.1, commit `d49578cfdff7ef5bdc77c97c14207642715f41b1`, blob Git `da04019f28d6fbc4858cc53458ed09da2d9dd661`. Su integración debe coordinarse con el autor; no se implementa el POST de registro en HU 3.2. Sin reportes recientes, no se inventa un nivel.
 
 ## Validación y errores: distinguir API de interfaz
 
@@ -112,3 +157,5 @@ Antes de implementar una nueva HU, acordar ruta/método, entrada/validación, sa
 Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. HU 3.3 añade `/api/places/:id` y HU 3.4 la búsqueda por nombre en el listado; todavía no hay filtros, reportes ni saturación en esta rama. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
 
 Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. Esta rama añade únicamente filtro por categoría; no hay `/api/places/:id`, búsqueda por nombre, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+
+Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; la entrega real por SMTP se habilita por configuración y su recepción se registra en ESTADO_ACTUAL. En esta rama existe la consulta de saturación HU 3.2; no incorpora `/api/places/:id`, búsqueda, filtros ni el registro de reportes. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.

@@ -9,6 +9,8 @@ import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
 import { assertPlaceDetailsSchemaReady } from "./src/database/migratePlaceDetails.js";
+
+import { assertReportsSchemaReady } from "./src/database/migrateReports.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 import { mailConfiguration } from "./src/config/mail.js";
@@ -50,6 +52,8 @@ export const startServer = async ({ port = PORT } = {}) => {
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
     await assertPlaceDetailsSchemaReady(sequelize);
+
+    await assertReportsSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
     return server.listen(port, () => {
