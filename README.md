@@ -1,38 +1,10 @@
 # CrowdRadar Backend
 
-## HU 3.4 — búsqueda por nombre (revisión dependiente)
+Incremento **solo local** del Release 01, 17/10/2026, en `feature/local-r01-consolidacion-20261017`. Reutiliza HU3.2–3.6 de Nick y HU4.1–4.3 de Manu sobre origin/develop; conserva sus commits/autores. No está publicado ni aceptado formalmente. HU1.x/2.x, SMTP de Diego y mapa ya estaban integrados.
 
-Rama `feature/hu-3-4-busqueda-lugares`, basada en HU 3.3. GET `/api/places?nombre=<texto>` busca el nombre completo o parcial sin distinguir mayúsculas, devuelve todas las coincidencias activas y trata `%`, `_` y barra inversa como texto literal. Sin criterio devuelve todos; sin coincidencias devuelve `[]`.
+Añade consulta/detalle/búsqueda/categoría/saturación combinables, reporte atómico con karma e historial propio. El arranque comprueba esquemas con SELECT; nunca migra automáticamente. Antes de ejecutar: migraciones explícitas001–006. Dos variantes históricas de reportes se concilian mediante005 sin cambiar sus identidades ni borrar datos. No se concede karma por reportes antiguos.
 
-Los PR de búsqueda se comparan inicialmente contra `feature/hu-3-3-detalles-lugar` para mostrar solo HU 3.4. Integrar/validar primero la pareja HU 3.3 y después cambiar la base de estos PR a `develop`. No incorpora migraciones ni dependencias adicionales. Contrato y pruebas en sus documentos/PR.
-
-## HU 3.3 — información del lugar (rama de revisión)
-
-Rama `feature/hu-3-3-detalles-lugar`, desde `develop`. Añade GET autenticado `/api/places/:id` y la dirección opcional del lugar. El frontend compañero muestra nombre, dirección, categoría y referencia desde el marcador; no incluye búsqueda por nombre en este incremento.
-
-Antes de ejecutar: `npm run db:migrate` aplica `004-places-direccion`, aditiva e idempotente. Las direcciones desconocidas permanecen null; el fixture solo completa sus tres lugares demostrativos con direcciones ilustrativas, sin reemplazar datos existentes. `npm run test:db:places` valida PostgreSQL aislado y `npm run test:local:places` valida HTTP/DB exclusivamente en `crowdradar_dev` local con una cuenta activa.
-
-Contrato en [CONTRATO_API](docs/CONTRATO_API.md). Publicar el código no acredita integración, catálogo real ni aceptación de la historia.
-
-API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. Desde el 10/10/2026 `develop` integra HU 3.1, HU 2.3 y HU 2.1–2.2 (PR #26, #29 y #30); el envío SMTP descrito aquí entra con el PR #31, y hasta entonces `develop` responde 503 uniforme en la recuperación. Verifica la rama del PR que revisas.
-
-Esta rama de revisión añade HU 3.2: consulta autenticada de una estimación ciudadana de saturación por lugar, con política provisional aprobada por el usuario y pendiente de acuerdo/revisión del equipo. No incorpora registro de reportes (HU 4.1), filtros ni métricas de confianza.
-
-Esta rama de revisión añade HU 3.6 sobre HU 3.2: filtrar lugares por la misma estimación ciudadana de saturación. Conserva la política provisional aprobada por el usuario y pendiente de acuerdo/revisión del equipo. No incorpora registro de reportes (HU 4.1) ni métricas de confianza.
-
-API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación envía el enlace por SMTP (Brevo) cuando cada PC configura sus variables `SMTP_*`; sin ellas responde 503 uniforme. Está construida con Node.js, Express, Sequelize y PostgreSQL. La base `develop` comprobada el 11/10/2026 (`46267e7`) ya integra HU 3.1, HU 2.3, HU 2.1–2.2 y envío SMTP (PR #26, #29, #30 y #31). Verifica Git y la rama del PR que revisas; esto no declara HU 3.2 integrada.
-
-Para colaborar con el equipo y usar IA sobre el código, empieza por [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [inicio del equipo](docs/INICIO_EQUIPO.md), que incluye un prompt sin tarea asignada. Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
-
-**Descarga actual del equipo:** `integration/base-equipo` en backend y frontend contiene los avances A/B/C y las guías de inicio, pendientes de revisión/integración. Usarla para leer, ejecutar y revisar; iniciar tareas nuevas desde `develop` solo después de integrar y comprobar el par. Los comandos de clonación y el prompt están en la guía de inicio.
-
-## HU 3.6 — filtro de saturación
-
-Rama `feature/hu-3-6-filtro-saturacion`, dependiente de `feature/hu-3-2-consulta-saturacion` (padre backend `0605b51fb5aa6933de9b587e9ad9c73f5e46c2d1`). [Issue frontend #7](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/issues/7). Revisar el par y primero la dependencia HU 3.2; no se declara integrado en `develop`.
-
-`GET /api/places?nivel=TRANQUILO|MODERADO|SATURADO` exige JWT y devuelve el DTO histórico de lugares. Sin `nivel`, vacío o espacios conserva Todos. Con un nivel, una consulta batch utiliza la política/evaluación existentes de HU 3.2; empate e información insuficiente no coinciden con ningún nivel. Entrada inválida devuelve 400 público; sin coincidencias, 200 con `data: []`. Cambiar/quitar el filtro vuelve a consultar; no calcula distancias ni promete monitoreo automático.
-
-Sin dependencias, variables o migraciones nuevas. Se requiere el esquema de reportes del padre HU 3.2 y su coordinación compartida con HU 4.1. Prueba adicional: `npm run test:db:saturation-filter`, exclusivamente sobre la base local aislada ya preparada, sin migrar ni confirmar fixtures. [Contrato](docs/CONTRATO_API.md) y [validaciones](docs/ESTADO_ACTUAL.md).
+Lee [CONTRIBUTING](CONTRIBUTING.md), [contrato](docs/CONTRATO_API.md), [configuración](docs/CONFIGURACION_LOCAL.md), [arquitectura](docs/ARQUITECTURA.md) y [estado/pruebas](docs/ESTADO_ACTUAL.md). No uses el ZIP histórico ni el experimento visual como este incremento.
 
 ## Requisitos
 

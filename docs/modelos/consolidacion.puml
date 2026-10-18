@@ -1,0 +1,61 @@
+@startuml
+title CrowdRadar — R01 local (no despliegue)
+package "Flutter Android / Web" {
+  [Pages / Components] as UI
+  [Cubits y guardas de sesión] as State
+  [Servicios HTTP / DTO] as Client
+  UI --> State
+  State --> Client
+}
+package "Express por capas" {
+  [Rutas / JWT / Controladores] as HTTP
+  [Servicios de negocio] as Services
+  [Repositorios / transacciones] as Repos
+  [RecoveryMailDelivery\nAdapter SMTP existente] as Mail
+  HTTP --> Services
+  Services --> Repos
+  Services --> Mail
+}
+database "PostgreSQL\nusers / places / recovery\nsaturation_reports / report_karma_awards" as DB
+Client --> HTTP : JSON + JWT
+Repos --> DB : SQL parametrizado / locks
+Mail --> [Brevo SMTP] : TLS (configuración privada)
+note right of Mail
+  Cola actual en memoria, no durable.
+  No garantiza entrega/reintentos.
+end note
+note bottom of DB
+  Migraciones CLI explícitas001–006.
+  Arranque solo SELECT/readiness.
+  No Data API desde Flutter.
+end note
+@enduml
+
+@startuml
+title R01 — reporte y karma atómicos
+actor Ciudadano
+participant ReportPlaceSheet as UI
+participant SaturationReportService as Service
+participant SaturationReportRepository as Repo
+database PostgreSQL as DB
+Ciudadano -> UI : seleccionar nivel / enviar
+UI -> Service : POST JWT, placeId, level
+Service -> Repo : usuario, versión, expiración, regla10/3
+Repo -> DB : BEGIN / usuario FOR UPDATE
+Repo -> DB : revalidar sesión / lock usuario-lugar
+Repo -> DB : consultar lugar y cooldown con reloj SQL
+alt aceptado
+  Repo -> DB : INSERT reporte / INSERT ledger único / UPDATE karma
+  Repo -> DB : COMMIT
+  Repo --> Service : reporte + premio real
+  Service --> UI : 201
+else inválido, duplicado o fallo
+  Repo -> DB : ROLLBACK o sin escritura
+  Repo --> Service : error público / 409
+  Service --> UI : sin premio
+end
+note over UI
+  Sin doble envío; no cerrar durante petición.
+  Respuesta de otra sesión se descarta.
+end note
+@enduml

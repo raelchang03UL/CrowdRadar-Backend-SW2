@@ -1,28 +1,27 @@
-# Configuración local desde una clonación limpia
+# Configuración local reproducible
 
-## Actualización HU 3.3 — dirección y detalle
+Corte17/10/2026. Node22.20.0/npm10.9.3,PostgreSQL18,Flutter3.41.9/Dart3.11.5; SDK fuera de Git. Este incremento R01 solo está en la rama local `feature/local-r01-consolidacion-20261017`, aún no en GitHub.
 
-En `feature/hu-3-3-detalles-lugar`, ejecutar `npm run db:migrate` antes de consultar lugares: aplica `004-places-direccion` sin reescribir 001–003 ni modificar las filas anteriores. No se migra al arrancar. Las direcciones no registradas permanecen null.
+## 1. Elegir la versión, no pisar cambios
 
-El seed opcional `npm run db:seed:demo` completa solo direcciones null de sus tres IDs negativos reservados, identificadas como ilustrativas/no verificadas; conserva una dirección ya registrada. `npm run test:db:places` usa únicamente `crowdradar_hu31_test`; `npm run test:local:places` exige `crowdradar_dev` local y una cuenta activa, no crea usuarios ni envía correo.
+Clonar GitHub con `-b develop` obtiene únicamente lo publicado. Para reproducir esta revisión antes de publicarla, clonar la rama local desde los repositorios de esta PC en carpetas NUEVAS (sustituye destino):
+`git clone -b feature/local-r01-consolidacion-20261017 <ruta-repositorio-local> <nuevo-clon>`.
+Hacerlo en ambos componentes. No usar reset/stash/limpieza sobre los borradores originales.
 
-Frontend y backend deben usar la pareja de ramas de HU 3.3; integrar backend compatible antes del frontend. No hay variables o dependencias nuevas.
+En un equipo nuevo, las dependencias se instalan desde los locks mediante npm ci / flutter pub get, con autorización de quien opera. En esta tarea solo se reutilizaron paquetes existentes; no se certificó instalación limpia en otra PC/Linux.
 
-Línea base comprobada en Windows 11 con Node 22.20.0, npm 10.9.3, PostgreSQL 18, Java 21.0.7, Flutter 3.41.9/Dart 3.11.5 y Android SDK Platform/Build-Tools 36. Los SDK van fuera de los repositorios. No uses la base `crowdradar_sprint1` ni Supabase para desarrollo.
+## QA aislada del incremento
 
-## 1. Clonar ambos repositorios
+1. PostgreSQL local y archivo privado con DB_HOST,DB_PORT,DB_USER,DB_PASSWORD. Nunca pegarlo en chat/Git. No usar DATABASE_URL remota.
+2. Definir CROWDRADAR_QA_ENV_FILE con la ruta del archivo privado; ejecutar `npm run test:db:consolidation`.
+3. El runner identifica y crea exclusivamente crowdradar_consolidacion_fresh_20261017 y crowdradar_consolidacion_legacy_20261017; se niega a adoptar bases existentes. Prueba desde cero/legacy,idempotencia,concurrencia,preservación,HTTP,rollback. No borra bases; no usar una base personal para repetirlo. Para una nueva ejecución local, revisar explícitamente otro par de destinos/guardas o usar una instancia PostgreSQL QA limpia, sin eliminar lo anterior automáticamente.
+4. `npm run qa:serve` usa solo la base fresh ya probada,API3033,SMTP deshabilitado. No copia.env ni altera datos personales. CORS exacto permite Web5533/5534.
+5. En frontend: `flutter build web --no-pub --dart-define=API_BASE_URL=http://localhost:3033`; servir build/web localmente en5533. El servidor estático QA utilizado se conserva fuera de los repositorios en tmp/consolidacion-20261017/serve-web.mjs. No es un despliegue Vercel.
+6. Crear cuenta sintética propia por UI, entrar→lugar→reporte→perfil/historial. No hay credencial predeterminada. SMTP real requiere autorización y configuración por separado.
 
-**Vigencia backend (11/10/2026):** la base `develop` observada (`46267e7`) integra HU 3.1, HU 2.3, HU 2.1–2.2 y envío SMTP (backend #26, #29, #30 y #31). Incluye migraciones 001–003; `004-saturation-reports` es todavía parte de este incremento local HU 3.2, no de aquella base compartida. El frontend tiene su propio historial: comprobar la rama/par que se revisa, sin asumir integración conjunta automática. Los padres/pruebas históricas permanecen en ESTADO_ACTUAL; no se reejecutó una clonación limpia del conjunto. Cada integrante usa su PostgreSQL y secretos locales.
+El runner CLI normal ahora prepara001–006;005 reconoce explícitamente las dos historias publicadas de reportes y conserva sus claves/filas,006 añade karma yledger. Reportes antiguos empiezan sin premio retrospectivo. Si encuentra un esquema desconocido o una columna karma sin historial, detenerse y revisar; no borrar/adoptar automáticamente. Arranque soloSELECT/readiness.
 
-```powershell
-$workspaceRoot = Join-Path $env:USERPROFILE 'Documents\CrowdRadar-SW2'
-New-Item -ItemType Directory -Path $workspaceRoot -Force | Out-Null
-Set-Location $workspaceRoot
-git clone -b develop https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git CrowdRadar-Backend
-git clone -b develop https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
-```
-
-Para cualquier tarea nueva, comprobar ambos árboles y usar `develop` como base. Para revisar un PR pendiente, descargar explícitamente su rama con el árbol limpio y confirmar primero si ya está integrado. Actualizar únicamente con `git pull --ff-only`, sin sobrescribir cambios; una rama publicada no sustituye el par integrado.
+Las instrucciones siguientes describen la ejecución general de la base, no prueban una instalación nueva realizada hoy.
 
 ## 2. Backend y base de datos
 

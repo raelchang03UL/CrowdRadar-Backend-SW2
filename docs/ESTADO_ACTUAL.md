@@ -1,5 +1,18 @@
 # Estado actual
 
+## Corte local de consolidación Release 01 — 17/10/2026
+
+Rama `feature/local-r01-consolidacion-20261017`, no publicada; base Bffe9b19/Fdfdb753. Se reutilizaron los diez PR de Nick y las tres ramas independientes de Manu, preservando commits/autores. No se tocaron los árboles originales con borradores/experimento. No implica aceptación humana de17 HU.
+
+- Correcciones: readiness de detalle solo SELECT;005 concilia ambas004 de reportes sin reescribirlas;006 agrega karma/ledger. Registro, premio único +10 y total comparten transacción; cooldown3 minutos por usuario/lugar; sesión revalidada bajo lock.
+- Nombre/categoría/nivel se combinan; respuestas públicas/DTO explícitos. Perfil convierte BIGINT a número seguro y oculta fallos internos.
+- Node22.20.0:130/130 comprobaciones aprobadas (HTTP loopback y dobles). C1 reprodujo4 fallos antes/6 aprobadas después en sus tests de migración, y73/73 en el paquete previo.
+- PostgreSQL18 real:6/6 bloques scripts/verify-consolidation-db.js, bases crowdradar_consolidacion_fresh_20261017 y crowdradar_consolidacion_legacy_20261017. Creación/actualización/idempotencia/concurrencia/preservación,201/409 simultáneos,premio único,rollback y sesión,aislamiento/filtros. No se borraron bases. El runner se niega a adoptar destinos existentes; repetir en clon/instancia QA limpia según configuración.
+- No se repitió SMTP real; recuperación normal503 sin secretos SMTP. Dependencias/locks intactos; audit10 avisos heredados pendientes de corrección compatible.
+
+Políticas aprobadas por Rael:10 puntos por reporte válido una sola vez;cooldown3 minutos;3 personas/30min para saturación yempate insuficiente. Código local probado no equivale a integración compartida/aceptación. Las secciones siguientes conservan fechas/resultados históricos; no usarlas como instrucciones vigentes.
+
+
 ## HU 3.4 — búsqueda por nombre, 10/10/2026
 
 Rama `feature/hu-3-4-busqueda-lugares`, posterior a HU 3.3, para frontend #5. Filtra lugares activos por nombre completo/parcial, sin distinguir mayúsculas; conserva todas las coincidencias y devuelve lista vacía cuando no hay ninguna. Límite de 160 caracteres, recorte, consultas literales y errores públicos.
