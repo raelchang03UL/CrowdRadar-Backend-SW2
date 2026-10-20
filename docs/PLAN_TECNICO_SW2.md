@@ -1,6 +1,30 @@
 # Plan técnico SW2
 
-La línea base Sprint 1 funciona en Android y PostgreSQL local. Este plan separa riesgos de trabajo inmediato: no implica implementar los Sprints 2–8 ni actualizar todas las dependencias.
+## Situación de cierre — 19/10/2026
+
+I1 resolvió continuidad401;I2 distingue cooldown sin premio de incertidumbre;I3/C2/F11 cubren mapa/perfil/navegación. No reimplementar esas correcciones de las propuestas históricas. Rama de revisión integration/cierre-web-r01-s03-20261019, sin merge/aceptación/despliegue. Siguientes puertas ya identificadas:revisión humana/integración del par,QA desde cero/opt-in/SMTP autorizados y seguridad/runtime antes de nube; no nuevos compromisos por este documento. Estado/evidencia canónicos en ESTADO_ACTUAL/CIERRE_WEB_R01_S03; no depende de la matriz externa para revisar el PR.
+
+## Prioridades anteriores — auditoría19/10 antes de I1/I2/C2/F11
+
+Propuesta, no Sprint Backlog ni autorización de implementación/publicación. Planeamiento actual:4 Sprints (HU 1–2,3–4,5–6,7–8). El candidato local R01/S3 pasa análisis/build y muchas pruebas, pero **no está aceptado ni integrado**; detalles y24 dictámenes en la matriz canónica de la raíz y ESTADO_ACTUAL.
+
+| Prioridad | Área / brecha comprobada | Siguiente paso acotado |
+| --- | --- | --- |
+| Alto | Autenticación/UX:401en mapa y perfil conserva sesión y ofrece solo Reintentar; Validar sí redirige | Limpiar/redirigir solo generación vigente;401tardío no cierra sesión nueva;503/timeout no cierra sesión. Sin persistencia/revocación nueva. |
+| Medio, requisito de aceptación | HU 4.2: rechazo no premia, pero no informa ausencia de puntos; espera restante no disponible | Acordar mensaje/contrato, añadir prueba de rechazo/saldo; no contador ficticio. |
+| Alto | Reproducibilidad/pruebas: R01desde cero no repetible en bases existentes;2 opt-in omitidas y sin SMTP real nuevo | Instancia QA nueva o destinos estrictos aprobados, sin borrar bases; revisar runners contra esquema actual. Verificar recepción autorizada, no duplicar adaptador. |
+| Alto | Integración:12 PR abiertos y aportes Manu ya incluidos en candidato, pero no develop | Revisar R01 por par/procedencia; elegir una vía que no duplique PR. Después revisar007/HU 5–6 y aceptar por criterio. No HU 7/8 todavía. |
+| Alto, antes de Internet | Seguridad/configuración: audit10 paquetes/6 producción, inicialización serverless/colaRAM/IPproxy no resueltas | Paquetes compatibles y verificables; TLS remoto/roles/pooler/destino NUEVO aprobado. No force-fix ni bypass databaseSafety. |
+| Medio | Base de datos: migraciones001–007 locales, compatibilidad005/ledger006 probadas históricamente y007 repetida | Permisos efectivos, backups/restauración y revisión de migraciones/retención; no reescribir historia ni migrar bases personales. |
+| Medio | Arquitectura frontend/backend y deuda técnica | Conservar capas, AdapterSMTP y Repository/Cubit; mejorar401y legibilidad del código S3 con pruebas. MapPage grande, sin reorganización general ni patrón por cuota. |
+| Medio | Pruebas/organización del equipo | CI con versiones/locks y QAefímera en paquete aprobado; revisión humana, contrato y par deSHA. Hoy no hay workflows rastreados. |
+| Mejora futura | UX/despliegue | Resumir ficha móvil larga, distinguir lugares homónimos con datos reales y validar accesibilidad. DemoWeb en nube solo tras puertas de CONFIGURACION_LOCAL; no rediseño ahora. |
+
+Próximas5 prioridades:1)401coherente y después mensaje no-premio;2)QA/SMTP reproducibles;3)R01 revisión/integración/aceptación;4)S3 revisión/integración/aceptación;5)puerta de demo segura con servidor/correo/DB aprobados. Reglas uniformes de cuentas ya autorizadas deben conciliarse con Issues heredados; catálogo, políticas provisionales y plataforma de aceptación aún requieren revisión grupal. El detalle del primer paquete401y sus pruebas/criterio está en la matriz, no se ejecuta desde este plan.
+
+## Plan anterior — 08/10/2026 y línea base Sprint1
+
+Las propuestas/resultados inferiores se conservan como antecedentes: referencias a proveedor no elegido, ramas sin integrar y Sprints2–8 no describen el estado vigente. La línea base Sprint1 tuvo evidencia Android/PostgreSQL; no acredita Android del candidato actual.
 
 | Prioridad | Área | Hallazgo y dirección |
 | --- | --- | --- |

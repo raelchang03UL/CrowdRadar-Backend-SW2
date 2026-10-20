@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-19",
+  "timezone": "America/Lima",
+  "scope": "Revision Web R01/S3; no integracion, aceptacion ni despliegue",
+  "branch": "integration/cierre-web-r01-s03-20261019",
+  "baselineBackend": "eeff38b86c53d22180655ee5aa6fa501a2a5b061",
+  "baselineFrontend": "18cec26d0f2da755b9e436f04b715f431f54563d",
+  "backend": {"passed":173,"failed":0,"skipped":0,"syntaxFiles":95},
+  "frontend": {"passed":562,"failed":0,"skipped":2,"analyze":"No issues found","analyzeSeconds":42,"testSeconds":16,"webBuildSeconds":31.2},
+  "f11": {"before":{"passed":1,"failed":6},"after":{"passed":7,"failed":0}},
+  "web": {"api":"http://127.0.0.1:3043","url":"http://127.0.0.1:5543","mainDartJsSha256":"4ae6c604b64025361b874ffe9504ff8438b39c99cf8c119b8ffd622e8ccc4fc8","relativeOutputAttempt":"Failed to write shaders; repeated build only with new absolute output"},
+  "audit": {"critical":1,"high":5,"moderate":4,"total":10,"fixed":false,"interpretation":"Advisories in dependency tree; not proof of route exploitability or permission for public exposure"},
+  "sql": {
+    "database":"crowdradar_demo_local",
+    "type":"Real PostgreSQL; read-only verification of synthetic UI operations",
+    "beforeVerifiedUtc":"2026-10-20T04:13:10.441Z",
+    "afterVerifiedUtc":"2026-10-20T04:15:07.705Z",
+    "syntheticSubject":{"id":2,"before":{"reports":0,"awards":0,"points":0},"after":{"reports":1,"awards":1,"points":10}},
+    "totalsBefore":{"places":5,"users":2,"reports":2,"awards":2,"points":20},
+    "totalsAfter":{"places":5,"users":2,"reports":3,"awards":3,"points":30},
+    "initialProvisioningRepeated":false,
+    "smtpSent":false
+  },
+  "pending":["2 opt-in","QA R01 from zero","Authorized real SMTP reception","Android and normal Chrome","Human acceptance and review","Integration into develop","Deployment"]
+}

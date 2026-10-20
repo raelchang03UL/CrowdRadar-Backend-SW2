@@ -1,6 +1,56 @@
 # Estado actual
 
-## Corte vigente local — R01 + Sprint 3, 18/10/2026
+## Vigente: cierre Web para revisión — 19/10/2026
+
+Rama `integration/cierre-web-r01-s03-20261019` en ambos repositorios, conservando develop y candidatos B`eeff38b`/F`18cec26` más F3/C2. Publicación/par exacto acreditados por los PR, no por esta cabecera; no implica merge, aceptación R01/S3 ni despliegue. [Evidencia accesible/procedencia](CIERRE_WEB_R01_S03.md).
+
+- Backend173/173,0fallidas/omitidas;95JS sintácticamente válidos;diff-check0. Demo35casos, incluido rechazo de init antes de leer configuración. Check/seed comprobados en demo existente: CLI ya no depende de QA ni crea bases. Aprovisionamiento inicial administrativo manual documentado, no repetido.
+- Frontend analyze0problemas,562aprobadas/2opt-in omitidas;Web31,2s con API3043. Salida relativa falló escribiendo shaders; salida absoluta nueva completó sin cambiar código/dependencias.
+- IAB final:login,búsqueda/selección,plegado,reporte,historial→perfil,ciclo perfil/historial,mapa,saldo10,logout/rutas protegidas. SQL cuenta sintética2:0/0/0→1reporte/1premio/10puntos. Dos reportes/premios previos conservados:totales2→3,20→30. Sin correo real.
+- npm audit:10paquetes(1crítico/5altos/4moderados),sin fix/instalación ni aprobación para Internet. Migraciones históricas/protecciones de bases intactas.
+
+QA desde cero,2opt-in,SMTP real,Android/Chrome normal,aceptación/revisión humana,integración y nube siguen pendientes separados de publicación. Cortes inferiores históricos preservados.
+
+## Corte anterior: catálogo demostrativo local — 19/10/2026, 17:39 America/Lima
+
+Backend candidato `fix/pruebas-reproducibles-20261018` / `eeff38b86c53d22180655ee5aa6fa501a2a5b061`, frontend `fix/mapa-reportes-ux-20261018` / `18cec26d0f2da755b9e436f04b715f431f54563d`, **más cambios sin commit**. C0 coincide exactamente con F3 del cierre anterior; no basta reproducir HEAD. Evidencia, snapshots C0/C1/C2 y diffs incrementales en [paquete local](../../../../tmp/catalogo-ux-20261019). Originales/borradores/experimento preservados.
+
+- Nueva base `crowdradar_demo_local`, inexistente al inspeccionar pg_database. Guardas localhost/nombre exacto/procedencia; init rehúsa adoptar una existente. Migraciones001–007 históricas intactas,8 entradas de historial existentes por compatibilidad; no8 migraciones nuevas. API3043/Web5543 separados de QA3033/5533; SMTP deshabilitado,JWT efímero y.env sin editar.
+- Seed transaccional de5 lugares con IDs negativos estables y fuentes verificadas: [catálogo canónico](CATALOGO_DEMO_LOCAL.md). Solo inserta ausentes; ID/nombre/datos incompatibles revierten el lote. Sin UPDATE/DELETE ni cuentas/reportes/premios precargados.
+- **172/172 pruebas Node**,0 fallidas/omitidas, frente a138 del corte anterior;34 nuevas de catálogo/configuración/guardas con dobles. SQL real en la demo: repetición y2 ejecuciones concurrentes sin duplicados; conflicto rechazado y catálogo idéntico. Después de sembrar:5 lugares/0 usuarios/0 reportes/0 premios. La verificación SQL se conserva separada de los dobles.
+- Recorrido IAB real con API/PostgreSQL demo: alta/login sintéticos, búsqueda Kennedy, categoría+saturación AND con vacío, quitar nivel recupera1 resultado; selección/lista, reporte confirmado y cooldown. SELECT antes:1 usuario/0 reportes/0 premios/0 puntos; después:1/1/1/10. Rechazo inmediato no añadió premio. Esta observación es **sintética**, no monitoreo real de Miraflores.
+- Frontend actual: análisis sin problemas;555 aprobadas/2 opt-in omitidas/0 fallidas; Web44,5s. I1/I2 conservados; ficha/mapa/perfil más claros. Teclado Enter/Escape observado en IAB;360/390/1440 y texto2× cubiertos por widgets, tamaños1× también observados en IAB. No nueva validación Android/Chrome normal/lector/manual2×.
+
+No aceptación/integración/publicación de Release01/Sprint3. QA R01 desde cero, opt-in, SMTP autorizado, criterios y revisión humana pendientes; avisos de dependencias del corte anterior sin corregir/instalar. Hallazgo de navegación previo: Historial usa currentIndex3 y CrBottomNav ignora tocar Perfil; volver atrás permite abrirlo. Registrar/corregir en otro paquete, no afirmar navegación íntegra aprobada. HU7/8 y Favoritos fuera. Las secciones inferiores son evidencia histórica, no estado vigente.
+
+## Auditoría anterior — 19/10/2026
+
+Rama `fix/pruebas-reproducibles-20261018`, HEAD `eeff38b86c53d22180655ee5aa6fa501a2a5b061` más los 4 archivos sin commit inventariados al iniciar. Par frontend `18cec26d0f2da755b9e436f04b715f431f54563d` más diff de mapa. SHA256 de archivos/estado probado en [manifiesto local](../../../../tmp/auditoria-20261019/verificacion.json). Esta auditoría solo edita documentación; no aprueba esos cambios ni publica nada.
+
+- `npm test`: **138/138**,0 fallidas/omitidas,12,17s; HTTP loopback y dobles. `node --check`:90 JS correctos. `git diff --check`:0, solo aviso LF/CRLF en un test.
+- Repetición focalizada con JWT/SMTP_HOST/CORS sintéticos ajenos: **14/14** en database-lifecycle/consolidation. Aislamiento de tests conservado, no conexión DB ni SMTP de esas suites.
+- PostgreSQL **18.1**, servicio18activo. `npm run test:db:sprint3`: **7/7 fresh y7/7 legacy**;007 idempotente/concurrente, autorización, participación única, conteos/confiabilidad, historial y preservación de usuarios previos. Únicamente crowdradar_consolidacion_fresh_20261017 y crowdradar_consolidacion_legacy_20261017. Añade fixtures sintéticos nuevos; no borra bases.
+- Runner R01 completo NO repetido: rechaza bases existentes. El6/6inferior es histórico. Reproducir después en instancia QA limpia o con destinos nuevos estrictamente autorizados/guardados, no eliminando lo conservado.
+- API real3033: raíz200, alta201,login200,perfil200,PUT200 y reconsulta persistida,clave incorrecta401,lugares sinJWT401,nombre+categoríaAND200/1,detalle200. Token de reset inexistente400 RESET_TOKEN_INVALID. **Sin SMTP:forgot503 RECOVERY_UNAVAILABLE; no se envió correo real**. Reset/cambio SQL íntegros y2 opt-in no repetidos hoy.
+- IAB real + SQL: reporte MODERADO aceptado y total10→20; intento dentro de 3 min rechazado. SELECT confirma2 reportes propios enQAParque,2 filas report_karma_awards y20 puntos. Perfil/historial/estado propio coherentes. Los9 lugares activos QA comparten(-12,-77), causa comprobada del grupo de marcadores; no es catálogo real.
+- Nueva brecha frontend ante401: mapa/perfil conservan sesión inválida y solo ofrecen Reintentar; Validar sí limpia y vuelve a login. Se reprodujo tras reiniciar QA, cuya clave es aleatoria por arranque; no es fallo de DB ni revocación nueva. El rechazo de reporte tampoco informa explícitamente que no premió, brecha HU 4.2C3. No corregidos aquí.
+- Audit actualizado: **10 paquetes** (1 crítico/5 altos/4 moderados); omit=dev **6**(1 crítico/1 alto/4 moderados), ambos exit1. Misma clasificación/rutas de la tabla inferior; no exploitable demostrado ni aprobación para Internet. Sin fix/instalación/locks modificados.
+
+Origin actualizado sin mover ramas: develop `ffe9b19865c4952d5cb87a34f38fa71331197155`; candidato29 commits delante,0 detrás. Incluye aportes ya publicados en otras ramas; no significa29publicaciones nuevas. Árbol deliberadamente sucio, no limpiado. Originales/main/upstream preservados. **Release 01/Sprint 3 pendientes de aceptación e integración**; [matriz canónica](../../../../docs/MATRIZ_ACEPTACION_TRAZABILIDAD.md), dictamen por 24 HU y próximo paquete. Las capturas/resultados fechados inferiores siguen siendo históricos.
+
+## Revisión local de reproducibilidad — 18/10/2026
+
+Rama `fix/pruebas-reproducibles-20261018`, padre `eeff38b86c53d22180655ee5aa6fa501a2a5b061`. Solo cambian pruebas/documentación; no servicio, contrato, migraciones, dependencias ni datos del equipo.
+
+- Al repetir la suite sin `.env` se identificaron cinco fallos dependientes de variables privadas: dos de validación del entorno y tres de firma JWT (`secretOrPrivateKey must have a value`). Se aislaron configuración sintética, transporte SMTP y CORS en las suites correspondientes, restaurando el entorno después.
+- Repetición final en terminal local permitida: **138/138**, sin `.env` ni variables privadas añadidas. Son dobles/HTTP local, no nueva ejecución completa de los runners SQL.
+- La ejecución restringida inicial produjo `fetch failed`/`EACCES`; un sondeo independiente confirmó el bloqueo de localhost. No se atribuye ese resultado a 57 defectos del producto.
+- Recorrido Web sobre API3033 y base `crowdradar_consolidacion_fresh_20261017`: alta/login de cuenta sintética y reporte. SELECT de solo lectura verificó un reporte MODERADO propio en QA Parque y karma 10. No se tocaron bases personales, Sprint1 o Supabase ni se envió SMTP.
+- `npm audit --omit=dev --json`: **6 paquetes**, 1 crítico/1 alto/4 moderados, sin instalar ni aplicar fix. Persisten las limitaciones de exposición/serverless detalladas más abajo. Pruebas aprobadas no equivalen a aprobación para Internet.
+
+El par de revisión utiliza frontend `fix/mapa-reportes-ux-20261018`. Ambas ramas son locales sobre los candidatos aislados; los directorios originales y develop/main permanecen intactos. Publicarlas e integrarlas requiere autorización separada.
+
+## Corte anterior local — R01 + Sprint 3, 18/10/2026
 
 Rama `feature/local-s03-validacion-analitica-20261017`, dependiente de R01 local. Par funcional comprobado: backend `5f933eac9a0095fb802f5d95a65ea563d15df9b0` / frontend `a5e33ac9078cc882474a6d22961f9502f61c6ac0`. Los commits documentales posteriores no cambian ese código. NO publicado, integrado en develop ni aceptado por el equipo.
 

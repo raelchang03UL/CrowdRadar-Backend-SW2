@@ -1,6 +1,10 @@
 # Arquitectura backend
 
-Corte local del 18/10/2026. Rama `feature/local-s03-validacion-analitica-20261017`, dependiente de la consolidación R01. No publicada, integrada en develop ni aceptada formalmente. Se conservan Express, Sequelize, PostgreSQL, JWT, bcrypt y el SMTP de Diego.
+## Herramienta de demo local — 19/10/2026
+
+`scripts/demo-local.js` compone configuración/guardas/migraciones/arranque; no es ruta HTTP ni Factory Method. Check verifica destino/procedencia sin DML; no aprovisiona ni conecta a QA. Creación inicial manual por administrador sobre base nueva, nunca adopción/comentario de una ajena. Seed encapsula SQL transaccional de catálogo; no cambia modelos ni crea cuentas/reportes. Alternativa descartada: conexión QA/shared.env por mezcla de datos/secretos. Coste: requisito administrativo inicial explícito; no provisionador cloud.35 pruebas con dobles y evidencia PostgreSQL separada. SMTP Adapter/runtime conservados.
+
+Contenido del candidato R01/S3 en `integration/cierre-web-r01-s03-20261019`; publicación acreditada por PR, integración/aceptación/despliegue pendientes. Express,Sequelize,PostgreSQL,JWT,bcrypt y SMTP de Diego conservados. Cortes anteriores fechados son históricos. Evidencia actual en [CIERRE_WEB_R01_S03](CIERRE_WEB_R01_S03.md).
 
 ## Responsabilidades comprobadas
 

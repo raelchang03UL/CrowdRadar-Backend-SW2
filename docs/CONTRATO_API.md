@@ -1,6 +1,6 @@
 # Contrato API compartido
 
-Corte local 18/10/2026: rama `feature/local-s03-validacion-analitica-20261017` (R01 + Sprint 3), NO publicada. Origin/develop ya integra autenticación, recuperación SMTP y mapa; esta rama reúne los aportes de Nick/Manu y sus correcciones. Pruebas/limitaciones en ESTADO_ACTUAL. Una clonación de GitHub todavía no contiene el incremento local.
+Contrato del candidato R01/S3 en `integration/cierre-web-r01-s03-20261019`. Origin/develop comprobado `ffe9b19` ya contiene autenticación/SMTP/mapa de Diego; la consolidación reúne Nick/Manu y correcciones. Publicación acreditada por PR no implica integración en develop, aceptación ni despliegue. Sin cambios JSON de negocio por F11/demo; pruebas actuales en CIERRE_WEB_R01_S03.
 
 JSON UTF-8; JWT Bearer en rutas protegidas. Ejecución QA: http://localhost:3033; configuración habitual por entorno. El cliente nunca conecta directamente a PostgreSQL.
 
