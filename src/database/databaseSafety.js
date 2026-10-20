@@ -1,5 +1,21 @@
 const localHosts = ["localhost", "127.0.0.1", "::1"];
 
+// Entorno de demostración separado: no concede acceso a ningún runner QA.
+export const demoLocalDatabase = "crowdradar_demo_local";
+export const demoLocalProvenance = "CrowdRadar/SW2/demo-local/v1";
+export function assertDemoLocalDatabase({ config: { database, host } }) {
+    if (!localHosts.includes(host) || database !== demoLocalDatabase) {
+        throw new Error("DEMO_TARGET_INVALID: solo crowdradar_demo_local en PostgreSQL local.");
+    }
+}
+export async function assertDemoLocalProvenance(db) {
+    assertDemoLocalDatabase(db);
+    const [rows] = await db.query("SELECT shobj_description(oid, 'pg_database') AS provenance FROM pg_database WHERE datname = current_database()");
+    if (rows.length !== 1 || rows[0].provenance !== demoLocalProvenance) {
+        throw new Error("DEMO_PROVENANCE_UNKNOWN: detenerse; no adoptar ni modificar esta base.");
+    }
+}
+
 export const consolidationTestDatabases = Object.freeze([
     "crowdradar_consolidacion_fresh_20261017", "crowdradar_consolidacion_legacy_20261017"
 ]);

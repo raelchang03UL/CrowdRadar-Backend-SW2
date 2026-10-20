@@ -16,6 +16,7 @@
     "test:db:consolidation": "node scripts/verify-consolidation-db.js",
     "test:db:sprint3": "node scripts/verify-sprint3-db.js",
     "qa:serve": "node scripts/serve-consolidation-qa.js",
+    "demo:local": "node scripts/demo-local.js",
     "test:db:saturation": "node scripts/verify-saturation-db.js",
     "test:db:saturation-filter": "node scripts/verify-saturation-filter-db.js"
   },
