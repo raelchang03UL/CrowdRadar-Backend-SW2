@@ -6,6 +6,28 @@ import User from "../src/models/User.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { assertLocalDevelopmentDatabase, assertIsolatedPlacesTestDatabase, assertMigrationTarget } from "../src/database/databaseSafety.js";
 
+// Estas pruebas sustituyen la conexión por dobles: no necesitan el .env de
+// ninguna persona ni deben construir un transporte SMTP de su terminal.
+test.beforeEach((context) => {
+    const synthetic = {
+        NODE_ENV: "test", DB_NAME: "qa_lifecycle", DB_HOST: "localhost",
+        DB_PORT: "5432", DB_USER: "unused_qa_role", DB_PASSWORD: "",
+        JWT_SECRET: "synthetic-lifecycle-only-not-for-deployment",
+        CORS_ORIGINS: "http://localhost:5500"
+    };
+    const unset = ["DATABASE_URL", "DB_SSL", "SMTP_HOST", "SMTP_PORT",
+        "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"];
+    const saved = new Map([...Object.keys(synthetic), ...unset].map((key) => [key, process.env[key]]));
+    Object.assign(process.env, synthetic);
+    for (const key of unset) delete process.env[key];
+    context.after(() => {
+        for (const [key, value] of saved) {
+            if (value === undefined) delete process.env[key];
+            else process.env[key] = value;
+        }
+    });
+});
+
 test("arranque rechaza esquema de detalle incompleto antes de aceptar tráfico", async () => {
     const original = { authenticate: sequelize.authenticate, query: sequelize.query };
     const queries = [];
@@ -100,7 +122,8 @@ test("CLI de migración conserva barreras para entrega, sistema y Supabase", () 
 });
 
 test("CORS admite preflight Web JSON y Authorization sin omitir JWT", async () => {
-    const { default: app } = await import("../app.js");
+    const { createApp } = await import("../app.js");
+    const app = createApp();
     const server = app.listen(0);
     const url = `http://127.0.0.1:${server.address().port}/api/places`;
     try {

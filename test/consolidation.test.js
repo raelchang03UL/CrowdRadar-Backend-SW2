@@ -10,6 +10,14 @@ import reports from "../src/repositories/SaturationReportRepository.js";
 import places from "../src/repositories/PlaceRepository.js";
 import jwt from "../src/utils/jwt.js";
 
+// Se firman únicamente tokens sintéticos; la suite no necesita un .env privado.
+const previousJwtSecret = process.env.JWT_SECRET;
+before(() => { process.env.JWT_SECRET = "synthetic-consolidation-only-not-for-deployment"; });
+after(() => {
+    if (previousJwtSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousJwtSecret;
+});
+
 test("reporte valida ID y nivel antes de persistir; reusa regla aprobada 10/3", async () => {
     const calls = [];
     const service = new SaturationReportService({ create: async (options) => { calls.push(options); return { kind: "CREATED", report: { id: "1" } }; } });
