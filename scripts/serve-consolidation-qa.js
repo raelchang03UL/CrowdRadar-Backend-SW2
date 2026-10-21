@@ -14,7 +14,8 @@ Object.assign(process.env, { DB_HOST: input.DB_HOST, DB_PORT: input.DB_PORT ?? "
     DB_PASSWORD: input.DB_PASSWORD, DB_NAME: qaDatabase, DATABASE_URL: "", DB_SSL: "false",
     NODE_ENV: "test", JWT_SECRET: randomBytes(48).toString("hex"),
     CORS_ORIGINS: webPorts.flatMap(value => [`http://localhost:${value}`, `http://127.0.0.1:${value}`]).join(",") });
-for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"]) delete process.env[key];
+// dotenv posterior conserva valores existentes: vacíos explícitos impiden reactivar SMTP desde .env.
+for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"]) process.env[key] = "";
 const { default: db } = await import("../src/config/database.js");
 await assertConsolidationQaProvenance(db, qaRun);
 const { startServer } = await import("../app.js");

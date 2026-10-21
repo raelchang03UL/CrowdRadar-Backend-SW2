@@ -1,5 +1,15 @@
 # Cierre Web R01/S3 — evidencia para revisión
 
+## Corrección solicitada por N1c19 — 21/10/2026
+
+Sobre backend `317caaf7eca2835835fd06673456fa4388530dc7`, el runner `scripts/serve-consolidation-qa.js` mantiene explícitamente vacías las seis variables SMTP/recuperación. Los imports posteriores y `dotenv.config()` no pueden restaurarlas desde `.env`. No cambia el adaptador SMTP de producción, las guardas de base ni el entorno privado.
+
+Regresión reproducible: `node --test test/qa-smtp-isolation.test.js`. Ejecuta runner, configuración y arranque reales en un subproceso con `.env` sintético completo, solo host y solo remitente; sustituye únicamente DB, escucha HTTP y transporte SMTP. Antes del arreglo: **0/3**, un transporte construido en el caso completo y `CONFIG_INVALID` en ambos parciales. Después: **3/3**, cero transportes/correos, dos cargas reales de dotenv por caso, seis valores vacíos y arranque alcanzado. El entorno de la prueba se aísla y restaura; no se conecta a PostgreSQL ni se envía correo real.
+
+Validación funcional final: `npm test` **180/180**, cero fallos/omitidas; `node --check` del runner y del test, y `git diff --check`, correctos. El intento restringido previo falló por fetch/EACCES; el resultado aprobado corresponde a la ejecución local autorizada. No se repitió QA SQL, no cambiaron esquema/reglas y no se instalaron dependencias. [Frontend compañero y par exacto publicado](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/21); los SHA finales y resultados se registran en las conversaciones de revisión de ambos PR, sin referencia circular en el documento.
+
+Esta corrección no descarta el **Changes requested** de [B#39](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/39): falta la revisión de Nick sobre los nuevos heads antes de cualquier merge. Los resultados inferiores son históricos, no pruebas repetidas del nuevo par.
+
 ## Aceptación Web y puerta de integración — 20/10/2026
 
 Par funcional probado: backend `5d467ca66adb7a9dc26d2d0e13b87c957258e69d` y frontend `1ef1b9b7312bd8d57d508c10888427bb2cb1d005`. Documentación posterior sin cambios funcionales. Par publicado exacto en [B#39](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/39) y [F#21](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/21); integración condicionada a revisión ajena vigente.
