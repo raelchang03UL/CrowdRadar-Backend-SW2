@@ -19,9 +19,26 @@ export async function assertDemoLocalProvenance(db) {
 export const consolidationTestDatabases = Object.freeze([
     "crowdradar_consolidacion_fresh_20261017", "crowdradar_consolidacion_legacy_20261017"
 ]);
-export function assertIsolatedConsolidationDatabase({ config: { database, host } }) {
-    if (!localHosts.includes(host) || !consolidationTestDatabases.includes(database)) {
+const closureTestDatabases = Object.freeze([
+    "crowdradar_cierre_fresh_20261019", "crowdradar_cierre_legacy_20261019"
+]);
+export const closureQaProvenance = "CrowdRadar/SW2/cierre-20261019/v1";
+export function consolidationQaDatabases(run = "consolidacion-20261017") {
+    if (run === "consolidacion-20261017") return consolidationTestDatabases;
+    if (run === "cierre-20261019") return closureTestDatabases;
+    throw new Error("QA_RUN_INVALID: ejecución QA no autorizada.");
+}
+export function assertIsolatedConsolidationDatabase({ config: { database, host } }, run) {
+    if (!localHosts.includes(host) || !consolidationQaDatabases(run).includes(database)) {
         throw new Error("QA de consolidación solo admite sus dos bases locales aisladas identificadas.");
+    }
+}
+export async function assertConsolidationQaProvenance(db, run) {
+    assertIsolatedConsolidationDatabase(db, run);
+    if (run !== "cierre-20261019") return;
+    const [rows] = await db.query("SELECT current_database() AS name, shobj_description(oid, 'pg_database') AS provenance FROM pg_database WHERE datname = current_database()");
+    if (rows.length !== 1 || rows[0].name !== db.config.database || rows[0].provenance !== closureQaProvenance) {
+        throw new Error("QA_PROVENANCE_UNKNOWN: detenerse; no adoptar ni modificar esta base.");
     }
 }
 

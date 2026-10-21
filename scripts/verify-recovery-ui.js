@@ -1,9 +1,10 @@
 // Private child-process harness for the opt-in Flutter VM integration test.
 // It never exposes captured mail through HTTP, sends mail, or prints secrets.
 import dotenv from "dotenv";
-import { createHash, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { createHash, randomUUID, randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
-import { assertIsolatedAuthTestDatabase } from "../src/database/databaseSafety.js";
+import { assertIsolatedAuthTestDatabase, assertIsolatedConsolidationDatabase, consolidationQaDatabases, assertConsolidationQaProvenance } from "../src/database/databaseSafety.js";
 
 const respond = (value) => process.stdout.write(`${JSON.stringify(value)}\n`);
 let server;
@@ -31,9 +32,19 @@ try {
         throw new Error("test-only");
     }
     dotenv.config({ quiet: true });
-    const database = "crowdradar_auth_test";
+    const qaRun = process.env.CROWDRADAR_QA_RUN;
+    if (qaRun) {
+        const privateEnv = dotenv.parse(readFileSync(process.env.CROWDRADAR_QA_ENV_FILE));
+        if (privateEnv.DATABASE_URL || !["localhost", "127.0.0.1", "::1"].includes(privateEnv.DB_HOST)) throw new Error("local-only");
+        Object.assign(process.env, { DB_HOST: privateEnv.DB_HOST, DB_PORT: privateEnv.DB_PORT ?? "5432",
+            DB_USER: privateEnv.DB_USER, DB_PASSWORD: privateEnv.DB_PASSWORD, DB_SSL: "false",
+            JWT_SECRET: randomBytes(48).toString("hex") });
+        for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"]) delete process.env[key];
+    }
+    const database = qaRun ? consolidationQaDatabases(qaRun)[0] : "crowdradar_auth_test";
     const host = process.env.DB_HOST;
-    assertIsolatedAuthTestDatabase({ config: { database, host } });
+    const assertTarget = (db) => qaRun ? assertIsolatedConsolidationDatabase(db, qaRun) : assertIsolatedAuthTestDatabase(db);
+    assertTarget({ config: { database, host } });
     process.env.DB_NAME = database;
     // Empty rather than absent prevents later dotenv imports from reloading
     // a DATABASE_URL from .env. The guarded local DB remains the only target.
@@ -43,8 +54,9 @@ try {
     console.log = console.info = console.debug = console.warn = console.error = () => {};
 
     ({ default: sequelize } = await import("../src/config/database.js"));
-    assertIsolatedAuthTestDatabase(sequelize);
+    assertTarget(sequelize);
     await sequelize.authenticate();
+    if (qaRun) await assertConsolidationQaProvenance(sequelize, qaRun);
     const { migratePlaces } = await import("../src/database/migratePlaces.js");
     const { migrateAuth } = await import("../src/database/migrateAuth.js");
     const { migrateRecovery } = await import("../src/database/migrateRecovery.js");
@@ -77,7 +89,8 @@ try {
         listener.once("error", reject);
     });
     input = createInterface({ input: process.stdin, crlfDelay: Infinity });
-    respond({ event: "ready", port: 3031, isolatedDatabase: true, memoryDelivery: true });
+    respond({ event: "ready", port: 3031, isolatedDatabase: true, memoryDelivery: true,
+        database, qaRun: qaRun ?? "auth-historical" });
     for await (const line of input) {
         let command;
         try { command = JSON.parse(line); } catch {

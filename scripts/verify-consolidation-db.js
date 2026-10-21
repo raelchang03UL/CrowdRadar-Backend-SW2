@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import dotenv from "dotenv";
 import { Sequelize, QueryTypes } from "sequelize";
 import { databaseConfiguration } from "../src/config/environment.js";
-import { assertMigrationTarget, assertIsolatedConsolidationDatabase, consolidationTestDatabases } from "../src/database/databaseSafety.js";
+import { assertMigrationTarget, assertIsolatedConsolidationDatabase, consolidationQaDatabases, closureQaProvenance, assertConsolidationQaProvenance } from "../src/database/databaseSafety.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { migrateAuth } from "../src/database/migrateAuth.js";
 import { migrateRecovery } from "../src/database/migrateRecovery.js";
@@ -18,7 +18,9 @@ const privateEnv = process.env.CROWDRADAR_QA_ENV_FILE
 const input = { ...privateEnv, ...process.env };
 assert.ok(!input.DATABASE_URL, "QA exige DB_* local, no DATABASE_URL.");
 assert.ok(["localhost", "127.0.0.1", "::1"].includes(input.DB_HOST), "Host QA debe ser loopback.");
-const [freshName, legacyName] = consolidationTestDatabases;
+const qaRun = process.env.CROWDRADAR_QA_RUN;
+const targetDatabases = consolidationQaDatabases(qaRun);
+const [freshName, legacyName] = targetDatabases;
 console.log(`Destinos exclusivos: ${freshName}, ${legacyName}; no se eliminan bases.`);
 const connection = (database) => {
     const cfg = databaseConfiguration({ ...input, DB_NAME: database, DATABASE_URL: "", DB_SSL: "false" });
@@ -31,13 +33,20 @@ const syntheticPassword = randomBytes(24).toString("hex");
 let blocks = 0;
 const pass = (message) => { blocks++; console.log(`PASS ${blocks}: ${message}`); };
 try {
-    for (const name of consolidationTestDatabases) {
+    // Verificar el par completo antes de crear cualquiera: nunca adoptar destinos existentes.
+    for (const name of targetDatabases) {
         const exists = await admin.query("SELECT datname FROM pg_database WHERE datname = :name", { replacements: { name }, type: QueryTypes.SELECT });
         // No adoptar una base existente: sus datos no son automáticamente nuestros.
         assert.equal(exists.length, 0, `El destino ${name} ya existe; conservar y usar una nueva ejecución revisada.`);
+    }
+    console.log("Precondición: ambas bases inexistentes; creación limitada al par autorizado.");
+    for (const name of targetDatabases) {
         await admin.query(`CREATE DATABASE "${name}"`);
+        if (qaRun === "cierre-20261019") {
+            await admin.query(`COMMENT ON DATABASE "${name}" IS '${closureQaProvenance}'`);
+        }
         const db = connection(name);
-        assertIsolatedConsolidationDatabase(db);
+        await assertConsolidationQaProvenance(db, qaRun);
         assertMigrationTarget(db);
         const [identity] = await db.query("SELECT current_database() AS name", { type: QueryTypes.SELECT });
         assert.equal(identity.name, name);
@@ -92,7 +101,8 @@ try {
     for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"]) delete process.env[key];
     const { default: app } = await import("../app.js");
     globalDb = (await import("../src/config/database.js")).default;
-    assertIsolatedConsolidationDatabase(globalDb);
+    assertIsolatedConsolidationDatabase(globalDb, qaRun);
+    await assertConsolidationQaProvenance(globalDb, qaRun);
     const { createSaturationReportRepository } = await import("../src/repositories/SaturationReportRepository.js");
     const { SaturationReportService } = await import("../src/services/SaturationReportService.js");
     const repo = createSaturationReportRepository(fresh);
