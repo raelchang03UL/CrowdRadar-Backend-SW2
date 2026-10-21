@@ -14,7 +14,44 @@ Usar una carpeta nueva para revisión; no reset/stash/limpieza sobre archivos aj
 
 En un equipo nuevo, las dependencias se instalan desde los locks mediante npm ci / flutter pub get, con autorización de quien opera. En esta tarea solo se reutilizaron paquetes existentes; no se certificó instalación limpia en otra PC/Linux.
 
-## QA aislada del incremento
+## QA de aceptación Web — 20/10/2026
+
+Perfil explícito `CROWDRADAR_QA_RUN=cierre-20261019`: admite únicamente `crowdradar_cierre_fresh_20261019` y `crowdradar_cierre_legacy_20261019` en loopback, con procedencia `CrowdRadar/SW2/cierre-20261019/v1`. El runner R01 comprueba **ambas inexistentes antes de crear cualquiera**. No adopta, borra ni vuelve a marcar destinos existentes. El aprovisionamiento requiere un operador PostgreSQL local autorizado para CREATE DATABASE; las migraciones/fixtures solo se ejecutan después de conectar al destino aislado, nunca en una base de sistema. El rol usado aquí no se propone como rol de producción.
+
+```powershell
+# Desde el clon backend; archivo privado propio con DB_* locales, sin DATABASE_URL.
+$env:CROWDRADAR_QA_RUN='cierre-20261019'
+$env:CROWDRADAR_QA_ENV_FILE=Read-Host 'Ruta absoluta de configuración QA privada'
+npm run test:db:consolidation  # solo primera ejecución; conservar las dos bases
+npm run test:db:sprint3
+$env:CROWDRADAR_S3_QA_DATABASE='crowdradar_cierre_legacy_20261019'
+npm run test:db:sprint3
+Remove-Item Env:CROWDRADAR_S3_QA_DATABASE
+npm run test:db:recovery
+npm run qa:serve  # API3053, loopback; CORS exacto Web5553; SMTP deshabilitado
+```
+
+En esta PC el par YA existe y se conserva. No repetir el primer comando para crear desde cero: el rechazo es intencional. Usar otra instancia PostgreSQL local aislada/aprobada si se necesita reproducir el aprovisionamiento; no cambiar nombres/guardas ni borrar datos para ensayar. Los runners posteriores exigen identidad/procedencia antes de migrar.
+
+Desde frontend, en otra terminal y sin ejecutar los dos opt-in simultáneamente:
+
+```powershell
+$env:CROWDRADAR_QA_RUN='cierre-20261019'
+$env:CROWDRADAR_QA_ENV_FILE=Read-Host 'Ruta absoluta del mismo archivo privado QA'
+$env:CROWDRADAR_API_INTEGRATION='1'
+flutter test --no-pub test/local_api_smoke_test.dart --dart-define=API_BASE_URL=http://127.0.0.1:3053
+Remove-Item Env:CROWDRADAR_API_INTEGRATION
+$env:CROWDRADAR_RECOVERY_INTEGRATION='1'
+flutter test --no-pub test/local_recovery_api_test.dart --dart-define=API_BASE_URL=http://127.0.0.1:3031
+Remove-Item Env:CROWDRADAR_RECOVERY_INTEGRATION
+$qaWebOutput=Join-Path (Get-Location).Path ('build/qa-web-'+(Get-Date -Format 'yyyyMMdd-HHmmss'))
+flutter build web --no-pub --dart-define=API_BASE_URL=http://127.0.0.1:3053 --output="$qaWebOutput"
+node tool/serve_demo_web.mjs "$qaWebOutput" 5553
+```
+
+Recovery levanta su propio hijo privado3031, valida destino declarado y transporta enlaces únicamente por IPC al test; ningún buzón HTTP ni correo real. El smoke de cambio usa la API3053 iniciada y verificada sobre fresh. Ambos conservan cuentas sintéticas y aserciones de contraseña/JWT. Web5553 corresponde a este QA; la demo3043/5543 conserva sus datos/configuración. Resultados y límites en CIERRE_WEB_R01_S03.
+
+## QA aislada anterior — destinos de 17/10/2026
 
 1. PostgreSQL local y archivo privado con DB_HOST,DB_PORT,DB_USER,DB_PASSWORD. Nunca pegarlo en chat/Git. No usar DATABASE_URL remota.
 2. Definir CROWDRADAR_QA_ENV_FILE con la ruta del archivo privado; ejecutar `npm run test:db:consolidation`.
@@ -29,7 +66,105 @@ Las reglas aprobadas para este incremento son cooldown3 minutos y premio10 punto
 
 Las instrucciones siguientes describen la ejecución general de la base, no prueban una instalación nueva realizada hoy.
 
-## Preparación de nube — NO desplegada ni autorizada
+## Primer despliegue: procedimiento condicionado — 20/10/2026
+
+Preparación autorizada; **ejecución cloud, creación de proyectos/cuentas, SQL remoto, pagos e instalaciones nuevas no autorizados en este cierre**. Este procedimiento se ejecutará en orden cuando exista un paquete aprobado. No confundir aceptación Web local con compatibilidad del runtime remoto. Decisiones y brechas en [arquitectura](ARQUITECTURA.md#arquitectura-candidata-de-primer-despliegue--20102026); seguimiento único en [plan técnico](PLAN_TECNICO_SW2.md#preparación-del-primer-despliegue--20102026).
+
+### D0. Fijar versión, operadores y destinos
+
+Registrar SHA backend/frontend realmente integrados, hashes de locks, versión Flutter/Dart/Node/npm, evidencia de aceptación y resultado de audit. El par publicado de entrada es B`05b399a` / F`4a227bb`; no usarlo como supuesto SHA de `develop`. Conservar versiones locales verificadas Flutter3.41.9/Dart3.11.5 y Node22.20.0/npm10.9.3; verificar el Node22.x efectivo de Vercel y dependencias nativas en Linux. No prometer una revisión patch exacta que el proveedor no permita fijar.
+
+En cada clon elegido, registrar `git status --short`, `git rev-parse HEAD` y el hash SHA256 de `package-lock.json` o `pubspec.lock`. Un árbol con cambios sin identificar no constituye el artefacto de salida. Las versiones Node mayores disponibles y sus actualizaciones menores dependen del proveedor: revisar la [política oficial de Node](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions) al ejecutar.
+
+Rael coordina aprobación y registro del par; Diego aporta configuración/evidencia del SMTP existente; Nick y Manu se consultan ante diferencias del contrato/esquema de lugares/reportes. Esto no cambia asignaciones del Project ni atribuye implementación ajena. Elegir un operador de consola por servicio y custodia privada antes de compartir accesos; no compartir contraseñas de cuenta.
+
+Acciones humanas mínimas: confirmar elegibilidad/cupo gratuito y operador; aprobar identidad de dos proyectos Vercel y un proyecto **nuevo** Supabase con región/project-ref/hosts/base/roles; autorizar remitente y destinatario de prueba Brevo; introducir secretos directamente en configuración privada. Nadie necesita pegarlos en chat o Git.
+
+### D1. Preparar runtime y seguridad con pruebas locales
+
+Antes de conectar Supabase, preparar y revisar el incremento de inicialización descrito en arquitectura: validación esperada por el handler, SELECT de readiness, configuración SMTP y pool único por instancia; fallo cerrado sin DDL. Probar configuración inválida, llamadas iniciales concurrentes y ausencia de esquema. Ejecutar `npm ci` desde lock en el entorno de build aprobado y `npm test`; esto es instrucción futura, no instalación realizada ahora.
+
+Revalidar audit de producción y desarrollo por separado; la referencia publicada anterior registra10 paquetes (1crítico/5altos/4moderados). Clasificar ruta afectada y corrección compatible antes de exposición; cualquier riesgo residual requiere una decisión registrada, no `audit fix --force` ni equiparar tests verdes con ausencia de vulnerabilidades.
+
+La API actual usa IP del socket para recuperación. Definir una política verificable de proxy/IP de Vercel y probar que una cabecera enviada por el cliente no elude límites ni hace que todas las personas compartan una IP. No activar `trust proxy=true` genérico. Conservar límites persistentes de recuperación y diseñar límites distribuidos para registro/login/lecturas/escrituras, presupuesto de consultas y respuesta429; CORS no reemplaza autenticación ni antiabuso. [Express detrás de proxies](https://expressjs.com/en/guide/behind-proxies/).
+
+### D2. Autorizar y preparar solo el Supabase nuevo
+
+La guarda actual bloquea Supabase y la base `postgres`; sigue así. Para el futuro proyecto nuevo, revisar una autorización de identidad exacta: project-ref, hosts direct/pooler, base, roles y operación. No añadir un flag global `ALLOW_SUPABASE`, renombrar una base para eludir la guarda ni relajar la protección de `postgres` local, Sprint1 o Supabase histórico. Primero pruebas negativas locales de destinos alternativos; después aprobación expresa del SQL remoto.
+
+Crear roles mínimos: migrador DDL separado y API DML según consultas verificadas; sin superusuario/CREATEDB/DDL para API ni permisos amplios por comodidad. `MIGRATION_DATABASE_URL` solo en el entorno de migración, nunca Vercel runtime. API usa `DATABASE_URL`, `DB_POOL_MAX=1`, `DB_POOL_MIN=0` inicialmente; registrar límite de clientes/pooler, reserva y concurrencia máxima antes de carga. Un pool por instancia multiplica conexiones al escalar.
+
+Copiar conexiones desde el panel. Candidato API: pooler transaccional; migración/backup: directa o sesión si la red no permite directa. Probar prepared statements/estado de sesión con las versiones reales pg/Sequelize; no copiar opciones de otro driver. Validar locks, premios atómicos, SET LOCAL y rollback bajo concurrencia. TLS debe verificar certificado/host mediante `DB_SSL=true`, `rejectUnauthorized:true` y CA correspondiente; probar rechazo de CA/host inválidos. Revisar además `sslcert`, `sslkey`, `sslrootcert` en URLs: pg puede sustituir el objeto SSL; no desactivar validación para conectar. [Supabase conexiones](https://supabase.com/docs/guides/database/connecting-to-postgres), [pg TLS](https://node-postgres.com/features/ssl).
+
+Deshabilitar Data API en el panel del proyecto nuevo; comprobar REST y GraphQL sin exposición de tablas internas, incluidos permisos heredados `anon`/`authenticated`/`PUBLIC`. Flutter solo llama Express, conserva JWT propio y no necesita Supabase Auth ni claves cliente. [Procedimiento oficial](https://supabase.com/docs/guides/api/securing-your-api#disable-the-data-api).
+
+El operador aprobado debe abrir **Integrations → Data API**, desactivar **Enable Data API** y guardar evidencia depurada; comprobar además el acceso efectivo a GraphQL y permisos de funciones, sin deducir su cierre de un simple404. La consola y las conexiones SQL son superficies separadas: no entregar acceso privilegiado al JP por carecer Free de un rol solo lectura de Dashboard.
+
+Ejecutar migraciones001–007 una vez mediante el CLI/rol migrador **después** de habilitar únicamente el destino aprobado. Conservar identidades históricas, registrar historial y repetir idempotencia; no correr fixtures/runners QA locales contra nube. Cargar solo catálogo/datos sintéticos aprobados con un procedimiento remoto independiente; los seeds locales no deben desbloquearse para aprovecharlos.
+
+### D3. Configurar y verificar API/correo
+
+En Vercel API, raíz backend y runtime Node compatible; secretos privados `DATABASE_URL`, `DB_SSL_CA`, `JWT_SECRET`, `SMTP_USER`, `SMTP_PASSWORD`; configuración `DB_SSL=true`, pool acotado, `CORS_ORIGINS` con **origen HTTPS exacto**, `PASSWORD_RESET_URL` HTTPS `/#/reset-password`, host/puerto SMTP y `MAIL_FROM` verificado. Ninguna variable migradora, clave Supabase, JWT o SMTP se compila en Web. Mantener3min/+10 y políticas aprobadas, no ajustarlas para demo. Previews necesitan origen y configuración explícitos; no permitir comodines de subdominios ni compartir producción automáticamente.
+
+La lista de configuración del despliegue debe identificar el custodio y el entorno, sin copiar valores: API recibe `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA`, `DB_POOL_MAX/MIN/IDLE_MS/ACQUIRE_MS`, `JWT_SECRET`, `CORS_ORIGINS`, `SMTP_HOST/PORT/USER/PASSWORD`, `MAIL_FROM` y `PASSWORD_RESET_URL`; el operador de migración recibe su `MIGRATION_DATABASE_URL` y TLS; Web solo `API_BASE_URL` pública. El adaptador ya selecciona TLS directo en465 y STARTTLS obligatorio en587; no inventar una variable `SMTP_SECURE` que el código no consume. Confirmar que la URL de reset apunta al Web realmente servido y que los cambios de variables crean el nuevo despliegue esperado.
+
+Conservar Brevo/Adapter de Diego. Su evidencia previa no prueba este runtime. Vercel bloquea25 y permite465/587, pero SMTP requiere completar conexión/TLS/envío dentro del ciclo de vida. El proveedor recomienda HTTP por fiabilidad; cambiar transporte no está aprobado y no se propone reimplementarlo en este cierre. Probar SMTP existente con remitente/destinatario autorizados: frío/caliente, timeout, rechazo del proveedor, recepción y reset/aviso sin log de enlace. [Restricciones y ciclo SMTP](https://vercel.com/kb/guide/sending-emails-from-an-application-on-vercel).
+
+La cola RAM actual no sobrevive a terminación de Function. `waitUntil` solo extiende una promesa hasta el límite de ejecución; no aporta persistencia, reintentos o confirmación de entrega. La aceptación del hosting requiere decidir y probar el nivel de fiabilidad del correo; si se exige recuperación tras caída, aprobar outbox/worker con custodia segura, expiración, reintentos e idempotencia. Una respuesta202 o aceptación SMTP no demuestra recepción. No exponer recuperación como operativa con esta puerta sin resolver.
+
+### D4. Construir Web y publicar el par aprobado
+
+En un clon limpio o build aislado del SHA frontend aprobado, usando Flutter fijado y los locks existentes:
+
+```powershell
+# Pasos para el futuro entorno de build aprobado; API pública, nunca secretos.
+flutter pub get --enforce-lockfile
+flutter analyze --no-pub
+flutter test --no-pub
+$deployApi = Read-Host 'URL HTTPS exacta de la API aprobada'
+if (-not $deployApi.StartsWith('https://')) { throw 'Se requiere API HTTPS aprobada' }
+$deployOutput = Join-Path (Get-Location).Path ("build/web-release-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+flutter build web --no-pub --dart-define="API_BASE_URL=$deployApi" --output="$deployOutput"
+Get-FileHash -Algorithm SHA256 (Join-Path $deployOutput 'main.dart.js')
+```
+
+Registrar SHA/par/variables públicas/hash del artefacto y conservar salida anterior. Configurar proyecto Web Vercel como sitio estático, con esa salida exacta o build Linux equivalente reproducido; publicar por un operador autorizado mediante el mecanismo de artefactos/build aprobado, no versionar `build/` en el repositorio. Mantener `#/` y política referrer de OSM; no añadir rewrites de path innecesarios. Deploy API compatible primero, luego Web; son operaciones separadas. Comparar versiones desplegadas y hacer smoke del **par servido**, no de localhost. No se ejecutó ninguno de esos pasos cloud. [Build Flutter Web](https://docs.flutter.dev/deployment/web).
+
+### D5. Operación, fallos y criterio de apertura
+
+Antes de acceso compartido: login, permisos, filtros/detalle, reporte/karma/historial, participación/analítica, reset recibido e invalidación; fallos de DB, TLS, proveedor, timeout/concurrencia, reinicio y cuota. Registrar resultados por capa y SHA sin secretos. Logs: fecha, correlation-id, operación/código, duración y versión; excluir cuerpos auth, email, JWT, enlace, cadenas DB y PII. Definir retención y operador que consulta métricas/errores/cuotas; no prometer monitoreo24/7.
+
+Propuesta inicial para aprobar: backup privado cifrado antes de cada migración y diario mientras la demo reciba datos; restauración ensayada en destino nuevo y autorizado, nunca encima de históricos. Esto propone RPO24h, no un resultado conseguido; RTO se medirá en el ensayo. Mantener custodia/retención y prueba de restauración, no subir dumps al repo. SupabaseFree no incluye backups automáticos; recomienda exportaciones externas. [Backups oficiales](https://supabase.com/docs/guides/platform/backups).
+
+El runbook que se apruebe debe fijar operador, herramienta ya disponible, versión compatible de `pg_dump`/`pg_restore` o CLI, conexión directa/sesión privada, archivo fuera del repo, cifrado/custodia, retención y destino nuevo de restauración. Autenticar mediante configuración privada de PostgreSQL; no poner contraseñas o URLs completas en argumentos/logs. Ensayar restauración y comparar historial de migraciones, recuentos e invariantes de usuarios/reportes/ledger antes de afirmar que el backup es recuperable. La cuota de dos proyectos puede impedir ensayar una restauración remota gratuita: acordar un destino local aislado o cupo disponible, sin borrar proyectos para hacer espacio.
+
+Rollback: conservar el par anterior compatible y sus configuraciones; retirar tráfico/promoción antes de exponer un cambio incompatible. Revertir despliegue de aplicación no revierte esquema ni datos: preferir migración correctiva hacia delante y restauración solo con aprobación, estimación de pérdida y destino identificado. Probar ambos lados y registrar si queda integración parcial; VercelHobby limita Instant Rollback al despliegue de producción anterior. [Alcance de rollback](https://vercel.com/docs/instant-rollback).
+
+### D6. Coste cero y colaboración: verificación oficial20/10/2026
+
+| Servicio | Condición actual relevante | Decisión operativa antes de ejecutar |
+| --- | --- | --- |
+| VercelHobby | Uso personal/no comercial, cuotas; sobrepasarlas puede suspender uso hasta renovación. Colaboración de código pública gratuita; privados requieren condiciones de equipo que Hobby no cubre y no se conectan repos de organizaciones a Hobby. | Comprobar elegibilidad del proyecto académico y operador; no prometer7 asientos gratis ni reescribir autores para desplegar. Si falla una condición, detener esa elección y pedir alternativa sin activar pago. [Hobby](https://vercel.com/docs/plans/hobby), [colaboración](https://vercel.com/docs/deployments/troubleshoot-project-collaboration), [restricciones Git](https://vercel.com/docs/limits#connecting-a-project-to-a-git-repository). |
+| SupabaseFree | 2proyectos activos,500MB de base/proyecto,5GB egress, pausa tras1semana inactivo; miembros de Dashboard ilimitados, sin backup automático ni roles Read-only/project-scoped gratuitos. | Verificar cupo sin borrar proyectos existentes; cuentas propias con mínimo acceso disponible y evidencia depurada para el JP, no hacerlo administrador para visualizar. Prever reactivación y backup. [Precio](https://supabase.com/pricing), [roles](https://supabase.com/docs/guides/platform/access-control). |
+| BrevoFree | 300envíos/día y1usuario de consola. | Operador actual custodia configuración; cada integrante desarrolla con entorno local sin compartir login. Cuota del proveedor no garantiza entrega de tareas que nuestra Function pierda. [Límites](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan). |
+
+Presupuesto propuesto0, sin tarjeta/add-ons/upgrade automático, sujeto a aceptación de límites y disponibilidad de cuentas. Revalidar al ejecutar porque condiciones pueden cambiar. Este plan no concede autorización de despliegue ni convierte preparación cloud en criterio retroactivo de todas las HU Web locales.
+
+### Control de salida y ejecución de D0–D6
+
+| Paso / responsable de seguimiento | Entrada y acción concreta | Evidencia requerida antes del siguiente paso |
+| --- | --- | --- |
+| D0 / Rael | Par integrado revisado, operadores de cuentas y condiciones D6 aprobados; registrar identidad exacta de destinos nuevos y límite0. | Manifiesto sin secretos con SHA/locks/versiones, project-ref/hosts/base/roles, URLs y aprobación de operaciones. Si falta, continuar preparación local únicamente. |
+| D1 / Rael, con revisión de otra persona | Incremento acotado de inicialización/IP/avisos, conservando SMTP y contrato. | PR y pruebas locales de arranque frío/concurrente/esquema ausente, rechazo de cabeceras falsas, presupuesto del pool y decisión por aviso; permiso específico para ejecutar el ensayo cloud. |
+| D2 / operador Supabase identificado | Proyecto NUEVO autorizado, guardas específicas aprobadas, roles/TLS y conexión de migración privada. Aplicar001–007 solo al destino identificado. | Migraciones/idempotencia, API sin DDL, pruebas de rechazo TLS/destinos erróneos, Data API cerrada, transacciones concurrentes y reserva de conexiones; sin fixtures QA remotos. |
+| D3 / operador Vercel y referente SMTP Diego | Configuración privada por entorno y remitente/destinatario autorizados; ejecutar ensayo del Adapter existente en runtime real. | Recepción y reset/aviso verificables, invalidación de sesiones, errores uniformes y prueba de timeout/terminación; decisión explícita sobre durabilidad y límites antes de ofrecer recuperación compartida. |
+| D4 / operador de publicación identificado por Rael | API compatible publicada en el destino aprobado; build Web del SHA con URL HTTPS exacta. | Dos IDs/URLs de despliegue, par de SHA, hash Web, smoke autenticado del par servido y CORS positivo/negativo. Despliegue parcial registrado, sin declarar atomicidad. |
+| D5 / operador de operación identificado | Par servido, datos sintéticos autorizados y runbook de backup/retirada aprobado. | Pruebas de fallos, logs depurados, control de cuota, restauración ensayada y retirada/rollback compatible con esquema; pendientes y responsable de respuesta registrados. |
+| D6 / Rael | Revalidar límites y acceso de cada proveedor antes de D0 y de cada cambio de servicio. | Aceptación de coste0 y restricciones de colaboración. Si exige pago o permiso no aprobado, conservar la alternativa documentada y detener esa operación. |
+
+La solicitud futura de ejecución será una sola: operadores/cuentas, dos proyectos Vercel, identidad Supabase nueva, SQL/migraciones aprobados, catálogo sintético, remitente/destinatario, secretos colocados privadamente, límite0 y mecanismo de retirada. Estos campos faltantes no se sustituyen por nombres inventados ni habilitaciones globales. Los cambios de runtime/guardas se revisan antes; ningún comando de los apartados cloud se ejecutó en este cierre.
+
+## Antecedente de preparación de nube — 18–19/10/2026, no ejecutado
 
 Arquitectura propuesta: navegador/Android → API propia HTTPS/JWT → PostgreSQL NUEVO; recuperación → adaptador SMTP/Brevo existente. Flutter recibe solo API_BASE_URL pública. Ninguna clave DB, JWT_SECRET, SMTP, anon/service-role de Supabase se compila en el frontend. No se usa Supabase Auth ni acceso directo a tablas desde el navegador.
 

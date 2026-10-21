@@ -1,5 +1,18 @@
 # Estado actual
 
+## Vigente: aceptación Web y revisión de integración — 20/10/2026
+
+Par funcional: B`5d467ca66adb7a9dc26d2d0e13b87c957258e69d` / F`1ef1b9b7312bd8d57d508c10888427bb2cb1d005`, con documentación posterior sin cambios funcionales. PR#39/backend y #21/frontend requieren revisión de otra persona antes de merge según CONTRIBUTING/COORDINACION. Los SHA publicados actuales se verifican en sus PR; no confundir preparación con develop integrado.
+
+- Backend177/177,96JS sintácticamente válidos; Flutter562 en batería general y las2opt-in ejecutadas aparte1/1cada una, análisis limpio y Web58s/API3053. R01 PostgreSQL nuevo/legacy6/6; S3fresh7/7+legacy7/7; recuperación6bloques, sin correo real. Detalle en CIERRE_WEB_R01_S03.
+- Solo se crearon los dos destinos locales de cierre expresamente autorizados, inexistentes antes del aprovisionamiento. No adopción/borrados; procedencia estricta y migraciones históricas intactas. QA/demo/DBpersonales/Sprint1/Supabase previas conservadas.
+- Recorrido real Web5553→API3053→PostgreSQL cierre: alta/login, búsqueda, reporte+10, historial→perfil, voto ajeno definitivo, denuncia sin ocultación, historia/comparación/horarios y logout/rutas protegidas. Todo sintético; no negocio real.
+- Recepción SMTP de Diego16/10 reutilizable como evidencia histórica identificada: servicio/adaptador/configuración/contrato de correo sin cambios desde ese par. No envío nuevo ni credenciales SMTP solicitadas. Cambio/reset e invalidación sí repetidos con SQL/HTTP y widgets reales.
+- Aceptación global R01/S3 pendiente: revisión ajena/merge del par y decisiones sobre dirección ausente(HU3.3) y «cercanos»(HU3.5/3.6). Respuestas uniformes HU1.1/2.1 ratificadas por Rael; no revelar cuentas. HU4.1 no exige contador restante en sus criterios.
+- Audit conserva10paquetes:1crítico/5altos/4moderados, sin fix. Android/Chrome normal/manual200%/lector no ejecutados ahora; aceptación de este encargo limitada a Web. HU7/8 y Favoritos no implementados.
+
+Los cortes siguientes son históricos; sus opt-in omitidas y estados locales ya no describen este corte. Plan de nube ejecutable en CONFIGURACION_LOCAL/PLAN_TECNICO, todavía sin ejecución remota.
+
 ## Vigente: cierre Web para revisión — 19/10/2026
 
 Rama `integration/cierre-web-r01-s03-20261019` en ambos repositorios, conservando develop y candidatos B`eeff38b`/F`18cec26` más F3/C2. Publicación/par exacto acreditados por los PR, no por esta cabecera; no implica merge, aceptación R01/S3 ni despliegue. [Evidencia accesible/procedencia](CIERRE_WEB_R01_S03.md).

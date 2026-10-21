@@ -1,5 +1,34 @@
 # Arquitectura backend
 
+## Arquitectura candidata de primer despliegue — 20/10/2026
+
+Preparación documental, sin despliegue ni habilitación remota. La publicación del par backend `05b399a` / frontend `4a227bb` en los PR [#39](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/39) / [#21](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/21) no acredita integración o aceptación. El par que finalmente llegue a `develop` y sus evidencias deben fijarse antes de ejecutar el procedimiento de [configuración](CONFIGURACION_LOCAL.md#primer-despliegue-procedimiento-condicionado--20102026).
+
+```text
+Flutter Web estático en Vercel ── HTTPS/JWT ──> Express en Vercel (candidato)
+Flutter Android conservado ───── HTTPS/JWT ──>          │
+                                                     ├─ TLS/pooler → PostgreSQL NUEVO en Supabase
+                                                     └─ Adapter SMTP existente → Brevo
+Operador de migración separado ─── TLS/directa o sesión → PostgreSQL nuevo
+```
+
+El navegador solo conoce la URL pública de Express. Supabase Auth, REST de tablas y claves `anon`/`service_role` no forman parte de este diseño; Data API deshabilitada y permisos SQL efectivos revisados. JWT, autorización y transacciones continúan en la API propia.
+
+| Decisión / estado | Evidencia y cambio mínimo necesario | Alternativa / coste / prueba de salida |
+| --- | --- | --- |
+| Hosting Express serverless: candidato, no demostrado | `app.js` exporta `createApp()` antes de `startServer`; el export omite validación, readiness y construcción SMTP. Preparar inicialización asíncrona única por instancia, esperada por cada petición y que falle cerrada, reutilizando las comprobaciones SELECT existentes, sin DDL. | Vercel soporta Express, pero eso no prueba nuestro ciclo de vida. Servidor persistente es alternativa solo si falla el ensayo y se aprueban host/coste. Probar frío, caliente, peticiones iniciales simultáneas, esquema ausente, reconexión y fallo SMTP/configuración sin filtrar secretos. [Soporte oficial](https://vercel.com/docs/frameworks/backend/express). |
+| Conexiones y migrador separados: estructura local existente, operación remota pendiente | `databaseConfiguration` limita pool; `migrationConnection` selecciona URL exclusiva. API comienza con max1/min0 por instancia, conservando presupuesto total de instancias, conexiones del pooler y reserva administrativa; no afirmar que max1 limita toda la nube. | Pooler transaccional para API sujeto a prueba de pg/Sequelize y locks/SET LOCAL; migración directa o sesión. Coste: medir saturación/espera y ajustar concurrencia; no cerrar el pool compartido al terminar cada petición. [Guía Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres). |
+| SMTP Adapter: conservar; ejecución posterior y durabilidad son decisiones distintas | `PasswordRecoveryService.queueDelivery` mantiene promesas en RAM y consume el rechazo; terminar la Function puede interrumpir el envío. Añadir lifecycle explícito en un paquete futuro, con presupuesto/errores medibles y respuesta uniforme. | `waitUntil` puede esperar dentro del límite de la Function; no persiste tareas ni reintenta. Si la demo exige recuperación fiable tras caída, diseñar outbox/worker separado: lease, reintentos acotados, vencimiento y custodia cifrada del enlace, nunca token plano durable. SMTP no garantiza una sola recepción ante respuesta ambigua. [Ciclo de vida](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package#waituntil). |
+| Separación de privilegios: propuesta, sin grants remotos | Rol migrador propietario de esquema; rol API con permisos mínimos de sus consultas, sin DDL/CREATEDB/superusuario. No distribuir URL migradora al runtime ni a Flutter. | RLS puede ser defensa adicional, pero no sustituye autorización Express ni evita un rol con privilegios excesivos. Probar denegación de DDL y acceso ajeno, y ausencia de REST/GraphQL público. [Data API](https://supabase.com/docs/guides/api/securing-your-api#disable-the-data-api). |
+
+Estas decisiones conservan capas y Adapter; una función `initialize…` no sería Factory Method por su nombre. Las futuras tareas de inicialización y outbox tienen problemas verificables, no justifican reorganizar carpetas o introducir microservicios.
+
+La brecha del runtime se comprueba en `app.js`: el export por defecto recibe `createApp()` sin pasar por `startServer`, donde hoy viven `validateEnvironment`, `sequelize.authenticate`, las seis comprobaciones de esquema y `recoveryServiceFromEnvironment`. `GET /` devuelve un mensaje y no acredita esas comprobaciones. En `src/services/PasswordRecoveryService.js`, `queueDelivery` guarda promesas en `pendingDeliveries` y consume sus errores; no existe una cola durable. `src/config/environment.js` y `src/config/migrationConnection.js` ya separan configuración/pool/migrador; se deben extender solo ante los requisitos concretos del ensayo, sin introducir otra capa de repositorios. La excepción futura de destino pertenece a `src/database/databaseSafety.js` y exige identidad aprobada y pruebas negativas antes de habilitar SQL remoto.
+
+La evidencia local de JWT, transacciones, premios y recuperación sigue siendo válida para sus versiones; no demuestra TLS remoto, permisos efectivos, cold starts ni entrega SMTP bajo terminación de Function. El ensayo debe registrar cada una de esas propiedades por separado y conservar Android como cliente del mismo contrato HTTPS.
+
+HU7 exige decidir autorización administrativa en servidor, mínimo privilegio, validación de cada acción, auditoría sin datos sensibles y política de moderación/recuperación antes de implementar pantallas; ocultar botones no autoriza. HU8.3 exige decidir evento, destinatario/consentimiento, canal, frecuencia, deduplicación, baja y mecanismo durable de alertas; no asumir que la cola SMTP de recuperación cumple esa historia. Ambas permanecen fuera de esta implementación.
+
 ## Herramienta de demo local — 19/10/2026
 
 `scripts/demo-local.js` compone configuración/guardas/migraciones/arranque; no es ruta HTTP ni Factory Method. Check verifica destino/procedencia sin DML; no aprovisiona ni conecta a QA. Creación inicial manual por administrador sobre base nueva, nunca adopción/comentario de una ajena. Seed encapsula SQL transaccional de catálogo; no cambia modelos ni crea cuentas/reportes. Alternativa descartada: conexión QA/shared.env por mezcla de datos/secretos. Coste: requisito administrativo inicial explícito; no provisionador cloud.35 pruebas con dobles y evidencia PostgreSQL separada. SMTP Adapter/runtime conservados.

@@ -1,5 +1,42 @@
 # Plan técnico SW2
 
+## Puerta actual — 20/10/2026
+
+QA desde cero/legacy y las2opt-in ya ejecutados; no repetirlos como propuesta abierta. Dictamen y evidencia en ESTADO_ACTUAL/CIERRE_WEB_R01_S03. Integración del par PR39/21 espera revisión ajena real y las historias con discrepancias de producto conservan sus bloqueos. Esta revisión puede completar #28 con un dictamen de no aceptación global; no convierte el Release en aceptado. HU7/8 y despliegue siguen fuera de implementación.
+
+## Preparación del primer despliegue — 20/10/2026
+
+Plan ejecutable separado del cierre Web HU1–6. HU7/8 continúan pendientes, cuatro Sprints sin cambios. La matriz/Issues controlan aceptación y los PR/Git la integración; esta sección no anticipa sus resultados. No se desplegó ni habilitó Supabase. Se reutilizan [arquitectura](ARQUITECTURA.md#arquitectura-candidata-de-primer-despliegue--20102026) y [procedimiento D0–D6](CONFIGURACION_LOCAL.md#primer-despliegue-procedimiento-condicionado--20102026).
+
+| Orden | Paquete futuro / dependencia | Criterio de salida verificable |
+| --- | --- | --- |
+| 0 | Identidad del par integrado, propietarios de cuentas/cupo gratuito y autorización de destinos | SHA de ambos `develop`, evidencia Web, operadores y matriz de variables sin secretos; project-ref/hosts/base/roles del Supabase NUEVO aprobados antes de SQL remoto. |
+| 1 | Runtime Express/Vercel y revisión de avisos/abuso; depende de0 | Inicialización esperada en frío/caliente/concurrente, sin DDL y sin omitir SMTP/readiness; fallos públicos seguros; política IP/proxy probada y tratamiento individual de audit. |
+| 2 | DB remota preparada; depende de1 y permiso remoto específico | Guarda limitada al proyecto nuevo, TLS con rechazo de CA/host incorrectos, roles mínimos efectivos, API sin DDL, migrador separado, migraciones históricas intactas, Data API cerrada, pruebas de locks/rollback/presupuesto del pooler. |
+| 3 | Correo en runtime elegido; depende de1–2 y remitente/destinatario autorizados | Recepción/reset/aviso demostrados y comportamiento ante terminación/timeout documentado; decidir durabilidad/reintentos sin confundir waitUntil con cola persistente. Reutilizar AdapterSMTP, no migrar SupabaseAuth. |
+| 4 | Build/publicación de ambos artefactos; depende de1–3 y permiso de despliegue | Flutter/Node/locks fijados, URLAPI HTTPS correcta, CORS exacto y secretos solo servidor; smoke real por par publicado y hashes, recuperación funcional y captura sin datos sensibles. |
+| 5 | Operación/retirada segura; depende de4 | Logs depurados, límites/cuotas, backup privado y restauración ensayada, rollback de app compatible con esquema y prueba de fallos. No promesa de disponibilidad absoluta. |
+
+D6 (elegibilidad, cuotas y colaboración) se verifica antes de0 y de nuevo al ejecutar cada servicio. El procedimiento canónico contiene la tabla de entradas/salidas D0–D6 y la separación de configuración API/migrador/Web; no duplicar aquí comandos ni secretos. El primer incremento de código futuro es la inicialización serverless esperada y sus pruebas, limitado al problema demostrado del export de `app.js`; no se convierte en un cambio de proveedor ni reescritura.
+
+Rael es responsable de coordinación/preparación e identifica el operador antes de ejecutar; Diego conserva la procedencia del SMTP y participa como referente de su configuración/evidencia; Nick/Manu son consultados si cambian contratos/esquemas de sus aportes. No son nuevas asignaciones automáticas de HU ni Story Points. Tiempo/capacidad/revisor deben acordarse para cada paquete antes de comprometer un Sprint.
+
+### Checklist de una única tarea técnica pendiente
+
+Reutilizar una tarea equivalente si existe; en caso contrario, título propuesto **Preparar primer despliegue Web/API/Supabase nuevo** y responsable `raelchang03UL`, sin fecha/puntos inventados. Crear o actualizar solo bajo autorización vigente, mantener pendiente hasta completar su alcance de preparación y enlazar estas tres guías; no duplicar #28 para sumar tarjetas Done.
+
+- [ ] Par integrado/evidencia y brechas del hosting identificados; condiciones de coste cero y colaboración aceptadas.
+- [ ] Paquete mínimo de inicialización, política IP/antiabuso y tratamiento de audit definido y revisado.
+- [ ] Identidad Supabase nueva/roles/TLS/pooling/migraciones/Data API y pruebas negativas especificados, sin permisos globales.
+- [ ] Operador/remitente/destinatario y decisión de lifecycle/durabilidad SMTP documentados privadamente donde corresponda.
+- [ ] Build reproducible, HTTPS/CORS/secretos por entorno y orden API→Web definidos.
+- [ ] Logs/cuotas/backups/restauración/rollback y pruebas de fallos con criterios verificables.
+- [ ] Solicitud futura única de ejecución enumera destinos, operaciones, datos sintéticos y límite de coste; no hay despliegue implícito.
+
+**Salida de preparación:** checklist con decisiones, responsables operativos, pruebas que se ejecutarán y solicitud concreta de ejecución revisables desde los tres documentos. **Salida de despliegue:** requiere otro paquete autorizado y evidencia real de D0–D6. No cerrar esta tarea como si ya existiera un servicio público por haber redactado el plan; registrar el alcance que efectivamente se complete.
+
+Preparar esta tarea no equivale a desplegarla. Puede permanecer abierta tras aceptar HU1–6; sus riesgos no deben esconderse ni usarse para fabricar un Release02 terminado. HU7 requerirá diseño de autorización administrativa/auditoría; HU8.3 requerirá evento/canal/consentimiento/frecuencia/deduplicación y entrega de alertas. Refinarlas después, sin implementarlas en el cierre actual.
+
 ## Situación de cierre — 19/10/2026
 
 I1 resolvió continuidad401;I2 distingue cooldown sin premio de incertidumbre;I3/C2/F11 cubren mapa/perfil/navegación. No reimplementar esas correcciones de las propuestas históricas. Rama de revisión integration/cierre-web-r01-s03-20261019, sin merge/aceptación/despliegue. Siguientes puertas ya identificadas:revisión humana/integración del par,QA desde cero/opt-in/SMTP autorizados y seguridad/runtime antes de nube; no nuevos compromisos por este documento. Estado/evidencia canónicos en ESTADO_ACTUAL/CIERRE_WEB_R01_S03; no depende de la matriz externa para revisar el PR.

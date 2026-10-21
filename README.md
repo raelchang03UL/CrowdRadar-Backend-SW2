@@ -1,5 +1,7 @@
 # CrowdRadar Backend
 
+Corte20/10/2026:QA de aceptación R01/S3 y2opt-in ya ejecutados,con resultados en [CIERRE_WEB_R01_S03](docs/CIERRE_WEB_R01_S03.md). PR#39/backend y#21/frontend pendientes de revisión ajena/merge. [ConfiguraciónQA3053/Web5553](docs/CONFIGURACION_LOCAL.md#qa-de-aceptación-web--20102026);demo3043/5543conservada. Plan de primer despliegue separado,sin activar nube. HU7/8siguen pendientes.
+
 ## Candidato de revisión Web R01/S3 — 19/10/2026
 
 Rama `integration/cierre-web-r01-s03-20261019`, preparada desde `eeff38b` más pendientes identificados F3/C2. La existencia remota y el par exacto se acreditan por los PR, no por esta cabecera. **Rama de revisión ≠ integrado en develop ≠ aceptado ≠ desplegado.** Se conservan historial/autores de Nick/Manu y la base de autenticación/SMTP/mapa de Diego.

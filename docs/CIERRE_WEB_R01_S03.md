@@ -1,5 +1,34 @@
 # Cierre Web R01/S3 — evidencia para revisión
 
+## Aceptación Web y puerta de integración — 20/10/2026
+
+Par funcional probado: backend `5d467ca66adb7a9dc26d2d0e13b87c957258e69d` y frontend `1ef1b9b7312bd8d57d508c10888427bb2cb1d005`. Documentación posterior sin cambios funcionales. Par publicado exacto en [B#39](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/39) y [F#21](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/21); integración condicionada a revisión ajena vigente.
+
+| Comprobación nueva | Resultado / alcance |
+| --- | --- |
+| Node / sintaxis / diff |177/177;96JS correctos;diff-check correcto |
+| PostgreSQL R01 |6/6bloques fresh+legacy:esquema,compatibilidad,preservación,idempotencia/concurrencia,autorización,filtros,premio atómico/rollback |
+| PostgreSQL S3 |7/7fresh+7/7legacy:4personas,voto/denuncia únicos,peso congelado,72bloques Lima/comparación/horarios/vacíos |
+| PostgreSQL recuperación |6bloques:inválido/vencido/usado,validación sin consumo,concurrencia,rollback,JWTviejo rechazado,login nuevo,límites persistentes |
+| Flutter general |562aprobadas;2opt-in excluidas por defecto y ejecutadas aparte;0fallidas |
+| Opt-in cambio / recuperación |1/1cadauna,widgetsVM+HTTP/PostgreSQL real;API3053 yrecoveryIPC3031;correoRAM |
+| Analyze / Web |Sin problemas;buildWeb58s/API3053,dependencias existentes |
+| Audit |10paquetes:1crítico,5altos,4moderados;incluye producción,sin fix/instalación;no aprobación para Internet |
+
+Se crearon solo `crowdradar_cierre_fresh_20261019` y `crowdradar_cierre_legacy_20261019`, ambas ausentes antes de crear cualquiera. Perfil explícito y procedencia `CrowdRadar/SW2/cierre-20261019/v1`;no adopción/borrado ni migraciones/fixtures en sistema. [Procedimiento](CONFIGURACION_LOCAL.md#qa-de-aceptación-web--20102026). SMTP deshabilitado;contraseñas,tokens y enlaceIPC solo en memoria.
+
+Un primer smoke opt-in falló esperando un título del perfil fuera del viewport. Solo se ajustó la espera a la identidadQA y scroll a la acción, conservando aserciones de errores,cambio,logout,rutas yJWT;repetición1/1. Intento restringido de npmtest falló fetch/EACCES;ejecución local autorizada177/177. No repetir batería por documentación ni ocultar los diagnósticos.
+
+Recorrido real Web5553/API3053:alta/login,búsqueda/selecciónQAParque,reporte+10,historial→perfil y ciclo inverso,voto ajeno definitivo,denuncia persistida sin ocultar,estado actualizado,historia12–14oct(6bloques suficientes),comparación,horario10:00/3días,logout y rutas protegidas. SELECT final de solo lectura en la base identificada confirmó cuenta sintética18:1reporte/1premio/10puntos/1voto/1denuncia. [Capturas frontend](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/blob/integration/cierre-web-r01-s03-20261019/docs/CIERRE_WEB_R01_S03.md). Carreras200/401tardías corresponden a widgets/dobles;datos sintéticos,no negocio real.
+
+Correo: [recepción Diego16/10](../entrega/EVIDENCIAS_SPRINT_2.md), parB`46267e7`/F`dfdb753`. Servicio,adaptador,repositorio/configuración/controlador/rutas de correo sin cambios desde ese backend. Evidencia histórica aplicable,no envío nuevo ni prueba serverless. No se reimplementóSMTP.
+
+Aceptación:7HUcerradas conservan su historial;HU3.1puede cerrarse por el par original integradoB#26/F#9,aprobado porDiego. Otras16HUen revisión:PR39/21sin revisión ajena;dirección ausenteHU3.3 y«cercanos»HU3.5/3.6requieren decisión. HU1.1/2.1uniformes ratificadas porRael;HU4.1no exigecontador restante. #28puede concluir la revisión con dictamen de no aceptación global;no se marcan desgloses históricos por inferencia.
+
+Contribuciones conservadas:Diego autenticación/SMTP;Nick lugares/consultas/filtros;Manu reporte/karma/historial;Rael HU5–6,conciliación,guardasQA,I1/I2/C2/F11/verificación. Integrar no atribuye código ajeno;StoryPoints no son cuota/autoría. Androidfinal,Chrome normal,manual200%/lector no ejecutados;aceptación de este encargo Web. HU7/8,Favoritos y nube sin implementar. Plan nube separado en ARQUITECTURA/CONFIGURACION_LOCAL/PLAN_TECNICO.
+
+## Cierre publicado anterior — 19/10/2026
+
 19/10/2026, America/Lima. Rama de ambos repositorios: `integration/cierre-web-r01-s03-20261019`. Esta página describe contenido/pruebas; existencia remota y **par exacto final** se acreditan en los cuerpos de sus PR. No implica merge en develop, aceptación de HU/Release/Sprint ni despliegue.
 
 ## Procedencia e identidad

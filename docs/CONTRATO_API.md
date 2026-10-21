@@ -1,5 +1,7 @@
 # Contrato API compartido
 
+Decisión de aceptación20/10/2026 ratificada por Rael para HU1.1/HU2.1: credenciales inválidas y solicitud de recuperación responden uniformemente, sin revelar existencia de cuentas. Reemplaza la redacción heredada que exigía «cuenta no existe»; no modifica el servicio, SMTP de Diego ni JSON. Dirección nullable y alcance de «cercanos» siguen pendientes de decisión de producto. Las políticas provisionales documentadas de reportes/confiabilidad/períodos ya están autorizadas; no se exige aprobarlas nuevamente por ejecutar QA.
+
 Contrato del candidato R01/S3 en `integration/cierre-web-r01-s03-20261019`. Origin/develop comprobado `ffe9b19` ya contiene autenticación/SMTP/mapa de Diego; la consolidación reúne Nick/Manu y correcciones. Publicación acreditada por PR no implica integración en develop, aceptación ni despliegue. Sin cambios JSON de negocio por F11/demo; pruebas actuales en CIERRE_WEB_R01_S03.
 
 JSON UTF-8; JWT Bearer en rutas protegidas. Ejecución QA: http://localhost:3033; configuración habitual por entorno. El cliente nunca conecta directamente a PostgreSQL.
