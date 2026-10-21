@@ -23,7 +23,7 @@ Recorrido real Web5553/API3053:alta/login,búsqueda/selecciónQAParque,reporte+1
 
 Correo: [recepción Diego16/10](../entrega/EVIDENCIAS_SPRINT_2.md), parB`46267e7`/F`dfdb753`. Servicio,adaptador,repositorio/configuración/controlador/rutas de correo sin cambios desde ese backend. Evidencia histórica aplicable,no envío nuevo ni prueba serverless. No se reimplementóSMTP.
 
-Aceptación:7HUcerradas conservan su historial;HU3.1puede cerrarse por el par original integradoB#26/F#9,aprobado porDiego. Otras16HUen revisión:PR39/21sin revisión ajena;dirección ausenteHU3.3 y«cercanos»HU3.5/3.6requieren decisión. HU1.1/2.1uniformes ratificadas porRael;HU4.1no exigecontador restante. #28puede concluir la revisión con dictamen de no aceptación global;no se marcan desgloses históricos por inferencia.
+Aceptación:7HUcerradas conservan su historial;HU3.1se cierra por el par original integradoB#26/F#9,aprobado porDiego. Otras16HUen revisión:PR39/21necesitan revisión ajena,merge ysmoke develop. Rael aprobó dirección ausente explícitaHU3.3 y«cercanos»como catálogo disponible sinGPS/radioHU3.5/3.6;ya no son bloqueos de producto. HU1.1/2.1uniformes ratificadas;HU4.1no exigecontador restante. #28concluye la revisión con dictamen de no aceptación global;no se marcan desgloses históricos por inferencia.
 
 Contribuciones conservadas:Diego autenticación/SMTP;Nick lugares/consultas/filtros;Manu reporte/karma/historial;Rael HU5–6,conciliación,guardasQA,I1/I2/C2/F11/verificación. Integrar no atribuye código ajeno;StoryPoints no son cuota/autoría. Androidfinal,Chrome normal,manual200%/lector no ejecutados;aceptación de este encargo Web. HU7/8,Favoritos y nube sin implementar. Plan nube separado en ARQUITECTURA/CONFIGURACION_LOCAL/PLAN_TECNICO.
 

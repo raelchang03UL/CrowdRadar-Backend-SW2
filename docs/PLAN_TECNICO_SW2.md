@@ -2,7 +2,7 @@
 
 ## Puerta actual — 20/10/2026
 
-QA desde cero/legacy y las2opt-in ya ejecutados; no repetirlos como propuesta abierta. Dictamen y evidencia en ESTADO_ACTUAL/CIERRE_WEB_R01_S03. Integración del par PR39/21 espera revisión ajena real y las historias con discrepancias de producto conservan sus bloqueos. Esta revisión puede completar #28 con un dictamen de no aceptación global; no convierte el Release en aceptado. HU7/8 y despliegue siguen fuera de implementación.
+QA desde cero/legacy y las2opt-in ya ejecutados;no repetirlos como propuesta abierta. Decisiones de dirección ausente y catálogo sinGPS/radio aprobadas porRael20/10,registradas en CONTRATO_API/Issues. Integración del par PR39/21 espera revisión ajena real y smoke del develop resultante. #28completa la revisión con un dictamen de no aceptación global;no convierte el Release en aceptado. HU7/8 y despliegue siguen fuera de implementación.
 
 ## Preparación del primer despliegue — 20/10/2026
 
