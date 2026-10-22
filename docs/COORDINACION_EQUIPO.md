@@ -1,6 +1,14 @@
 # Coordinación del equipo — CrowdRadar SW2
 
+## Revisión vigente19/10 — consolidación Web R01/S3
+
+Rama integration/cierre-web-r01-s03-20261019 en ambos repositorios, cuando esté publicada. [Entrada](INICIO_EQUIPO.md),[demo portátil](CATALOGO_DEMO_LOCAL.md),[evidencia/procedencia](CIERRE_WEB_R01_S03.md). Publicar una consolidación no fusiona develop ni cierra PR/HU; conservar revisión humana y par de commits. PR #27/#10 y los de Nick siguen intactos. Las notas08/10 inferiores describen su fecha, no vuelven ausentes funciones que hoy existen en el candidato.
+
 Guía compartida de ambos repositorios, preparada el 07/10/2026 para siete integrantes activos. Es el acuerdo operativo propuesto para revisión del equipo. Preparar este archivo no crea Issues, asignaciones, protecciones ni automatizaciones remotas.
+
+Para incorporarse sin historial de chats, empezar por [INICIO_EQUIPO.md](INICIO_EQUIPO.md). Esta guía mantiene el acuerdo operativo; el estado técnico y las tareas diarias conservan sus fuentes canónicas.
+
+El 08/10 se autorizó publicar las guías y preparar los PR de la base del equipo. El par `integration/base-equipo` reúne HU 3.1/A/B/C ya publicados más documentación de inicio; sus PR en borrador a `develop` son una revisión consolidada del conjunto, no PR individuales de A/B/C ni un merge autorizado. Conservar los PR HU 3.1 anteriores sin ampliar sus ramas. Hasta que exista revisión humana, comprobación del par y aprobación de merge, esta instantánea sirve para incorporarse/revisar, no para sustituir la base diaria `develop`.
 
 ## Fuentes y documentos
 
@@ -59,21 +67,21 @@ No se borran cambios locales para ejecutar esta secuencia. Una rama de tarea que
 
 Los dos repositorios tienen historias Git independientes; no hay un merge atómico conjunto. «Último frontend» y «último backend» no garantizan por sí solos compatibilidad. Antes de declarar una base lista, registrar en el PR/Issue de integración **SHA backend + SHA frontend + pruebas/recorrido + pendientes**. Si cambia cualquiera, validar de nuevo lo afectado. No copiar una lista paralela de versiones en todos los README.
 
-Para HU 3.1, la publicación y los PR en borrador no autorizan su merge. Mientras sigan sin integrar, clonar `develop` recibe la base anterior. El 08/10 se publicaron incrementos dependientes: pulido visual A (frontend `0361ae1`) y HU 2.3 B (backend `97e607e`, frontend `1e62c75`); recuperación C parte de B. Sus ramas no añaden alcance a los PR HU 3.1. Descargar explícitamente el par de ramas para revisión, sin confundirlo con integración. No abrir sus PR a develop hasta integrar sus bases, ni reescribir historial para ocultar dependencias.
+Para HU 3.1, la publicación y los PR en borrador no autorizan su merge. Mientras sigan sin integrar, clonar `develop` recibe la base anterior. El 08/10 se publicaron incrementos dependientes: pulido visual A (frontend `0361ae1`), HU 2.3 B (backend `97e607e`, frontend `1e62c75`) y recuperación C (backend `9ee244e`, frontend `652ea26`) desde B. El par C está en `feature/hu-2-1-2-recuperacion`, con envío real pendiente. Sus ramas no añaden alcance a los PR HU 3.1. Descargar explícitamente el par de ramas para revisión, sin confundirlo con integración. No abrir sus PR a develop hasta integrar sus bases, ni reescribir historial para ocultar dependencias.
 
 Una tarea tiene un responsable humano y un revisor distinto. Los demás pueden colaborar en pruebas, UI o API con tareas delimitadas. Nadie aprueba automáticamente el código de su propia IA. Los roles rotan: no dejar a una persona permanentemente solo con documentación.
 
-Propuesta para distribuir trabajo, todavía sin nombres ni compromiso:
+La propuesta inicial A–G del 07/10 incluía implementar formularios y autenticación que ya avanzaron en A/B/C. No reutilizarla para asignar siete implementaciones nuevas de lo mismo. Comprobar los estados/PR actuales y elegir brechas reales; candidatos sin nombres, estimaciones ni compromiso automático:
 
 | Paquete | Trabajo concreto | Dependencia/colisión que coordinar |
 | --- | --- | --- |
-| A | Backend solicitar/restablecer HU 2.1–2.2 | Contrato, esquema, envío y sesiones |
-| B | Frontend solicitar/restablecer HU 2.1–2.2 | Contrato de A; puede usar dobles mientras se integra |
-| C | Backend cambiar contraseña HU 2.3 | Base B ya define versión persistente/migración; recuperación la reutiliza. No editar auth a la vez |
-| D | Frontend cambiar contraseña HU 2.3 | Contrato de C; coordina router/perfil con B |
-| E | Pruebas de integración y casos negativos | Participa desde el contrato; verifica el par final |
-| F | Pulido visual sobrio de autenticación/perfil | Tokens compartidos; no editar los formularios de B/D a la vez |
-| G | Reproducibilidad/CI y revisión de integración | Migra/testea en base aislada; no cambia el modelo a la vez que A |
+| Reproducibilidad | Arrancar ambos clones en otra PC y registrar el par probado | Base elegida, PostgreSQL/secretos propios; no instalar SDK en Git |
+| QA Web | Recorrido final de registro/login/perfil/mapa/cambio; anotar fallos | No presentar widgets VM como Chrome ni pruebas anteriores como actuales |
+| QA Android | Repetir el recorrido final y precisar comportamiento de enlaces | Emulador/dispositivo y API correctos; enlaces nativos aún no verificados |
+| Recuperación | Conectar y verificar entrega real sobre el núcleo C existente | Decisión de proveedor/remitente y autorización de configuración/gastos; no rehacer tokens |
+| Casos negativos | Comprobar que peticiones alteradas no permiten otro usuario, token inválido/usado ni sesión revocada | Entorno local aislado, contrato vigente, datos controlados; no atacar servicios externos |
+| Interfaz | Corregir problemas observables de accesibilidad/flujo tras QA | No rediseñar otra vez A ni editar tema/router/formularios en paralelo |
+| CI e integración | Preparar checks reproducibles y revisar PR dependientes | Tarea aprobada separada; CI/protecciones aún no activas, merge requiere autorización |
 
 El reparto exige ajuste: estos paquetes no tienen el mismo tamaño. Antes de asignar, acordar disponibilidad y estimar las historias con el equipo. Story Points estiman historias, no productividad individual; una historia compartida cuenta una sola vez. Para equilibrar personas se revisan tareas, esfuerzo acordado, QA, revisiones y bloqueos, sin fabricar puntos ni multiplicarlos por siete.
 

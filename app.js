@@ -8,7 +8,16 @@ import userRoutes from "./src/routes/user.routes.js";
 import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
+import { assertPlaceDetailsSchemaReady } from "./src/database/migratePlaceDetails.js";
+
+
+import { assertConsolidatedReportsSchemaReady } from "./src/database/migrateReportCompatibility.js";
+import { assertKarmaSchemaReady } from "./src/database/migrateKarma.js";
+import { assertValidationSchemaReady } from "./src/database/migrateValidation.js";
+import validationRoutes from "./src/routes/validation.routes.js";
+import historyRoutes from "./src/routes/history.routes.js";
 import placeRoutes from "./src/routes/place.routes.js";
+import reportRoutes from "./src/routes/report.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 import { mailConfiguration } from "./src/config/mail.js";
 import PasswordRecoveryService from "./src/services/PasswordRecoveryService.js";
@@ -26,12 +35,20 @@ export function recoveryServiceFromEnvironment(env = process.env, createDelivery
 export function createApp({ recoveryService } = {}) {
     const app = express();
     app.use(cors(corsOptions()));
-    app.use(express.json());
+    app.use(express.json({ limit: "32kb" }));
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
+    app.use("/api/places", reportRoutes);
+    app.use("/api/places", historyRoutes);
+    app.use("/api/reports", validationRoutes);
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
+    });
+    app.use((error,req,res,next) => {
+        if(res.headersSent) return next(error);
+        const status=error.type==='entity.too.large'?413:error.type==='entity.parse.failed'?400:503;
+        res.status(status).json({code:status===413?'BODY_TOO_LARGE':status===400?'INVALID_JSON':'SERVICE_UNAVAILABLE',message:status===413?'La solicitud es demasiado grande.':status===400?'El JSON enviado no es válido.':'No se pudo completar la solicitud.'});
     });
     return app;
 }
@@ -40,7 +57,7 @@ const app = createApp();
 
 const PORT = process.env.PORT || 3000;
 
-export const startServer = async ({ port = PORT } = {}) => {
+export const startServer = async ({ port = PORT, host } = {}) => {
     validateEnvironment();
     // Solo el servidor real construye la entrega SMTP; importar app.js (pruebas) nunca envía correo.
     const recoveryService = recoveryServiceFromEnvironment();
@@ -48,9 +65,14 @@ export const startServer = async ({ port = PORT } = {}) => {
     // Toda creación/cambio de esquema es explícita: npm run db:migrate.
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
+    await assertPlaceDetailsSchemaReady(sequelize);
+
+    await assertConsolidatedReportsSchemaReady(sequelize);
+    await assertKarmaSchemaReady(sequelize);
+    await assertValidationSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
-    return server.listen(port, () => {
+    return server.listen(port, host, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
         console.log(recoveryService ? "Recuperación de contraseña: envío por correo habilitado." : "Recuperación de contraseña: sin correo configurado (503 uniforme).");
     });

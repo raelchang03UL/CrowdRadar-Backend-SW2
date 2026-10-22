@@ -10,7 +10,7 @@ const { seedPlacesDemo } = await import("../src/database/seedPlacesDemo.js");
 let server, baseUrl, places;
 const original = repository.findActive;
 const originalSession = userRepository.findSessionById;
-const validPlace = { id: 1, nombre: "Lugar de prueba", categoria: "Parque", referencia: "Prueba", latitud: -12.0464, longitud: -77.0428, activo: true, demostrativo: true };
+const validPlace = { id: 1, nombre: "Lugar de prueba", categoria: "Parque", referencia: "Prueba", direccion: "Dirección de prueba", latitud: -12.0464, longitud: -77.0428, activo: true, demostrativo: true };
 before(() => {
     userRepository.findSessionById = async () => ({ id: 1, status: "ACTIVO", rol: "USUARIO", sessionVersion: 0 });
     repository.findActive = async () => places;

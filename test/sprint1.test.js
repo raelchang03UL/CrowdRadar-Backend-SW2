@@ -17,6 +17,7 @@ let users;
 const originalRepositoryMethods = {
     create: UserRepository.create,
     findById: UserRepository.findById,
+    findKarmaPoints: UserRepository.findKarmaPoints,
     findByEmail: UserRepository.findByEmail,
     findSessionById: UserRepository.findSessionById,
     update: UserRepository.update
@@ -34,6 +35,7 @@ before(() => {
         const user = {
             ...data,
             sessionVersion: 0,
+            karmaPoints: 0,
             id: nextId++,
             createdAt: now,
             updatedAt: now
@@ -43,6 +45,10 @@ before(() => {
     };
 
     UserRepository.findById = async (id) => publicUser(users.get(id));
+    UserRepository.findKarmaPoints = async (id) => {
+        const user = users.get(id);
+        return user ? { id: user.id, karmaPoints: user.karmaPoints } : null;
+    };
     UserRepository.findSessionById = async (id) => users.get(id) ?? null;
 
     UserRepository.findByEmail = async (email) =>
@@ -208,4 +214,21 @@ test("HU 1.4 actualiza el perfil y conserva los cambios en la consulta siguiente
     });
     assert.equal(invalidUpdate.response.status, 400);
     assert.equal(invalidUpdate.body.message, "Datos inválidos.");
+});
+
+test("HU 4.2 consulta el karma del usuario autenticado", async () => {
+    const { payload } = await registerCitizen();
+    users.get(1).karmaPoints = 20;
+    const login = await request("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: payload.email, password: payload.password })
+    });
+    const headers = { Authorization: "Bearer " + login.body.data.token };
+
+    const withoutToken = await request("/api/users/karma");
+    assert.equal(withoutToken.response.status, 401);
+
+    const karma = await request("/api/users/karma", { headers });
+    assert.equal(karma.response.status, 200);
+    assert.deepEqual(karma.body.data, { karmaPoints: 20 });
 });

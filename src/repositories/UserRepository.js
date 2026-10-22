@@ -20,6 +20,13 @@ class UserRepository {
         });
     }
 
+    async findKarmaPoints(id) {
+        return User.findByPk(id, {
+            attributes: ["id", "karmaPoints"],
+            raw: true
+        });
+    }
+
     async findByEmail(email) {
         return await User.findOne({
             where: {
