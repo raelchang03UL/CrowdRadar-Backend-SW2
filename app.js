@@ -8,9 +8,11 @@ import userRoutes from "./src/routes/user.routes.js";
 import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
+import { assertFavoritesSchemaReady } from "./src/database/migrateFavorites.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 import favoritoRoutes from "./src/routes/favoritoRoutes.js";
+import { authenticateToken } from "./src/middlewares/auth.middleware.js";
 
 dotenv.config();
 
@@ -21,7 +23,10 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
-    app.use("/api/favorites", favoritoRoutes);
+    
+    // Ruta de favoritos protegida con el middleware de autenticación JWT
+    app.use("/api/favorites", authenticateToken, favoritoRoutes);
+    
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
@@ -38,6 +43,7 @@ export const startServer = async ({ port = PORT } = {}) => {
     // Toda creación/cambio de esquema es explícita: npm run db:migrate.
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
+    await assertFavoritesSchemaReady(sequelize);
 
     return app.listen(port, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);

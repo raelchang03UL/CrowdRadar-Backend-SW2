@@ -1,25 +1,51 @@
 import sequelize from "../config/database.js";
 
-// HU 8.1: Marcar como favorito
+// Extrae el ID del usuario directamente desde la sesión JWT decodificada
+const getUserIdFromReq = (req) => {
+  return req.user?.id || req.user?.id_usuario || req.user?.userId;
+};
+
+// HU 8.1: Guardar o re-marcar lugar como favorito
 export const agregarFavorito = async (req, res) => {
-  const { id_usuario, id_lugar } = req.body;
+  const idUsuario = getUserIdFromReq(req);
+  const { id_lugar } = req.body;
+
+  if (!idUsuario) {
+    return res.status(401).json({ message: "Usuario no autenticado" });
+  }
+
+  if (!id_lugar) {
+    return res.status(400).json({ message: "El id_lugar es obligatorio" });
+  }
+
   try {
     const [result] = await sequelize.query(
       `INSERT INTO lugar_favorito (id_usuario, id_lugar, alertas_activadas) 
        VALUES ($1, $2, true) 
-       ON CONFLICT (id_usuario, id_lugar) DO NOTHING 
+       ON CONFLICT (id_usuario, id_lugar) DO UPDATE 
+       SET alertas_activadas = true
        RETURNING *;`,
-      { bind: [id_usuario, id_lugar] }
+      { bind: [idUsuario, id_lugar] }
     );
-    res.status(201).json({ message: 'Lugar añadido a favoritos', data: result[0] });
+
+    return res.status(201).json({
+      message: "Lugar añadido a favoritos",
+      data: result[0]
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error al agregar favorito:", error);
+    return res.status(500).json({ error: "Error interno del servidor al guardar favorito" });
   }
 };
 
-// HU 8.2: Consultar lugares favoritos del usuario
+// HU 8.2: Consultar lugares favoritos del usuario autenticado
 export const obtenerFavoritos = async (req, res) => {
-  const { idUsuario } = req.params;
+  const idUsuario = getUserIdFromReq(req);
+
+  if (!idUsuario) {
+    return res.status(401).json({ message: "Usuario no autenticado" });
+  }
+
   try {
     const [results] = await sequelize.query(
       `SELECT f.id_favorito, f.alertas_activadas, l.* 
@@ -28,39 +54,41 @@ export const obtenerFavoritos = async (req, res) => {
        WHERE f.id_usuario = $1;`,
       { bind: [idUsuario] }
     );
-    res.status(200).json(results);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
-// HU 8.3: Activar o desactivar alertas
-export const cambiarEstadoAlertas = async (req, res) => {
-  const { id_usuario, alertas_activadas } = req.body;
-  try {
-    await sequelize.query(
-      `UPDATE lugar_favorito 
-       SET alertas_activadas = $1 
-       WHERE id_usuario = $2;`,
-      { bind: [alertas_activadas, id_usuario] }
-    );
-    res.status(200).json({ message: 'Estado de alertas actualizado' });
+    return res.status(200).json(results);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error al obtener favoritos:", error);
+    return res.status(500).json({ error: "Error interno del servidor al consultar favoritos" });
   }
 };
 
 // HU 8.4: Eliminar lugar de favoritos
 export const eliminarFavorito = async (req, res) => {
-  const { idUsuario, idLugar } = req.params;
+  const idUsuario = getUserIdFromReq(req);
+  const { idLugar } = req.params;
+
+  if (!idUsuario) {
+    return res.status(401).json({ message: "Usuario no autenticado" });
+  }
+
+  if (!idLugar) {
+    return res.status(400).json({ message: "El ID del lugar es requerido" });
+  }
+
   try {
-    await sequelize.query(
+    const [result] = await sequelize.query(
       `DELETE FROM lugar_favorito 
-       WHERE id_usuario = $1 AND id_lugar = $2;`,
+       WHERE id_usuario = $1 AND id_lugar = $2
+       RETURNING *;`,
       { bind: [idUsuario, idLugar] }
     );
-    res.status(200).json({ message: 'Se eliminó el lugar de tus favoritos' });
+
+    return res.status(200).json({ 
+      message: "Se eliminó el lugar de tus favoritos",
+      deletedCount: result.length
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error al eliminar favorito:", error);
+    return res.status(500).json({ error: "Error interno del servidor al eliminar favorito" });
   }
 };
