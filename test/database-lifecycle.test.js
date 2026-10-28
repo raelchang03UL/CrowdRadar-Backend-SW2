@@ -6,6 +6,44 @@ import User from "../src/models/User.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { assertLocalDevelopmentDatabase, assertIsolatedPlacesTestDatabase, assertMigrationTarget } from "../src/database/databaseSafety.js";
 
+// Estas pruebas sustituyen la conexión por dobles: no necesitan el .env de
+// ninguna persona ni deben construir un transporte SMTP de su terminal.
+test.beforeEach((context) => {
+    const synthetic = {
+        NODE_ENV: "test", DB_NAME: "qa_lifecycle", DB_HOST: "localhost",
+        DB_PORT: "5432", DB_USER: "unused_qa_role", DB_PASSWORD: "",
+        JWT_SECRET: "synthetic-lifecycle-only-not-for-deployment",
+        CORS_ORIGINS: "http://localhost:5500"
+    };
+    const unset = ["DATABASE_URL", "DB_SSL", "SMTP_HOST", "SMTP_PORT",
+        "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"];
+    const saved = new Map([...Object.keys(synthetic), ...unset].map((key) => [key, process.env[key]]));
+    Object.assign(process.env, synthetic);
+    for (const key of unset) delete process.env[key];
+    context.after(() => {
+        for (const [key, value] of saved) {
+            if (value === undefined) delete process.env[key];
+            else process.env[key] = value;
+        }
+    });
+});
+
+test("arranque rechaza esquema de detalle incompleto antes de aceptar tráfico", async () => {
+    const original = { authenticate: sequelize.authenticate, query: sequelize.query };
+    const queries = [];
+    try {
+        sequelize.authenticate = async () => {};
+        sequelize.query = async (sql, options) => {
+            queries.push(sql);
+            assert.match(sql, /^SELECT /);
+            if (options?.replacements?.name === "004-places-direccion") return [];
+            return [{ name: "ready" }];
+        };
+        await assert.rejects(startServer({ port: 0 }), { code: "SCHEMA_NOT_READY" });
+        assert.ok(queries.some((sql) => sql.includes("crowdradar_migrations")));
+    } finally { Object.assign(sequelize, original); }
+});
+
 test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
     const original = { config: { ...sequelize.config }, authenticate: sequelize.authenticate, transaction: sequelize.transaction, query: sequelize.query, sync: User.sync };
     const calls = [];
@@ -17,10 +55,12 @@ test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
         sequelize.query = async (sql) => {
             assert.match(sql, /^SELECT /);
             calls.push("schema-read");
-            return [{ name: "002-users-session-version" }];
+            return [{ name: "002-users-session-version" }, { name: "004-saturation-reports" }, { name: "005-reconcile-report-schema" }, { name: "006-report-karma-ledger" }, { name: "007-report-validation" }];
         };
         User.sync = () => assert.fail("Arranque no debe sincronizar modelos");
-        server = await startServer({ port: 0 });
+        server = await startServer({ port: 0, host: "127.0.0.1" });
+        if (!server.listening) await new Promise(resolve => server.once("listening", resolve));
+        assert.equal(server.address().address, "127.0.0.1");
         const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
         assert.equal(response.status, 200);
         assert.deepEqual(await response.json(), { message: "CrowdRadar API" });
@@ -82,7 +122,8 @@ test("CLI de migración conserva barreras para entrega, sistema y Supabase", () 
 });
 
 test("CORS admite preflight Web JSON y Authorization sin omitir JWT", async () => {
-    const { default: app } = await import("../app.js");
+    const { createApp } = await import("../app.js");
+    const app = createApp();
     const server = app.listen(0);
     const url = `http://127.0.0.1:${server.address().port}/api/places`;
     try {

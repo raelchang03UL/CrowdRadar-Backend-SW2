@@ -1,5 +1,9 @@
 # Coordinación del equipo — CrowdRadar SW2
 
+## Revisión vigente19/10 — consolidación Web R01/S3
+
+Rama integration/cierre-web-r01-s03-20261019 en ambos repositorios, cuando esté publicada. [Entrada](INICIO_EQUIPO.md),[demo portátil](CATALOGO_DEMO_LOCAL.md),[evidencia/procedencia](CIERRE_WEB_R01_S03.md). Publicar una consolidación no fusiona develop ni cierra PR/HU; conservar revisión humana y par de commits. PR #27/#10 y los de Nick siguen intactos. Las notas08/10 inferiores describen su fecha, no vuelven ausentes funciones que hoy existen en el candidato.
+
 Guía compartida de ambos repositorios, preparada el 07/10/2026 para siete integrantes activos. Es el acuerdo operativo propuesto para revisión del equipo. Preparar este archivo no crea Issues, asignaciones, protecciones ni automatizaciones remotas.
 
 Para incorporarse sin historial de chats, empezar por [INICIO_EQUIPO.md](INICIO_EQUIPO.md). Esta guía mantiene el acuerdo operativo; el estado técnico y las tareas diarias conservan sus fuentes canónicas.

@@ -8,6 +8,7 @@ Place.init({
     nombre: { type: DataTypes.STRING(160), allowNull: false, validate: { notEmpty: true } },
     categoria: { type: DataTypes.STRING(80), allowNull: false, validate: { notEmpty: true } },
     referencia: { type: DataTypes.STRING(250) },
+    direccion: { type: DataTypes.STRING(250), validate: { notEmpty: true } },
     latitud: { type: DataTypes.DOUBLE, allowNull: false, validate: { min: -90, max: 90, isFloat: true } },
     longitud: { type: DataTypes.DOUBLE, allowNull: false, validate: { min: -180, max: 180, isFloat: true } },
     activo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },

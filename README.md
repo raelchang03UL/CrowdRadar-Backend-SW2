@@ -1,10 +1,16 @@
 # CrowdRadar Backend
 
-API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación tiene envío real deshabilitado hasta elegir proveedor/remitente; su flujo se prueba mediante correo en memoria exclusivo de pruebas. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
+Corte20/10/2026:QA de aceptación R01/S3 y2opt-in ya ejecutados,con resultados en [CIERRE_WEB_R01_S03](docs/CIERRE_WEB_R01_S03.md). PR#39/backend y#21/frontend pendientes de revisión ajena/merge. [ConfiguraciónQA3053/Web5553](docs/CONFIGURACION_LOCAL.md#qa-de-aceptación-web--20102026);demo3043/5543conservada. Plan de primer despliegue separado,sin activar nube. HU7/8siguen pendientes.
 
-Para colaborar con el equipo y usar IA sobre el código, empieza por [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [inicio del equipo](docs/INICIO_EQUIPO.md), que incluye un prompt sin tarea asignada. Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
+## Candidato de revisión Web R01/S3 — 19/10/2026
 
-**Descarga actual del equipo:** `integration/base-equipo` en backend y frontend contiene los avances A/B/C y las guías de inicio, pendientes de revisión/integración. Usarla para leer, ejecutar y revisar; iniciar tareas nuevas desde `develop` solo después de integrar y comprobar el par. Los comandos de clonación y el prompt están en la guía de inicio.
+Rama `integration/cierre-web-r01-s03-20261019`, preparada desde `eeff38b` más pendientes identificados F3/C2. La existencia remota y el par exacto se acreditan por los PR, no por esta cabecera. **Rama de revisión ≠ integrado en develop ≠ aceptado ≠ desplegado.** Se conservan historial/autores de Nick/Manu y la base de autenticación/SMTP/mapa de Diego.
+
+Para ejecutar el par en otra PC: [demo reproducible sin QA ni rutas personales](docs/CATALOGO_DEMO_LOCAL.md). Usa `.env.demo.example` sin secretos, cinco lugares reales/observaciones demostrativas, API3043/Web5543 y SMTP deshabilitado. No hay cuentas/reportes/puntos precargados. [Pruebas, procedencia y límites](docs/CIERRE_WEB_R01_S03.md).
+
+Consolida lugares/filtros, reporte atómico, karma e historial propio; añade HU5.1–5.4 (votos, confiabilidad, estado y denuncia) y HU6.1–6.3 (historial horario, comparación y horarios). Sin HU7/8 ni reescritura de SMTP. Arranque solo SELECT/readiness; migraciones explícitas 001–007 antes de servir. 005 concilia reportes históricos y 006 no inventa premios retrospectivos.
+
+Lee [CONTRIBUTING](CONTRIBUTING.md), [contrato](docs/CONTRATO_API.md), [configuración](docs/CONFIGURACION_LOCAL.md), [arquitectura](docs/ARQUITECTURA.md) y [estado/pruebas](docs/ESTADO_ACTUAL.md). No uses el ZIP histórico ni el experimento visual como este incremento.
 
 ## Requisitos
 
@@ -52,7 +58,7 @@ La línea base de desarrollo se verificó con Node.js 22.20.0, npm 10.9.3 y Post
 npm start
 ```
 
-Antes del primer arranque y de actualizar este incremento, ejecuta `npm run db:migrate`. Aplica `001-create-places`, `002-users-session-version` y `003-password-recovery`: 002 crea `users` en una base limpia o añade la versión de sesión a su esquema histórico reconocido; 003 añade tablas de tokens/límites, sin borrar usuarios. El arranque solo autentica y verifica el esquema; **no ejecuta DDL ni `User.sync()`**. Si falta la migración, se detiene con instrucciones. La respuesta de control está en `GET http://localhost:3000/`.
+Antes del arranque general, ejecutar `npm run db:migrate`: recorre001–007, conserva las claves históricas004, concilia almacenamiento de reportes005, añade ledger/karma006 y validaciones007. No renumerar migraciones aplicadas ni usar una base histórica. El arranque comprueba esquema mediante SELECT y no ejecuta DDL ni User.sync(). Para la demo usar los comandos específicos demo:local del procedimiento enlazado, no este.env general.
 
 Los fixtures admiten únicamente `crowdradar_dev` o `crowdradar_hu31_test` en PostgreSQL local. El comando de migración es explícito y portable; bloquea la base de entrega, bases de sistema y hosts Supabase. En esta tarea todas las conexiones reales fueron locales. No se realizó despliegue.
 
@@ -77,19 +83,35 @@ Para desarrollo con recarga automática:
 npm run dev
 ```
 
-## Endpoints actuales en esta rama
+## HU 3.5 — filtrar lugares por categoría
+
+En `feature/hu-3-5-filtro-categoria`, `GET /api/places/categories` devuelve `{data: ["Cultura", "Parque", ...]}` con las categorías existentes de lugares activos, únicas y ordenadas. No se inventa un catálogo. Ambas rutas exigen JWT.
+
+`GET /api/places?categoria=Parque` devuelve solo los lugares activos de esa categoría exacta, en orden de ID. La categoría se recorta y admite hasta 80 caracteres Unicode; sin parámetro, vacío o espacios muestra todos. Una categoría sin coincidencias devuelve 200 con `data: []`. Repetidos/propiedades extra devuelven 400; fallos de consulta, 503 público. No hay cambios de esquema ni dependencias.
+
+La consolidación conserva detalle3.3 y búsqueda3.4 junto a categoría3.5 y nivel3.6: nombre/categoría/nivel se combinan con AND. Los PR originales conservan su estado; incorporar su ascendencia aquí no los fusiona ni cierra. Contrato completo y rutas HU4–6 en [CONTRATO_API](docs/CONTRATO_API.md).
+
+## Resumen de endpoints (contrato canónico enlazado)
 
 | Método | Ruta | Autenticación | Propósito |
 | --- | --- | --- | --- |
 | `POST` | `/api/auth/register` | No | Registrar un ciudadano. |
 | `POST` | `/api/auth/login` | No | Validar credenciales y obtener JWT. |
 | `POST` | `/api/auth/password/change` | Bearer JWT | Verificar contraseña actual, cambiarla e invalidar todas las sesiones anteriores. |
-| `POST` | `/api/auth/password/forgot` | No | Solicitar enlace con respuesta uniforme; sin proveedor devuelve 503. |
+| `POST` | `/api/auth/password/forgot` | No | Solicitar enlace con respuesta uniforme (202); sin `SMTP_*` devuelve 503. |
 | `POST` | `/api/auth/password/reset/validate` | No | Validar enlace antes del formulario, sin consumirlo. |
 | `POST` | `/api/auth/password/reset` | No | Restablecer una vez, invalidar sesiones y exigir login. |
 | `GET` | `/api/users/profile` | Bearer JWT | Consultar el perfil autenticado. |
 | `PUT` | `/api/users/profile` | Bearer JWT | Actualizar nombre, apellido, teléfono o distrito. |
-| `GET` | `/api/places` | Bearer JWT | Listar lugares activos con coordenadas válidas. |
+| `GET` | `/api/places` | Bearer JWT | Lugares activos; filtros AND nombre/categoria/nivel. |
+| `GET` | `/api/places/categories` | Bearer JWT | Consultar categorías únicas de lugares activos. |
+
+| `GET` | `/api/places/:id` | Bearer JWT | Detalle/dirección nullable por ID. |
+| `GET` | `/api/places/:id/saturation` | Bearer JWT | Consultar el nivel estimado con reportes recientes de personas distintas. |
+| `POST` | `/api/places/:id/reports` | Bearer JWT | Reporte y premio atómicos, cooldown3min. |
+| `GET` | `/api/users/reports` y `/api/users/karma` | Bearer JWT | Historial propio y saldo real. |
+| `GET/POST` | `/api/reports/…` | Bearer JWT | Validación/confiabilidad/estado/denuncia HU5. |
+| `GET` | `/api/places/:id/history`, `comparison`, `quiet-hours` | Bearer JWT | Análisis histórico HU6; no predicción. |
 
 `GET /api/places` devuelve `{ "data": [...] }`, con `id`, `nombre`, `categoria`, `referencia`, `latitud`, `longitud` y `demostrativo`. Vacío: HTTP 200 y `data: []`. Sin autorización: 401. Fallo de datos/consulta: 503 con un mensaje público, sin detalles internos. No hay endpoint de alta/edición de lugares en esta HU.
 
@@ -118,7 +140,21 @@ Authorization: Bearer <token>
 
 HU 2.3: enviar `currentPassword`, `newPassword` y `confirmPassword` al cambio de contraseña. La nueva debe tener mínimo 8 caracteres Unicode, no ser solo espacios, no superar 72 bytes UTF-8 y ser diferente de la actual. El éxito no devuelve JWT: vuelve a login. Cada petición protegida comprueba la versión de sesión persistida; todos los JWT anteriores quedan rechazados, incluso en otros clientes y después de reiniciar el backend. Los JWT antiguos sin versión tampoco se aceptan: inicia sesión nuevamente tras actualizar. El cierre local HU 2.4 por sí solo continúa sin revocar JWT.
 
-HU 2.1–2.2: URL local confiable `PASSWORD_RESET_URL=http://localhost:5500/#/reset-password`, con query del token dentro del fragmento Flutter. HTTPS fuera de desarrollo/pruebas loopback. Configurar esa URL no habilita envío: falta elegir proveedor, remitente y credenciales; no se inventan SMTP ni un modo de captura en producción. La solicitud normal responde 503 `RECOVERY_UNAVAILABLE` sin consultar cuentas ni almacenar tokens. El 202 uniforme y el recorrido completo solo están comprobados con transporte exclusivo de pruebas. Ver [contrato](docs/CONTRATO_API.md) y [configuración](docs/CONFIGURACION_LOCAL.md).
+HU 2.1–2.2: URL local confiable `PASSWORD_RESET_URL="http://localhost:5500/#/reset-password"` (entre comillas: sin ellas `.env` corta el valor en `#`), con query del token dentro del fragmento Flutter. HTTPS fuera de desarrollo/pruebas loopback. Configurar esa URL no habilita envío: hacen falta además las variables `SMTP_*` de Brevo descritas en la configuración local. Sin ellas, la solicitud responde 503 `RECOVERY_UNAVAILABLE` sin consultar cuentas ni almacenar tokens. No existe modo de captura en producción. Ver [contrato](docs/CONTRATO_API.md) y [configuración](docs/CONFIGURACION_LOCAL.md).
+
+## HU 3.2 — consulta de saturación
+
+La propuesta local cuenta el último reporte de cada persona durante los 30 minutos anteriores a la consulta (ambos límites incluidos, reportes futuros excluidos). Exige tres personas distintas; gana el nivel con más votos (`TRANQUILO`, `MODERADO` o `SATURADO`). Si faltan personas o hay empate, devuelve `level: null` con el motivo correspondiente. No exige usuarios simultáneamente conectados, no mide aforo y no pondera confianza. La actualización ocurre al consultar/reintentar, no mediante tiempo real. El [contrato](docs/CONTRATO_API.md) contiene el DTO y errores.
+
+Se conserva migrateReports de Manu (`d49578c`) y sus claves históricas, junto al POST/formulario e historial/puntos ya conciliados en el candidato. Las004 de detalle y reportes conservan nombres independientes;005/006 hacen compatibilidad/premio explícitos. No reescribirlas ni premiar reportes históricos retrospectivamente.
+
+Sin reportes reales de HU 4.1, un lugar activo muestra información insuficiente. `db:seed:demo` sigue cargando solo lugares y **nunca niveles ficticios**. La prueba siguiente crea reportes únicamente dentro de una transacción aislada que revierte.
+
+```powershell
+npm run test:db:saturation
+```
+
+Reutiliza exclusivamente `crowdradar_auth_test` en PostgreSQL local; la base debe existir (el runner auth la prepara). Aplica migraciones explícitas, verifica preservación/idempotencia y usa HTTP/JWT/SQL reales sobre fixtures revertibles. No borra tablas/filas ni confirma reportes de prueba. Las secuencias PostgreSQL pueden avanzar aun con rollback. No equivale a recorrido Web ni Android.
 
 ## Pruebas
 
@@ -134,7 +170,7 @@ La suite cubre autorización, lugares, ciclo de migración/arranque, configuraci
 npm run test:db:places
 ```
 
-Esta comprobación requiere PostgreSQL local y permiso de crear bases: crea o reutiliza exclusivamente `crowdradar_hu31_test`, nunca usa `DB_NAME` como destino. Verifica idempotencia, preservación de una tabla `users` centinela, restricciones SQL, fixture repetible y exclusión de inactivos. Las inserciones negativas se revierten mediante transacción; la base aislada se conserva para inspección. No la uses para datos personales.
+Esta comprobación requiere PostgreSQL local y permiso de crear bases: crea o reutiliza exclusivamente `crowdradar_hu31_test`, nunca usa `DB_NAME` como destino. Verifica idempotencia, preservación de una tabla `users` centinela, restricciones SQL, fixture repetible y exclusión de inactivos. Incluye HU 3.5 con repositorio ORM y HTTP real sobre PostgreSQL; solo la consulta de sesión se dobla, porque `users` centinela no es el esquema de autenticación. Comprueba catálogo, igualdad literal, cambio/quitar filtro, ausencia de coincidencias y 400/401. Sus fixtures adicionales se revierten y se comparan las filas de lugares/usuarios antes y después. La base aislada se conserva para inspección. No la uses para datos personales.
 
 ```powershell
 npm run test:db:auth

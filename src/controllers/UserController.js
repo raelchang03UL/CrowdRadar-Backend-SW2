@@ -1,6 +1,15 @@
-import UserService from "../services/UserService.js";
+import UserService, { UserNotFoundError } from "../services/UserService.js";
 
 class UserController {
+
+    async getKarma(req, res) {
+        try {
+            const karmaPoints = await UserService.getKarmaPoints(req.user.id);
+            return res.status(200).json({ data: { karmaPoints } });
+        } catch (error) {
+            return res.status(error instanceof UserNotFoundError ? 404 : 503).json({ message: error instanceof UserNotFoundError ? "Usuario no encontrado." : "No se pudo cargar tu karma. Inténtalo de nuevo." });
+        }
+    }
 
     async getProfile(req, res) {
 
@@ -14,9 +23,7 @@ class UserController {
 
         } catch (error) {
 
-            return res.status(404).json({
-                message: error.message
-            });
+            return res.status(error instanceof UserNotFoundError ? 404 : 503).json({ message: error instanceof UserNotFoundError ? "Usuario no encontrado." : "No se pudo cargar tu perfil. Inténtalo de nuevo." });
 
         }
 
@@ -38,12 +45,22 @@ class UserController {
 
         } catch (error) {
 
-            return res.status(400).json({
-                message: error.message
-            });
+            return res.status(error instanceof UserNotFoundError ? 404 : 503).json({ message: error instanceof UserNotFoundError ? "Usuario no encontrado." : "No se pudo guardar tu perfil. Inténtalo de nuevo." });
 
         }
 
+    }
+
+    async getReports(req, res) {
+        try {
+            return res.status(200).json({
+                data: await UserService.getReports(req.user.id)
+            });
+        } catch {
+            return res.status(503).json({
+                message: "No se pudo cargar el historial de reportes. Inténtalo de nuevo."
+            });
+        }
     }
 
 }
