@@ -1,5 +1,25 @@
 # Arquitectura backend
 
+## Moderación de reportes HU7.1 — 28/10/2026
+
+Rutas administrativas → AdminReportController → AdminReportService → AdminReportRepository. El servicio valida filtros, IDs BIGINT textuales, decisión, motivo y revisión/total esperados. El repositorio revalida al administrador activo, bloquea usuarios por ID y después el reporte, consulta las denuncias vigentes y guarda decisión más auditoría en una transacción. La participación usa FOR SHARE sobre reporte/lugar; decidir usa FOR UPDATE, de modo que no puede entrar una denuncia inadvertida entre el conteo y la decisión. Conflictos devuelven409 y exigen nueva lectura.
+
+El estado efectivo se deriva de visibilidad y total revisado: REMOVE es retirado; KEEP es conservado mientras el total vigente coincida con el revisado; una denuncia nueva deja Pendiente sin borrar ni reescribir el evento anterior. Detalle reúne total, agrupaciones e historial en una sola sentencia, evitando que conteos y motivos pertenezcan a instantáneas distintas. El orden de páginas usa BIGINT numérico, no el texto del DTO. No hay datos de denunciantes en el contrato administrativo aprobado.
+
+La migración009 es aditiva y explícita; no hay DDL al iniciar. is_public se filtra antes de calcular último reporte por persona en saturación/mapa e historia, y se exige para consulta/participación pública. El historial del autor conserva la fila y señala el retiro; la consulta propia exige identidad y opción propia explícita. No se modifica ledger de karma, estado de usuario ni cooldown. Cambiar los gráficos históricos al retirar es una consecuencia aprobada del mismo filtro. Ver CONTRATO_API y ESTADO_ACTUAL para contrato y evidencias.
+
+## Transacciones de moderación de cuentas — 28/10/2026
+
+Las acciones nuevas conservan rutas → controlador → AdminUserService → AdminUserRepository. El servicio valida motivo/observación y revisión esperada; el repositorio bloquea administrador y ciudadano por ID en orden, revalida actor, exige rol USUARIO y transición válida, y actualiza estado/sessionVersion/moderation_version junto con invalidación de recovery e inserción de auditoría. El saldo y los reportes no forman parte de esta escritura. No hay edición de rol ni suspensión automática. `moderationVersion` es un dato de concurrencia exclusivo del DTO administrativo; no se expone sessionVersion.
+
+Se eligió revisión explícita sobre comparar solo estado para detectar también una pantalla anterior a un ciclo completo suspendida/activa. El historial guarda un nombre del administrador capturado al decidir y no depende de futuros cambios de perfil. IDs BIGINT viajan como texto; el ORDER BY SQL usa la columna numérica cualificada para evitar orden lexicográfico. Páginas de 20 limitan la lectura. La migración008 es explícita y aditiva; el arranque solo verifica. Evidencia real, fallo de auditoría inyectado y límites en ESTADO_ACTUAL.
+
+## Consulta administrativa HU7.2 — 27/10/2026
+
+Incremento local en `feature/hu-7-2-usuarios-admin`: `/api/admin` → autenticación existente → middleware de administrador → AdminUserController → AdminUserService → AdminUserRepository. El servicio valida filtros/IDs y devuelve un DTO limitado; el repositorio parametriza SQL y cuenta reportes denunciados mediante EXISTS, para no multiplicarlos por número de denunciantes. Reutiliza users, saturation_reports y report_denunciations; no añade tablas ni sincronización al inicio.
+
+Cada lectura vuelve a consultar al administrador con FOR SHARE dentro de la transacción, comprueba estado/versión/expiración y exige el rol ADMIN persistido. El lock evita que una modificación concurrente del actor atraviese esa lectura; statement_timeout acota esperas. El frontend restringe navegación por comodidad, mientras estos controles son la autorización efectiva. Cambios de suspensión/auditoría/visibilidad aprobados siguen pendientes de sus incrementos y migraciones. Ver ESTADO_ACTUAL para pruebas y límites.
+
 ## Arquitectura candidata de primer despliegue — 20/10/2026
 
 Preparación documental, sin despliegue ni habilitación remota. La publicación del par backend `05b399a` / frontend `4a227bb` en los PR [#39](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/39) / [#21](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/21) no acredita integración o aceptación. El par que finalmente llegue a `develop` y sus evidencias deben fijarse antes de ejecutar el procedimiento de [configuración](CONFIGURACION_LOCAL.md#primer-despliegue-procedimiento-condicionado--20102026).

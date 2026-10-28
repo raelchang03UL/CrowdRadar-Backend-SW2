@@ -6,6 +6,8 @@ import { migrateRecovery, recoveryMigration } from "../src/database/migrateRecov
 import { migrateReportCompatibility, reportCompatibilityMigration } from "../src/database/migrateReportCompatibility.js";
 import { migrateKarma, karmaMigration } from "../src/database/migrateKarma.js";
 import { migrateValidation, validationMigration } from "../src/database/migrateValidation.js";
+import { migrateUserModeration, userModerationMigration } from "../src/database/migrateUserModeration.js";
+import { migrateReportModeration, reportModerationMigration } from "../src/database/migrateReportModeration.js";
 import { assertMigrationTarget } from "../src/database/databaseSafety.js";
 import { migratePlaceDetails, placeDetailsMigration } from "../src/database/migratePlaceDetails.js";
 
@@ -28,6 +30,8 @@ try {
     const karmaApplied = await migrateKarma(sequelize);
     console.log(`${karmaMigration}: ${karmaApplied ? 'aplicada' : 'sin cambios'}.`);
     console.log(`${validationMigration}: ${await migrateValidation(sequelize) ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${userModerationMigration}: ${await migrateUserModeration(sequelize) ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${reportModerationMigration}: ${await migrateReportModeration(sequelize) ? 'aplicada' : 'sin cambios'}.`);
 } catch (error) {
     console.error("No se completaron las migraciones. Revisa configuración, permisos y destino autorizado; no se muestran SQL ni credenciales.");
     process.exitCode = 1;

@@ -34,6 +34,7 @@ export const createPlaceRepository = (model = Place) => ({
             FROM public.saturation_reports r
             JOIN lugares ON lugares.id = r.place_id CROSS JOIN reloj
             WHERE r.created_at >= reloj.evaluated_at - make_interval(mins => :windowMinutes)
+              AND r.is_public=TRUE
               AND r.created_at <= reloj.evaluated_at
             ORDER BY r.place_id, r.user_id, r.created_at DESC, r.id DESC
         )
