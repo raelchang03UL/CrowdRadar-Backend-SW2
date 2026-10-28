@@ -1,10 +1,44 @@
 # Contrato API compartido
 
-Decisiones de aceptación20/10/2026 ratificadas por Rael: HU1.1/HU2.1responden uniformemente sin revelar existencia de cuentas;HU3.3muestra dirección verificada si existe y «Dirección no registrada» si falta,sin inventar datos;«cercanos»enHU3.5/HU3.6significa catálogo disponible,sinGPSni radio. Sustituyen las redacciones heredadas de esos criterios,conservadas como antecedentes en Issues. No modifican JSON,SMTP ni implementación. Las políticas provisionales de reportes/confiabilidad/períodos ya están autorizadas;no requieren nueva aprobación por ejecutar QA.
+JSON UTF-8, JWT Bearer en rutas protegidas; el cliente nunca conecta directamente a PostgreSQL. Esta sección describe HU7 vigente,28/10/2026; las rutas previas se conservan debajo.
 
-Contrato del candidato R01/S3 en `integration/cierre-web-r01-s03-20261019`. Origin/develop comprobado `ffe9b19` ya contiene autenticación/SMTP/mapa de Diego; la consolidación reúne Nick/Manu y correcciones. Publicación acreditada por PR no implica integración en develop, aceptación ni despliegue. Sin cambios JSON de negocio por F11/demo; pruebas actuales en CIERRE_WEB_R01_S03.
+## HU7 — usuarios y moderación
 
-JSON UTF-8; JWT Bearer en rutas protegidas. Ejecución QA: http://localhost:3033; configuración habitual por entorno. El cliente nunca conecta directamente a PostgreSQL.
+ADMIN activo revalidado desde BD y sesión vigente en cada operación; registro público conserva USUARIO. Respuestas administrativas no-store. Sin edición de roles; acciones solo sobre ciudadanos. Migraciones008/009 explícitas antes del arranque, que solo comprueba esquema.
+
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/admin/users | q parcial literal de nombre/correo, máximo160 caracteres, sin distinguir mayúsculas; status ACTIVO/SUSPENDIDO opcional; page1..10000, limit1..50 (por defecto1/20). Filtros AND;200 data:usuarioAdmin[] y pagination:{page,limit,hasNext}. |
+| GET /api/admin/users/:id | ID entero PostgreSQL positivo;200 data:usuarioAdmin;404 USER_NOT_FOUND. |
+| POST /api/admin/users/:id/suspend | JSON exacto reason,expectedVersion. Motivo recortado1..500; ciudadano ACTIVO. |
+| POST /api/admin/users/:id/reactivate | JSON expectedVersion,note opcional. Observación hasta500, vacío=null; ciudadano SUSPENDIDO. |
+| GET /api/admin/users/:id/history | before BIGINT textual opcional;20 eventos por página, ID descendente; data:accion[],pagination:{nextBefore}. |
+
+usuarioAdmin contiene id,nombre,apellido,email,rol,status,denouncedReportCount,moderationVersion. El conteo es de reportes distintos con denuncias, incluidos revisados/retirados. Campos históricos ausentes permanecen null. Nunca hashes, tokens ni versión privada de sesión. accion contiene id textual,action SUSPEND/REACTIVATE,reason nullable,previousStatus,newStatus,createdAt UTC,adminId,adminName capturado y moderationVersion.
+
+Suspender/reactivar confirma estado, revisión, invalidación de sesiones/recuperación y auditoría en una transacción;200 devuelve data:usuarioAdmin. Motivo obligatorio al suspender; observación opcional al reactivar. Sin duración programada: reactivación manual y nuevo login. No modifica reportes, karma ni rol.409 ACCOUNT_STATE_CHANGED exige actualizar.
+
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/admin/reports | state PENDING (predeterminado),KEPT,REMOVED,ALL; authorId opcional; before BIGINT textual opcional. Hasta20 reportes con denuncias, ID descendente; data:reporteAdmin[],pagination:{nextBefore}. |
+| GET /api/admin/reports/:id | data:reporteAdmin más reasons:[{reason nullable,count}]; history y historyPagination:{nextBefore}. beforeHistory opcional pagina eventos anteriores de20 en20. |
+| POST /api/admin/reports/:id/decision | JSON exacto decision KEEP/REMOVE,reason recortado1..500,expectedVersion,expectedDenunciationCount.200 devuelve detalle actualizado con historial. |
+
+reporteAdmin contiene id textual,placeId,placeName,level,createdAt,author:{id,name,rol},denunciationCount,reviewedDenunciationCount,reviewState,isPublic,moderationVersion. Motivos idénticos recortados se agrupan; null/vacío es Sin motivo y la suma coincide con el total. Sin identidades de denunciantes. Cada evento contiene id textual,decision,reason,adminId,adminName,createdAt,reviewedDenunciationCount,moderationVersion. Total, grupos e historial se leen coherentemente.
+
+KEEP conserva visibilidad; denuncia posterior vuelve a PENDING conservando historial. No se repite KEEP sin denuncias nuevas. REMOVE también puede seguir a KEEP y deja solo lectura; no hay restauración en este alcance. Revisión y total se comparan bajo locks;409 REPORT_STATE_CHANGED exige nueva lectura. Cambio y auditoría son atómicos. Un resultado incierto exige actualizar, sin reenvío automático.
+
+Retirar conserva evidencia, votos, denuncias, premios e historial privado del autor; no suspende ni quita karma/cooldown. Excluye lista/detalle/participación y cálculos públicos actuales e históricos, incluidos mapa, comparación y recomendaciones. own-validation sigue exigiendo autor y devuelve removedFromPublic:true; historial propio incluye isPublic:false. No cambia mínimos, ventanas ni ponderaciones.
+
+Errores administrativos:401 SESSION_INVALID,403 ADMIN_REQUIRED/MODERATION_CITIZEN_ONLY,400 ADMIN_QUERY_INVALID/ADMIN_USER_ID_INVALID/ADMIN_REPORT_ID_INVALID/MODERATION_INPUT_INVALID/REPORT_MODERATION_INPUT_INVALID,404 por recurso ausente y503 SERVICE_UNAVAILABLE sin detalles internos. Parámetros desconocidos/repetidos se rechazan; %, _ y barra invertida se buscan literalmente.
+
+## HU7.3 — aviso al iniciar sesión
+
+POST /api/auth/login devuelve403 ACCOUNT_SUSPENDED y el mensaje público «Tu cuenta está suspendida. Un administrador debe reactivarla para que puedas volver a ingresar.» únicamente si la contraseña es válida y el estado es SUSPENDIDO. No incluye token ni datos de cuenta. Correo inexistente/clave incorrecta devuelve401 INVALID_CREDENTIALS uniforme; otros estados inactivos conservan ese fallo cerrado. Recuperación de contraseña sigue siendo uniforme. Este ajuste autorizado por Nicolás el28/10 satisface el aviso de HU7.3 sin informar estado antes de verificar la clave.
+
+## Antecedentes anteriores a HU7
+
+Los cortes inferiores conservan su fecha y alcance originales. El estado vigente de HU7 es el resumen superior; sus iteraciones previas se conservan en Git.
 
 ## Rutas del Release 01
 
@@ -12,7 +46,7 @@ JSON UTF-8; JWT Bearer en rutas protegidas. Ejecución QA: http://localhost:3033
 | --- | --- | --- |
 | GET / | Pública | 200 mensaje de API |
 | POST /api/auth/register | nombre,apellido,email,password; telefono/distrito opcionales en API | 201;400 validación/duplicado;503 interno |
-| POST /api/auth/login | email,password | 200 token+user;400 formato;401 uniforme;503 interno |
+| POST /api/auth/login | email,password | 200 token+user;400 formato;401 uniforme;403 ACCOUNT_SUSPENDED con clave válida;503 interno |
 | POST /api/auth/password/change | JWT;currentPassword,newPassword,confirmPassword | 200 sin JWT;400/401/403/503 según reglas inferiores |
 | POST /api/auth/password/forgot | email | 202 uniforme con transporte;400/429/503 |
 | POST /api/auth/password/reset/validate | token | 200 valid;400/429/503 |

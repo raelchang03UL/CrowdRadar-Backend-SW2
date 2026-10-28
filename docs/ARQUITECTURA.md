@@ -1,5 +1,21 @@
 # Arquitectura backend
 
+## Moderación HU7 — 28/10/2026
+
+Rutas/middleware → controlador → AdminUserService o AdminReportService → repositorio → PostgreSQL. El servicio valida entradas y limita DTO; el repositorio revalida ADMIN activo y sesión persistida dentro de la transacción. Permisos visuales no sustituyen esta autorización. No hay edición de roles ni moderación automática.
+
+Las escrituras bloquean usuarios en orden de ID y después el reporte, comparan revisión esperada y, al moderar reportes, total de denuncias leído. Cambio y auditoría se confirman juntos; fallo revierte todo y pantalla antigua recibe409. Participación toma FOR SHARE y decisión FOR UPDATE sobre el reporte. Historial guarda nombre capturado del administrador, fecha SQL y motivo; cursores ordenados por BIGINT numérico.
+
+Conservar sigue público mientras no existan denuncias posteriores al total revisado. Nueva denuncia devuelve estado efectivo Pendiente conservando la decisión anterior. Detalle obtiene total, grupos e historial en una sentencia coherente. Retirar usa is_public antes de elegir el último reporte por persona en saturación/mapa/historia; conserva evidencia privada del autor, ledger, karma y cooldown. Los gráficos históricos pueden cambiar, según la política aprobada.
+
+AuthService comprueba la contraseña antes de distinguir SUSPENDIDO:403 ACCOUNT_SUSPENDED sin token. Credenciales incorrectas conservan401 uniforme y otros estados desconocidos fallan cerrados. Suspender/reactivar incrementa versión de sesión e invalida recuperación; reactivar exige nuevo login.
+
+Esquema008/009 explícito y aditivo, sin DDL al iniciar. [Contrato](CONTRATO_API.md), [pruebas y límites](REVISION_HU7.md). Cambios de formato limitados a archivos JavaScript nuevos de HU7; sin dependencias nuevas del proyecto.
+
+## Antecedentes anteriores a HU7
+
+Los cortes inferiores conservan su fecha y alcance originales. El estado vigente de HU7 es el resumen superior; sus iteraciones previas se conservan en Git.
+
 ## Arquitectura candidata de primer despliegue — 20/10/2026
 
 Preparación documental, sin despliegue ni habilitación remota. La publicación del par backend `05b399a` / frontend `4a227bb` en los PR [#39](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/39) / [#21](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/21) no acredita integración o aceptación. El par que finalmente llegue a `develop` y sus evidencias deben fijarse antes de ejecutar el procedimiento de [configuración](CONFIGURACION_LOCAL.md#primer-despliegue-procedimiento-condicionado--20102026).

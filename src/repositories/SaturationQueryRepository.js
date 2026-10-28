@@ -13,6 +13,7 @@ export default {
             FROM public.saturation_reports r
             CROSS JOIN reloj CROSS JOIN lugar
             WHERE r.place_id = lugar.id
+              AND r.is_public=TRUE
               AND r.created_at >= reloj.evaluated_at - make_interval(mins => :windowMinutes)
               AND r.created_at <= reloj.evaluated_at
             ORDER BY r.user_id, r.created_at DESC, r.id DESC

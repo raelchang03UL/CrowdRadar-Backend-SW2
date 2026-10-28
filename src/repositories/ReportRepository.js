@@ -8,6 +8,7 @@ export default {
                 reports.id,
                 reports.created_at AS "createdAt",
                 reports.level,
+                reports.is_public AS "isPublic",
                 places.id AS "placeId",
                 places.nombre AS "placeName"
             FROM public.saturation_reports AS reports

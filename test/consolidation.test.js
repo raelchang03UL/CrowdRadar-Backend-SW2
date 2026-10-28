@@ -86,9 +86,10 @@ test("perfil convierte BIGINT PostgreSQL a entero público sin secretos ni trunc
 test("HTTP combina tres filtros, recorta textos y mantiene DTO explícito", async () => {
     places.findActiveWithSaturation = async (options) => {
         assert.equal(options.nombre, "Parque"); assert.equal(options.categoria, "Cultura");
+        const evaluatedAt = new Date();
         return [{ id: -1, nombre: "QA", categoria: "Cultura", referencia: null, direccion: null,
-            latitud: -12, longitud: -77, demostrativo: true, activo: true, evaluatedAt: new Date(),
-            votes: [1, 2, 3].map((id) => ({ id: String(id), userId: id, level: "MODERADO", createdAt: new Date() })) }];
+            latitud: -12, longitud: -77, demostrativo: true, activo: true, evaluatedAt,
+            votes: [1, 2, 3].map((id) => ({ id: String(id), userId: id, level: "MODERADO", createdAt: evaluatedAt })) }];
     };
     const response = await request("/api/places?nombre=%20Parque%20&categoria=Cultura&nivel=MODERADO");
     assert.equal(response.status, 200); const { data } = await response.json();

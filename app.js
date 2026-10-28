@@ -18,6 +18,9 @@ import validationRoutes from "./src/routes/validation.routes.js";
 import historyRoutes from "./src/routes/history.routes.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import reportRoutes from "./src/routes/report.routes.js";
+import adminRoutes from "./src/routes/admin.routes.js";
+import { assertUserModerationSchemaReady } from "./src/database/migrateUserModeration.js";
+import { assertReportModerationSchemaReady } from "./src/database/migrateReportModeration.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 import { mailConfiguration } from "./src/config/mail.js";
 import PasswordRecoveryService from "./src/services/PasswordRecoveryService.js";
@@ -42,6 +45,7 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/places", reportRoutes);
     app.use("/api/places", historyRoutes);
     app.use("/api/reports", validationRoutes);
+    app.use("/api/admin", adminRoutes);
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
@@ -70,6 +74,8 @@ export const startServer = async ({ port = PORT, host } = {}) => {
     await assertConsolidatedReportsSchemaReady(sequelize);
     await assertKarmaSchemaReady(sequelize);
     await assertValidationSchemaReady(sequelize);
+    await assertUserModerationSchemaReady(sequelize);
+    await assertReportModerationSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
     return server.listen(port, host, () => {

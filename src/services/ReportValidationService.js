@@ -48,12 +48,12 @@ export default {
         return (await repository.list(userId)).map(reportDto);
     },
     async detail(userId, id, ownOnly = false) {
-        const [row] = await repository.list(userId, parseReportId(id));
+        const [row] = await repository.list(userId, parseReportId(id), ownOnly);
         if (!row) throw reportError(404, "REPORT_NOT_FOUND", "El reporte no está disponible.");
         if (ownOnly && !row.isOwn) {
             throw reportError(403, "REPORT_FORBIDDEN", "Solo puedes consultar el estado propio en esta ruta.");
         }
-        return reportDto(row);
+        return { ...reportDto(row), ...(row.isPublic === false ? {removedFromPublic:true} : {}) };
     },
     async participate(actor, id, input, kind) {
         parseReportId(id);

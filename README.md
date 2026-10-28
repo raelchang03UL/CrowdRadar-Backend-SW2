@@ -1,5 +1,9 @@
 # CrowdRadar Backend
 
+## Candidato HU7 para revisión — 28/10/2026
+
+Esta rama incorpora consulta de usuarios, suspensión/reactivación con auditoría y revisión de reportes denunciados. Requiere las migraciones explícitas008/009 además de las anteriores. El frontend debe ser el par HU7; no sustituirlo por una compilación anterior. [Alcance, criterios y pruebas](docs/REVISION_HU7.md), [contrato](docs/CONTRATO_API.md) y [estado](docs/ESTADO_ACTUAL.md). La publicación y el par exacto se verifican en Git/PR; no implican integración en develop ni aceptación del equipo. Los cortes inferiores son históricos.
+
 Corte20/10/2026:QA de aceptación R01/S3 y2opt-in ya ejecutados,con resultados en [CIERRE_WEB_R01_S03](docs/CIERRE_WEB_R01_S03.md). PR#39/backend y#21/frontend pendientes de revisión ajena/merge. [ConfiguraciónQA3053/Web5553](docs/CONFIGURACION_LOCAL.md#qa-de-aceptación-web--20102026);demo3043/5543conservada. Plan de primer despliegue separado,sin activar nube. HU7/8siguen pendientes.
 
 ## Candidato de revisión Web R01/S3 — 19/10/2026

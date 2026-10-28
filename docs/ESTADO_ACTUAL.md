@@ -1,5 +1,20 @@
 # Estado actual
 
+## HU7 para revisión — 28/10/2026
+
+Rama feature/hu-7-moderacion-kou; aporte de Nicolás Kou, cuenta kowisprox. [Backend42](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/42) y [frontend23](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/23). Los heads de los PR identifican el par publicado. Pendiente revisión ajena e integración; no se cierran historias automáticamente.
+
+- HU7.1–7.4 implementadas: usuarios/búsqueda/detalle; suspensión y reactivación manual; reportes denunciados con total, motivos agrupados, decisiones e historiales persistidos. Nueva denuncia sobre un conservado devuelve Pendiente.
+- HU7.3 informa suspensión con403 ACCOUNT_SUSPENDED únicamente después de comprobar la contraseña. Correo inexistente o clave incorrecta conserva401 uniforme. No emite token a cuentas suspendidas; sesiones anteriores permanecen inválidas después de reactivar y se requiere un nuevo login.
+- Migraciones explícitas008/009, aditivas; aplicar npm run db:migrate antes de servir. Arranque solo SELECT. ADMIN activo revalidado, destinos ciudadanos y revisión/total esperados; decisión y auditoría atómicas. Retirar conserva evidencia privada, cuenta y karma; excluye cálculos públicos actuales e históricos.
+- Verificación actual: npm test200/200; frontend615 aprobadas, cero fallidas y dos opt-in previas omitidas; análisis limpio. Los tres runners HU7 completaron18 bloques SQL/HTTP reales en crowdradar_hu7_test local5447, incluidos aviso correcto/clave errónea, rollback, concurrencia y preservación. Sin SMTP ni acceso a bases históricas.
+- Observación de revisión corregida: R01 prepara001–009 y S3 añade007–009 antes de usar la API actual. R01 pasó6/6 en instancia nueva; S3 pasó7/7 en cuatro bases fresh/legacy, incluidas las de reproducción con esquemas006/007. Comprobaciones de preservación ampliadas para columnas nuevas y previas; migraciones históricas y guardas intactas. npm test200/200 y18 bloques HU7 repetidos.
+- Recorrido Web y capturas portables en el frontend; [criterios y reproducción](REVISION_HU7.md), [contrato](CONTRATO_API.md). Frontend sin cambios en esta corrección; Android, lectores de pantalla y nube siguen pendientes.
+
+## Antecedentes anteriores a HU7
+
+Los cortes inferiores conservan su fecha y alcance originales. El estado vigente de HU7 es el resumen superior; sus iteraciones previas se conservan en Git.
+
 ## Vigente: aceptación Web y revisión de integración — 20/10/2026
 
 Par funcional: B`5d467ca66adb7a9dc26d2d0e13b87c957258e69d` / F`1ef1b9b7312bd8d57d508c10888427bb2cb1d005`, con documentación posterior sin cambios funcionales. PR#39/backend y #21/frontend requieren revisión de otra persona antes de merge según CONTRIBUTING/COORDINACION. Los SHA publicados actuales se verifican en sus PR; no confundir preparación con develop integrado.
