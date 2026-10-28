@@ -3,34 +3,26 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { mailConfiguration } from "./src/config/mail.js";
+import { PasswordRecoveryService } from "./src/services/PasswordRecoveryService.js";
+import { createSmtpRecoveryDelivery } from "./src/services/RecoveryMailDelivery.js";
 import { createAuthRoutes } from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
+import placeRoutes from "./src/routes/place.routes.js";
+import reportRoutes from "./src/routes/report.routes.js";
+import validationRoutes from "./src/routes/validation.routes.js";
+import historyRoutes from "./src/routes/history.routes.js";
+import favoritoRoutes from "./src/routes/favoritoRoutes.js";
+import { authenticateToken } from "./src/middlewares/auth.middleware.js";
 import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
-<<<<<<< HEAD
 import { assertFavoritesSchemaReady } from "./src/database/migrateFavorites.js";
-=======
 import { assertPlaceDetailsSchemaReady } from "./src/database/migratePlaceDetails.js";
-
-
 import { assertConsolidatedReportsSchemaReady } from "./src/database/migrateReportCompatibility.js";
 import { assertKarmaSchemaReady } from "./src/database/migrateKarma.js";
 import { assertValidationSchemaReady } from "./src/database/migrateValidation.js";
-import validationRoutes from "./src/routes/validation.routes.js";
-import historyRoutes from "./src/routes/history.routes.js";
->>>>>>> origin/develop
-import placeRoutes from "./src/routes/place.routes.js";
-import reportRoutes from "./src/routes/report.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
-<<<<<<< HEAD
-import favoritoRoutes from "./src/routes/favoritoRoutes.js";
-import { authenticateToken } from "./src/middlewares/auth.middleware.js";
-=======
-import { mailConfiguration } from "./src/config/mail.js";
-import PasswordRecoveryService from "./src/services/PasswordRecoveryService.js";
-import { createSmtpRecoveryDelivery } from "./src/services/RecoveryMailDelivery.js";
->>>>>>> origin/develop
 
 dotenv.config();
 
@@ -48,24 +40,26 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
-<<<<<<< HEAD
+    app.use("/api/reports", reportRoutes);
+    app.use("/api/validations", validationRoutes);
+    app.use("/api/history", historyRoutes);
     
-    // Ruta de favoritos protegida con el middleware de autenticación JWT
+    // Ruta de favoritos protegida con autenticación JWT
     app.use("/api/favorites", authenticateToken, favoritoRoutes);
     
-=======
-    app.use("/api/places", reportRoutes);
-    app.use("/api/places", historyRoutes);
-    app.use("/api/reports", validationRoutes);
->>>>>>> origin/develop
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
-    app.use((error,req,res,next) => {
-        if(res.headersSent) return next(error);
-        const status=error.type==='entity.too.large'?413:error.type==='entity.parse.failed'?400:503;
-        res.status(status).json({code:status===413?'BODY_TOO_LARGE':status===400?'INVALID_JSON':'SERVICE_UNAVAILABLE',message:status===413?'La solicitud es demasiado grande.':status===400?'El JSON enviado no es válido.':'No se pudo completar la solicitud.'});
+
+    app.use((error, req, res, next) => {
+        if (res.headersSent) return next(error);
+        const status = error.type === 'entity.too.large' ? 413 : error.type === 'entity.parse.failed' ? 400 : 503;
+        res.status(status).json({
+            code: status === 413 ? 'BODY_TOO_LARGE' : status === 400 ? 'INVALID_JSON' : 'SERVICE_UNAVAILABLE',
+            message: status === 413 ? 'La solicitud es demasiado grande.' : status === 400 ? 'El JSON enviado no es válido.' : 'No se pudo completar la solicitud.'
+        });
     });
+
     return app;
 }
 
@@ -78,15 +72,12 @@ export const startServer = async ({ port = PORT, host } = {}) => {
     // Solo el servidor real construye la entrega SMTP; importar app.js (pruebas) nunca envía correo.
     const recoveryService = recoveryServiceFromEnvironment();
     await sequelize.authenticate();
-    // Toda creación/cambio de esquema es explícita: npm run db:migrate.
+    
+    // Ejecución de esquemas de migración
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
-<<<<<<< HEAD
     await assertFavoritesSchemaReady(sequelize);
-=======
     await assertPlaceDetailsSchemaReady(sequelize);
->>>>>>> origin/develop
-
     await assertConsolidatedReportsSchemaReady(sequelize);
     await assertKarmaSchemaReady(sequelize);
     await assertValidationSchemaReady(sequelize);
