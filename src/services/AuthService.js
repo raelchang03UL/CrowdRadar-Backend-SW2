@@ -44,7 +44,7 @@ class AuthService {
 
         const user = await UserRepository.findByEmail(email);
 
-        if (!user || user.status !== "ACTIVO") {
+        if (!user) {
             throw new AuthError(401, "INVALID_CREDENTIALS", "Correo o contraseña incorrectos.");
         }
 
@@ -54,6 +54,14 @@ class AuthService {
         );
 
         if (!passwordMatches) {
+            throw new AuthError(401, "INVALID_CREDENTIALS", "Correo o contraseña incorrectos.");
+        }
+
+        // Informar el estado solo después de comprobar la contraseña.
+        if (user.status === "SUSPENDIDO") {
+            throw new AuthError(403, "ACCOUNT_SUSPENDED", "Tu cuenta está suspendida. Un administrador debe reactivarla para que puedas volver a ingresar.");
+        }
+        if (user.status !== "ACTIVO") {
             throw new AuthError(401, "INVALID_CREDENTIALS", "Correo o contraseña incorrectos.");
         }
 

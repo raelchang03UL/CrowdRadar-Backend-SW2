@@ -1,24 +1,20 @@
 # Arquitectura backend
 
-## Moderación de reportes HU7.1 — 28/10/2026
+## Moderación HU7 — 28/10/2026
 
-Rutas administrativas → AdminReportController → AdminReportService → AdminReportRepository. El servicio valida filtros, IDs BIGINT textuales, decisión, motivo y revisión/total esperados. El repositorio revalida al administrador activo, bloquea usuarios por ID y después el reporte, consulta las denuncias vigentes y guarda decisión más auditoría en una transacción. La participación usa FOR SHARE sobre reporte/lugar; decidir usa FOR UPDATE, de modo que no puede entrar una denuncia inadvertida entre el conteo y la decisión. Conflictos devuelven409 y exigen nueva lectura.
+Rutas/middleware → controlador → AdminUserService o AdminReportService → repositorio → PostgreSQL. El servicio valida entradas y limita DTO; el repositorio revalida ADMIN activo y sesión persistida dentro de la transacción. Permisos visuales no sustituyen esta autorización. No hay edición de roles ni moderación automática.
 
-El estado efectivo se deriva de visibilidad y total revisado: REMOVE es retirado; KEEP es conservado mientras el total vigente coincida con el revisado; una denuncia nueva deja Pendiente sin borrar ni reescribir el evento anterior. Detalle reúne total, agrupaciones e historial en una sola sentencia, evitando que conteos y motivos pertenezcan a instantáneas distintas. El orden de páginas usa BIGINT numérico, no el texto del DTO. No hay datos de denunciantes en el contrato administrativo aprobado.
+Las escrituras bloquean usuarios en orden de ID y después el reporte, comparan revisión esperada y, al moderar reportes, total de denuncias leído. Cambio y auditoría se confirman juntos; fallo revierte todo y pantalla antigua recibe409. Participación toma FOR SHARE y decisión FOR UPDATE sobre el reporte. Historial guarda nombre capturado del administrador, fecha SQL y motivo; cursores ordenados por BIGINT numérico.
 
-La migración009 es aditiva y explícita; no hay DDL al iniciar. is_public se filtra antes de calcular último reporte por persona en saturación/mapa e historia, y se exige para consulta/participación pública. El historial del autor conserva la fila y señala el retiro; la consulta propia exige identidad y opción propia explícita. No se modifica ledger de karma, estado de usuario ni cooldown. Cambiar los gráficos históricos al retirar es una consecuencia aprobada del mismo filtro. Ver CONTRATO_API y ESTADO_ACTUAL para contrato y evidencias.
+Conservar sigue público mientras no existan denuncias posteriores al total revisado. Nueva denuncia devuelve estado efectivo Pendiente conservando la decisión anterior. Detalle obtiene total, grupos e historial en una sentencia coherente. Retirar usa is_public antes de elegir el último reporte por persona en saturación/mapa/historia; conserva evidencia privada del autor, ledger, karma y cooldown. Los gráficos históricos pueden cambiar, según la política aprobada.
 
-## Transacciones de moderación de cuentas — 28/10/2026
+AuthService comprueba la contraseña antes de distinguir SUSPENDIDO:403 ACCOUNT_SUSPENDED sin token. Credenciales incorrectas conservan401 uniforme y otros estados desconocidos fallan cerrados. Suspender/reactivar incrementa versión de sesión e invalida recuperación; reactivar exige nuevo login.
 
-Las acciones nuevas conservan rutas → controlador → AdminUserService → AdminUserRepository. El servicio valida motivo/observación y revisión esperada; el repositorio bloquea administrador y ciudadano por ID en orden, revalida actor, exige rol USUARIO y transición válida, y actualiza estado/sessionVersion/moderation_version junto con invalidación de recovery e inserción de auditoría. El saldo y los reportes no forman parte de esta escritura. No hay edición de rol ni suspensión automática. `moderationVersion` es un dato de concurrencia exclusivo del DTO administrativo; no se expone sessionVersion.
+Esquema008/009 explícito y aditivo, sin DDL al iniciar. [Contrato](CONTRATO_API.md), [pruebas y límites](REVISION_HU7.md). Cambios de formato limitados a archivos JavaScript nuevos de HU7; sin dependencias nuevas del proyecto.
 
-Se eligió revisión explícita sobre comparar solo estado para detectar también una pantalla anterior a un ciclo completo suspendida/activa. El historial guarda un nombre del administrador capturado al decidir y no depende de futuros cambios de perfil. IDs BIGINT viajan como texto; el ORDER BY SQL usa la columna numérica cualificada para evitar orden lexicográfico. Páginas de 20 limitan la lectura. La migración008 es explícita y aditiva; el arranque solo verifica. Evidencia real, fallo de auditoría inyectado y límites en ESTADO_ACTUAL.
+## Antecedentes anteriores a HU7
 
-## Consulta administrativa HU7.2 — 27/10/2026
-
-Incremento local en `feature/hu-7-2-usuarios-admin`: `/api/admin` → autenticación existente → middleware de administrador → AdminUserController → AdminUserService → AdminUserRepository. El servicio valida filtros/IDs y devuelve un DTO limitado; el repositorio parametriza SQL y cuenta reportes denunciados mediante EXISTS, para no multiplicarlos por número de denunciantes. Reutiliza users, saturation_reports y report_denunciations; no añade tablas ni sincronización al inicio.
-
-Cada lectura vuelve a consultar al administrador con FOR SHARE dentro de la transacción, comprueba estado/versión/expiración y exige el rol ADMIN persistido. El lock evita que una modificación concurrente del actor atraviese esa lectura; statement_timeout acota esperas. El frontend restringe navegación por comodidad, mientras estos controles son la autorización efectiva. Cambios de suspensión/auditoría/visibilidad aprobados siguen pendientes de sus incrementos y migraciones. Ver ESTADO_ACTUAL para pruebas y límites.
+Los cortes inferiores conservan su fecha y alcance originales. El estado vigente de HU7 es el resumen superior; sus iteraciones previas se conservan en Git.
 
 ## Arquitectura candidata de primer despliegue — 20/10/2026
 

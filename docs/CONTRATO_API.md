@@ -1,54 +1,44 @@
 # Contrato API compartido
 
-Decisiones de aceptación20/10/2026 ratificadas por Rael: HU1.1/HU2.1responden uniformemente sin revelar existencia de cuentas;HU3.3muestra dirección verificada si existe y «Dirección no registrada» si falta,sin inventar datos;«cercanos»enHU3.5/HU3.6significa catálogo disponible,sinGPSni radio. Sustituyen las redacciones heredadas de esos criterios,conservadas como antecedentes en Issues. No modifican JSON,SMTP ni implementación. Las políticas provisionales de reportes/confiabilidad/períodos ya están autorizadas;no requieren nueva aprobación por ejecutar QA.
+JSON UTF-8, JWT Bearer en rutas protegidas; el cliente nunca conecta directamente a PostgreSQL. Esta sección describe HU7 vigente,28/10/2026; las rutas previas se conservan debajo.
 
-Contrato del candidato R01/S3 en `integration/cierre-web-r01-s03-20261019`. Origin/develop comprobado `ffe9b19` ya contiene autenticación/SMTP/mapa de Diego; la consolidación reúne Nick/Manu y correcciones. Publicación acreditada por PR no implica integración en develop, aceptación ni despliegue. Sin cambios JSON de negocio por F11/demo; pruebas actuales en CIERRE_WEB_R01_S03.
+## HU7 — usuarios y moderación
 
-JSON UTF-8; JWT Bearer en rutas protegidas. Ejecución QA: http://localhost:3033; configuración habitual por entorno. El cliente nunca conecta directamente a PostgreSQL.
+ADMIN activo revalidado desde BD y sesión vigente en cada operación; registro público conserva USUARIO. Respuestas administrativas no-store. Sin edición de roles; acciones solo sobre ciudadanos. Migraciones008/009 explícitas antes del arranque, que solo comprueba esquema.
 
-## HU7 — primer incremento de consulta administrativa, 27/10/2026
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/admin/users | q parcial literal de nombre/correo, máximo160 caracteres, sin distinguir mayúsculas; status ACTIVO/SUSPENDIDO opcional; page1..10000, limit1..50 (por defecto1/20). Filtros AND;200 data:usuarioAdmin[] y pagination:{page,limit,hasNext}. |
+| GET /api/admin/users/:id | ID entero PostgreSQL positivo;200 data:usuarioAdmin;404 USER_NOT_FOUND. |
+| POST /api/admin/users/:id/suspend | JSON exacto reason,expectedVersion. Motivo recortado1..500; ciudadano ACTIVO. |
+| POST /api/admin/users/:id/reactivate | JSON expectedVersion,note opcional. Observación hasta500, vacío=null; ciudadano SUSPENDIDO. |
+| GET /api/admin/users/:id/history | before BIGINT textual opcional;20 eventos por página, ID descendente; data:accion[],pagination:{nextBefore}. |
 
-Alcance local aprobado por Nicolás Kou: permisos de administrador y HU7.2 de extremo a extremo. Issue de referencia: backend #19. Las operaciones de suspensión, reactivación y revisión de reportes pertenecen a los siguientes incrementos; esta sección no las declara implementadas ni integradas.
+usuarioAdmin contiene id,nombre,apellido,email,rol,status,denouncedReportCount,moderationVersion. El conteo es de reportes distintos con denuncias, incluidos revisados/retirados. Campos históricos ausentes permanecen null. Nunca hashes, tokens ni versión privada de sesión. accion contiene id textual,action SUSPEND/REACTIVATE,reason nullable,previousStatus,newStatus,createdAt UTC,adminId,adminName capturado y moderationVersion.
 
-El rol administrativo canónico es `ADMIN`; el registro ciudadano conserva `USUARIO` y no permite elegir privilegios. Las rutas administrativas consultan la sesión persistida y exigen administrador activo. Una comprobación visual de Flutter nunca sustituye estos permisos. Cada lectura vuelve a comprobar el actor dentro de la transacción SQL. Las respuestas administrativas usan `Cache-Control: no-store`.
+Suspender/reactivar confirma estado, revisión, invalidación de sesiones/recuperación y auditoría en una transacción;200 devuelve data:usuarioAdmin. Motivo obligatorio al suspender; observación opcional al reactivar. Sin duración programada: reactivación manual y nuevo login. No modifica reportes, karma ni rol.409 ACCOUNT_STATE_CHANGED exige actualizar.
 
-| Método/ruta | Entrada | Respuesta |
-| --- | --- | --- |
-| GET /api/admin/users | `q` opcional, coincidencia parcial literal por nombre completo o correo, sin distinguir mayúsculas; máximo 160 caracteres. `status` opcional: ACTIVO o SUSPENDIDO. `page` entero 1..10000, por defecto 1; `limit` entero 1..50, por defecto 20. | 200 `{data:usuarioAdmin[],pagination:{page,limit,hasNext}}`; sin resultados `data:[]`. Filtros AND, orden ID ascendente. |
-| GET /api/admin/users/:id | ID entero PostgreSQL positivo, sin query. | 200 `{data:usuarioAdmin}`; 404 USER_NOT_FOUND. |
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/admin/reports | state PENDING (predeterminado),KEPT,REMOVED,ALL; authorId opcional; before BIGINT textual opcional. Hasta20 reportes con denuncias, ID descendente; data:reporteAdmin[],pagination:{nextBefore}. |
+| GET /api/admin/reports/:id | data:reporteAdmin más reasons:[{reason nullable,count}]; history y historyPagination:{nextBefore}. beforeHistory opcional pagina eventos anteriores de20 en20. |
+| POST /api/admin/reports/:id/decision | JSON exacto decision KEEP/REMOVE,reason recortado1..500,expectedVersion,expectedDenunciationCount.200 devuelve detalle actualizado con historial. |
 
-`usuarioAdmin` contiene únicamente `id,nombre,apellido,email,rol,status,denouncedReportCount`. El conteo representa reportes distintos del usuario que recibieron al menos una denuncia, independientemente de cuántas denuncias tenga cada reporte. Nunca incluye hashes, versiones de sesión, claves ni tokens. Los nombres/estados/roles históricos ausentes se conservan como null; no se inventa que una cuenta está activa. No hay edición de roles ni de otras cuentas en este incremento.
+reporteAdmin contiene id textual,placeId,placeName,level,createdAt,author:{id,name,rol},denunciationCount,reviewedDenunciationCount,reviewState,isPublic,moderationVersion. Motivos idénticos recortados se agrupan; null/vacío es Sin motivo y la suma coincide con el total. Sin identidades de denunciantes. Cada evento contiene id textual,decision,reason,adminId,adminName,createdAt,reviewedDenunciationCount,moderationVersion. Total, grupos e historial se leen coherentemente.
 
-401 SESSION_INVALID: sesión ausente, expirada, obsoleta o cuenta inactiva. 403 ADMIN_REQUIRED: cuenta autenticada sin privilegio administrativo vigente. 400 ADMIN_QUERY_INVALID / ADMIN_USER_ID_INVALID: formato, rango, parámetros repetidos o desconocidos. 503 SERVICE_UNAVAILABLE: error interno con mensaje público. Los caracteres %, _ y barra invertida se buscan como texto, mediante parámetros SQL.
+KEEP conserva visibilidad; denuncia posterior vuelve a PENDING conservando historial. No se repite KEEP sin denuncias nuevas. REMOVE también puede seguir a KEEP y deja solo lectura; no hay restauración en este alcance. Revisión y total se comparan bajo locks;409 REPORT_STATE_CHANGED exige nueva lectura. Cambio y auditoría son atómicos. Un resultado incierto exige actualizar, sin reenvío automático.
 
-Flutter aplica la búsqueda con Buscar/Enter, descarta resultados de solicitudes antiguas y limpia la selección previa al cambiar criterios. Cuenta con páginas separadas de lista/detalle, carga, vacío, error/reintento y paginación. Cambiar sesión o cerrar la página descarta respuestas pendientes. Solo se muestra el acceso administrativo a sesiones con rol ADMIN; la API vuelve a verificarlo.
+Retirar conserva evidencia, votos, denuncias, premios e historial privado del autor; no suspende ni quita karma/cooldown. Excluye lista/detalle/participación y cálculos públicos actuales e históricos, incluidos mapa, comparación y recomendaciones. own-validation sigue exigiendo autor y devuelve removedFromPublic:true; historial propio incluye isPublic:false. No cambia mínimos, ventanas ni ponderaciones.
 
-Decisiones aprobadas para los siguientes incrementos: suspensión hasta reactivación manual; motivo obligatorio al suspender y observación opcional al reactivar; historial persistido con actor, fecha y motivo; total de denuncias antes del desglose agrupado, con categoría sin motivo; identidad de denunciantes fuera de la vista inicial. Mantener/retirar exige una decisión explícita; retirar conservará evidencia y el historial propio marcado, excluirá el reporte de consultas públicas/cálculos, mantendrá el karma otorgado y no suspenderá automáticamente al autor. Estos cambios requieren migraciones aditivas y sus pruebas antes de habilitarse.
+Errores administrativos:401 SESSION_INVALID,403 ADMIN_REQUIRED/MODERATION_CITIZEN_ONLY,400 ADMIN_QUERY_INVALID/ADMIN_USER_ID_INVALID/ADMIN_REPORT_ID_INVALID/MODERATION_INPUT_INVALID/REPORT_MODERATION_INPUT_INVALID,404 por recurso ausente y503 SERVICE_UNAVAILABLE sin detalles internos. Parámetros desconocidos/repetidos se rechazan; %, _ y barra invertida se buscan literalmente.
 
-## Segundo incremento HU7: cuentas e historial — 28/10/2026
+## HU7.3 — aviso al iniciar sesión
 
-Consulta HU7.2 revisada por Nicolás; se implementan ahora suspensión, reactivación y auditoría. `usuarioAdmin` añade `moderationVersion`, entero no negativo exclusivo del contrato administrativo, independiente de la versión privada de sesión. Se envía como `expectedVersion` al decidir; si otro administrador ya cambió la cuenta, 409 ACCOUNT_STATE_CHANGED exige volver a consultarla. No se aplica una decisión basada en una pantalla antigua.
+POST /api/auth/login devuelve403 ACCOUNT_SUSPENDED y el mensaje público «Tu cuenta está suspendida. Un administrador debe reactivarla para que puedas volver a ingresar.» únicamente si la contraseña es válida y el estado es SUSPENDIDO. No incluye token ni datos de cuenta. Correo inexistente/clave incorrecta devuelve401 INVALID_CREDENTIALS uniforme; otros estados inactivos conservan ese fallo cerrado. Recuperación de contraseña sigue siendo uniforme. Este ajuste autorizado por Nicolás el28/10 satisface el aviso de HU7.3 sin informar estado antes de verificar la clave.
 
-- POST `/api/admin/users/:id/suspend`: JSON exacto `{reason,expectedVersion}`. Motivo recortado, obligatorio, 1..500 caracteres; solo ciudadano USUARIO actualmente ACTIVO.
-- POST `/api/admin/users/:id/reactivate`: JSON `{expectedVersion,note?}`. Observación opcional recortada, máximo 500 caracteres; vacío se guarda como null. Solo ciudadano USUARIO actualmente SUSPENDIDO.
-- Ambos: confirmación explícita en Flutter, respuesta 200 `{data:usuarioAdmin}`. Actor activo ADMIN revalidado y filas bloqueadas en orden. Cambio de estado, aumento de revisión, invalidación de sesiones/tokens de recuperación e inserción del historial se confirman en una única transacción. Un fallo revierte todo. No se alteran reportes, votos, denuncias ni karma del ciudadano. No hay suspensión automática ni duración programada. Solo reactivación manual y nuevo ingreso.
-- GET `/api/admin/users/:id/history`: página de 20 decisiones, orden id descendente. `before` opcional es ID BIGINT positivo textual; devuelve `{data:accion[],pagination:{nextBefore:string|null}}`. `accion`: `id` textual, `action` SUSPEND/REACTIVATE, `reason` string|null, `previousStatus`, `newStatus`, `createdAt` ISO UTC, `adminId`, `adminName` capturado al decidir y `moderationVersion`. Sin acciones previas devuelve lista vacía: no se inventa historial para cuentas antiguas ya suspendidas.
+## Antecedentes anteriores a HU7
 
-403 MODERATION_CITIZEN_ONLY para cualquier destino distinto de USUARIO, incluida la propia cuenta del administrador. 400 MODERATION_INPUT_INVALID para campos extra, revisiones inválidas o motivos/observaciones inválidos. 409 ACCOUNT_STATE_CHANGED para revisión/estado obsoletos. Resto de errores y `no-store` igual a la consulta. Un fallo de transporte no autoriza reenvío automático: Flutter pide recargar el estado/historial antes de decidir otra vez.
-
-Requiere migración aditiva explícita `008-user-moderation`: columna de revisión en users y tabla user_moderation_actions. El arranque solo comprueba el esquema; no ejecuta DDL. Las decisiones conservar/retirar reportes siguen pendientes de su siguiente incremento.
-
-## HU7.1 — revisión de reportes denunciados, 28/10/2026
-
-Tercer incremento aprobado tras revisar consulta y gestión de cuentas. Nuevas denuncias sobre un reporte conservado vuelven a ponerlo Pendiente (ratificado por Nicolás). No se añade restauración de reportes retirados: quedan disponibles como evidencia administrativa y en el historial privado del autor.
-
-- GET `/api/admin/reports`: `state` opcional PENDING (predeterminado), KEPT, REMOVED o ALL; `authorId` opcional entero PostgreSQL positivo; `before` opcional ID BIGINT textual. Devuelve hasta 20 `{data:reporteAdmin[],pagination:{nextBefore:string|null}}`, orden ID numérico descendente. Solo reportes con al menos una denuncia, incluidos revisados/retirados si el filtro lo permite.
-- `reporteAdmin`: `id` textual, `placeId,placeName,level,createdAt`, `author:{id,name,rol}`, `denunciationCount` total, `reviewedDenunciationCount`, `reviewState` PENDING/KEPT/REMOVED, `isPublic`, `moderationVersion`. Ninguna identidad de denunciante. Un reporte conservado con denuncias posteriores al total revisado tiene estado efectivo PENDING; mantiene la evidencia de la decisión anterior.
-- GET `/api/admin/reports/:id`: mismo `data` más `reasons:[{reason:string|null,count:entero}]`. Se agrupa texto idéntico recortado; null/vacío se muestran como Sin motivo. La suma de grupos siempre equivale al total. Incluye `history` (últimas 20 decisiones) e `historyPagination:{nextBefore}`; `beforeHistory` opcional para páginas anteriores. Lectura coherente de total/grupos en el mismo snapshot SQL.
-- POST `/api/admin/reports/:id/decision`: JSON exacto `{decision:'KEEP'|'REMOVE',reason,expectedVersion,expectedDenunciationCount}`. Motivo recortado obligatorio 1..500 caracteres y confirmación en Flutter. Solo autor ciudadano USUARIO. Revalida administrador, autor, versión y total bajo locks; 409 REPORT_STATE_CHANGED si la pantalla quedó obsoleta. No se decide sin denuncias ni se repite KEEP sin denuncias nuevas. REMOVE también puede retirar un reporte conservado. Un retirado queda de solo lectura.
-- 200 devuelve el detalle actualizado. Decisión, visibilidad, revisión, total considerado y auditoría se confirman juntos. Historial con ID textual, decisión, administrador/nombre capturado, fecha SQL, motivo y denuncias consideradas. 403 MODERATION_CITIZEN_ONLY para autor no ciudadano; resto de permisos/errores y no-store como las rutas HU7 previas. Un fallo de transporte exige actualizar, sin reenvío automático.
-
-Migración aditiva explícita `009-report-moderation`. Retirar conserva reporte, denuncias, validaciones, premios e historial propio; no suspende al autor ni cambia karma/cooldown. Se excluye de lista/detalle públicos, participación nueva, saturación de mapa/detalle y todas las analíticas públicas (historia, comparación y recomendaciones). La ruta privada own-validation sigue autorizada solo al autor, con `removedFromPublic:true`; el historial propio añade `isPublic:false` y Flutter lo marca Retirado de la vista pública. Los gráficos de períodos anteriores pueden cambiar al recalcular sin ese reporte. No se modifica la regla de personas distintas, mínimos, ventanas o ponderación.
+Los cortes inferiores conservan su fecha y alcance originales. El estado vigente de HU7 es el resumen superior; sus iteraciones previas se conservan en Git.
 
 ## Rutas del Release 01
 
@@ -56,7 +46,7 @@ Migración aditiva explícita `009-report-moderation`. Retirar conserva reporte,
 | --- | --- | --- |
 | GET / | Pública | 200 mensaje de API |
 | POST /api/auth/register | nombre,apellido,email,password; telefono/distrito opcionales en API | 201;400 validación/duplicado;503 interno |
-| POST /api/auth/login | email,password | 200 token+user;400 formato;401 uniforme;503 interno |
+| POST /api/auth/login | email,password | 200 token+user;400 formato;401 uniforme;403 ACCOUNT_SUSPENDED con clave válida;503 interno |
 | POST /api/auth/password/change | JWT;currentPassword,newPassword,confirmPassword | 200 sin JWT;400/401/403/503 según reglas inferiores |
 | POST /api/auth/password/forgot | email | 202 uniforme con transporte;400/429/503 |
 | POST /api/auth/password/reset/validate | token | 200 valid;400/429/503 |

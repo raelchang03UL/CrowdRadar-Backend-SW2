@@ -1,4 +1,4 @@
-import { invalidSession } from '../utils/passwordPolicy.js';
+import { invalidSession } from "../utils/passwordPolicy.js";
 export const administratorRole = "ADMIN";
 
 export class AdministrationError extends Error {
@@ -11,12 +11,22 @@ export class AdministrationError extends Error {
 
 export function requireAdministrator(actor) {
     if (actor?.rol !== administratorRole) {
-        throw new AdministrationError(403, "ADMIN_REQUIRED", "Esta sección está disponible para administradores.");
+        throw new AdministrationError(
+            403,
+            "ADMIN_REQUIRED",
+            "Esta sección está disponible para administradores."
+        );
     }
 }
 
 export function requireAdministratorSession(current, actor) {
-    if (!current || current.status !== 'ACTIVO' || current.sessionVersion !== actor.sessionVersion ||
-        !Number.isSafeInteger(actor.exp) || actor.exp <= Math.floor(Date.now()/1000)) throw invalidSession();
+    if (
+        !current ||
+        current.status !== "ACTIVO" ||
+        current.sessionVersion !== actor.sessionVersion ||
+        !Number.isSafeInteger(actor.exp) ||
+        actor.exp <= Math.floor(Date.now() / 1000)
+    )
+        throw invalidSession();
     requireAdministrator(current);
 }
