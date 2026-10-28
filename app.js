@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mailConfiguration } from "./src/config/mail.js";
-import { PasswordRecoveryService } from "./src/services/PasswordRecoveryService.js";
+import PasswordRecoveryService from "./src/services/PasswordRecoveryService.js";
 import { createSmtpRecoveryDelivery } from "./src/services/RecoveryMailDelivery.js";
 import { createAuthRoutes } from "./src/routes/auth.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
@@ -13,7 +13,7 @@ import reportRoutes from "./src/routes/report.routes.js";
 import validationRoutes from "./src/routes/validation.routes.js";
 import historyRoutes from "./src/routes/history.routes.js";
 import favoritoRoutes from "./src/routes/favoritoRoutes.js";
-import { authenticateToken } from "./src/middlewares/auth.middleware.js";
+import { authenticateToken } from "./src/middlewares/authMiddleware.js";
 import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
@@ -26,7 +26,6 @@ import { corsOptions, validateEnvironment } from "./src/config/environment.js";
 
 dotenv.config();
 
-// Sin SMTP_* devuelve undefined: las rutas usan el servicio sin entrega (503 uniforme).
 export function recoveryServiceFromEnvironment(env = process.env, createDelivery = createSmtpRecoveryDelivery) {
     const mail = mailConfiguration(env);
     if (!mail) return undefined;
@@ -44,7 +43,6 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/validations", validationRoutes);
     app.use("/api/history", historyRoutes);
     
-    // Ruta de favoritos protegida con autenticación JWT
     app.use("/api/favorites", authenticateToken, favoritoRoutes);
     
     app.get("/", (req, res) => {
@@ -64,16 +62,13 @@ export function createApp({ recoveryService } = {}) {
 }
 
 const app = createApp();
-
 const PORT = process.env.PORT || 3000;
 
 export const startServer = async ({ port = PORT, host } = {}) => {
     validateEnvironment();
-    // Solo el servidor real construye la entrega SMTP; importar app.js (pruebas) nunca envía correo.
     const recoveryService = recoveryServiceFromEnvironment();
     await sequelize.authenticate();
     
-    // Ejecución de esquemas de migración
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
     await assertFavoritesSchemaReady(sequelize);
@@ -85,7 +80,6 @@ export const startServer = async ({ port = PORT, host } = {}) => {
     const server = recoveryService ? createApp({ recoveryService }) : app;
     return server.listen(port, host, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
-        console.log(recoveryService ? "Recuperación de contraseña: envío por correo habilitado." : "Recuperación de contraseña: sin correo configurado (503 uniforme).");
     });
 };
 
@@ -94,7 +88,7 @@ const executedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";
 
 if (path.resolve(currentFile) === executedFile) {
     startServer().catch((error) => {
-        console.error(["SCHEMA_NOT_READY", "CONFIG_INVALID"].includes(error.code) ? error.message : "No se pudo iniciar CrowdRadar API. Revisa la configuración local y la conexión PostgreSQL.");
+        console.error(["SCHEMA_NOT_READY", "CONFIG_INVALID"].includes(error.code) ? error.message : "No se pudo iniciar CrowdRadar API.");
         process.exitCode = 1;
     });
 }
