@@ -10,6 +10,7 @@ import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
 import placeRoutes from "./src/routes/place.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
+import favoritoRoutes from "./src/routes/favoritoRoutes.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
+    app.use("/api/favorites", favoritoRoutes);
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
