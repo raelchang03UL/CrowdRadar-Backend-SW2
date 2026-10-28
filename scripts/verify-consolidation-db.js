@@ -11,6 +11,9 @@ import { migrateRecovery } from "../src/database/migrateRecovery.js";
 import { migratePlaceDetails, assertPlaceDetailsSchemaReady } from "../src/database/migratePlaceDetails.js";
 import { migrateReportCompatibility, legacyReportsMigration, assertConsolidatedReportsSchemaReady } from "../src/database/migrateReportCompatibility.js";
 import { migrateKarma, assertKarmaSchemaReady } from "../src/database/migrateKarma.js";
+import { migrateValidation, assertValidationSchemaReady } from "../src/database/migrateValidation.js";
+import { migrateUserModeration, assertUserModerationSchemaReady } from "../src/database/migrateUserModeration.js";
+import { migrateReportModeration, assertReportModerationSchemaReady } from "../src/database/migrateReportModeration.js";
 
 // Credencial privada solo en memoria; nunca copiar .env ni imprimir errores SQL.
 const privateEnv = process.env.CROWDRADAR_QA_ENV_FILE
@@ -75,19 +78,33 @@ try {
         await migratePlaceDetails(db);
         await Promise.all([migrateReportCompatibility(db), migrateReportCompatibility(db)]);
         await Promise.all([migrateKarma(db), migrateKarma(db)]);
+        // La API actual exige también validación y moderación, incluso al probar R01.
+        await Promise.all([migrateValidation(db), migrateValidation(db)]);
+        await Promise.all([migrateUserModeration(db), migrateUserModeration(db)]);
+        await Promise.all([migrateReportModeration(db), migrateReportModeration(db)]);
         assert.equal(await migratePlaceDetails(db), false);
         assert.equal(await migrateReportCompatibility(db), false);
         assert.equal(await migrateKarma(db), false);
+        assert.equal(await migrateValidation(db), false);
+        assert.equal(await migrateUserModeration(db), false);
+        assert.equal(await migrateReportModeration(db), false);
         await assertPlaceDetailsSchemaReady(db);
         await assertConsolidatedReportsSchemaReady(db);
         await assertKarmaSchemaReady(db);
+        await assertValidationSchemaReady(db);
+        await assertUserModerationSchemaReady(db);
+        await assertReportModerationSchemaReady(db);
         const foreignKeys = await db.query("SELECT confdeltype FROM pg_constraint WHERE conrelid = 'public.saturation_reports'::regclass AND contype = 'f'", { type: QueryTypes.SELECT });
         assert.equal(foreignKeys.length, 2);
         assert.ok(foreignKeys.every(({ confdeltype }) => confdeltype === "a"));
     }
-    pass("base nueva y legacy actualizan, repiten y soportan migradores concurrentes; readiness sin DDL.");
-    assert.deepEqual((await legacy.query("SELECT * FROM public.users ORDER BY id", { type: QueryTypes.SELECT })).map(({ karma_points, ...user }) => user), usersBefore);
-    assert.deepEqual(await legacy.query("SELECT * FROM public.saturation_reports ORDER BY id", { type: QueryTypes.SELECT }), reportsBefore);
+    pass("base nueva y legacy preparan001–009, repiten y soportan migradores concurrentes; readiness sin DDL.");
+    const usersAfter = await legacy.query("SELECT * FROM public.users ORDER BY id", { type: QueryTypes.SELECT });
+    assert.deepEqual(usersAfter.map(({ karma_points, moderation_version, ...user }) => user), usersBefore);
+    assert.ok(usersAfter.every(user => user.karma_points === "0" && user.moderation_version === 0));
+    const reportsAfter = await legacy.query("SELECT * FROM public.saturation_reports ORDER BY id", { type: QueryTypes.SELECT });
+    assert.deepEqual(reportsAfter.map(({ is_public, moderation_version, reviewed_denunciations, review_decision, ...report }) => report), reportsBefore);
+    assert.ok(reportsAfter.every(report => report.is_public === true && report.moderation_version === 0 && report.reviewed_denunciations === 0 && report.review_decision === "PENDING"));
     const history = await legacy.query("SELECT name FROM public.crowdradar_migrations", { type: QueryTypes.SELECT });
     assert.ok(history.some(({ name }) => name === legacyReportsMigration));
     assert.ok(!history.some(({ name }) => name === "004-saturation-reports"));

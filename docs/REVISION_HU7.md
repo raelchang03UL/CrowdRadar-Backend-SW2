@@ -26,6 +26,8 @@ Retirar conserva reporte, votos, denuncias, premios e historial privado del auto
 | Nivel | Resultado |
 | --- | --- |
 | Node, `npm test` |200 aprobadas, cero fallidas/omitidas. Incluye permisos HTTP, aviso de suspensión/privacidad, contratos y regresiones previas. |
+| R01 PostgreSQL/HTTP, corrección de revisión |6/6 bloques en una instancia nueva: bases fresh y legacy preparadas con001–009; filas y claves históricas conservadas. |
+| S3 PostgreSQL/HTTP, corrección de revisión |7/7 en cada una de cuatro bases: fresh/legacy del cierre y fresh/legacy donde se reprodujo el fallo con006/007. Actualización aditiva, valores iniciales, idempotencia/concurrencia y preservación de usuarios/reportes anteriores. |
 | PostgreSQL/HTTP reales, consulta de usuarios |4 bloques: conteos distintos, filtros/literales/páginas, permisos persistidos y preservación. |
 | PostgreSQL/HTTP reales, cuentas |6 bloques:008 idempotente/concurrente, doble suspensión200/409, sesiones/recovery, aviso403 con clave válida y401 uniforme sin ella, reactivación, rollback de auditoría y páginas20+4. |
 | PostgreSQL/HTTP reales, reportes |8 bloques:009 idempotente/concurrente, grupos2+1, denuncia nueva, decisión obsoleta409, rollback/doble decisión, exclusión pública/consulta privada, karma47 y premio conservados, analíticas, carrera denuncia/retiro e historial20+3. |
@@ -45,6 +47,8 @@ Cada runner comprueba destino/procedencia y limpia únicamente sus fixtures. No 
 
 ## Revisión e integración pendientes
 
-Revisión de otra persona, Android/lector de pantalla e integración autorizada del par. Los runners históricos R01/S3 no se repitieron en este corte. No se certifica Internet/nube ni se actualizan dependencias del proyecto. Tras aprobar el par, aplicar migraciones antes de servir el backend y repetir el recorrido sobre los SHA integrados. Mantener Refs a las cuatro historias; no cerrarlas automáticamente.
+Se reprodujeron los fallos de R01 y S3 antes de corregir su preparación: la API actual consulta is_public de009. Ambos runners aplican ahora las migraciones necesarias antes de importar/usar la API, manteniendo guardas, comprobaciones de preservación y migraciones históricas intactas. R01 exige que ambos destinos sean inexistentes; repetirlo en otra instancia aislada, nunca borrando bases. S3 conserva también las columnas de moderación que ya existan. Se repitieron npm test y los18 bloques HU7; frontend no cambió y sus resultados anteriores no se repitieron para esta corrección.
+
+Revisión de la corrección por otra persona, Android/lector de pantalla e integración autorizada del par pendientes. No se certifica Internet/nube ni se actualizan dependencias del proyecto. Tras aprobar el par, aplicar migraciones antes de servir el backend y repetir el recorrido sobre los SHA integrados. Mantener Refs a las cuatro historias; no cerrarlas automáticamente.
 
 La demo portable existente conserva SMTP deshabilitado y su aprovisionamiento manual; HU7 no crea administradores desde el registro público. Cada operador debe preparar sus propias cuentas ficticias en su base local autorizada para revisar moderación.

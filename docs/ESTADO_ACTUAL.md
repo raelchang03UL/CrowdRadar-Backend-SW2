@@ -8,7 +8,8 @@ Rama feature/hu-7-moderacion-kou; aporte de Nicolás Kou, cuenta kowisprox. [Bac
 - HU7.3 informa suspensión con403 ACCOUNT_SUSPENDED únicamente después de comprobar la contraseña. Correo inexistente o clave incorrecta conserva401 uniforme. No emite token a cuentas suspendidas; sesiones anteriores permanecen inválidas después de reactivar y se requiere un nuevo login.
 - Migraciones explícitas008/009, aditivas; aplicar npm run db:migrate antes de servir. Arranque solo SELECT. ADMIN activo revalidado, destinos ciudadanos y revisión/total esperados; decisión y auditoría atómicas. Retirar conserva evidencia privada, cuenta y karma; excluye cálculos públicos actuales e históricos.
 - Verificación actual: npm test200/200; frontend615 aprobadas, cero fallidas y dos opt-in previas omitidas; análisis limpio. Los tres runners HU7 completaron18 bloques SQL/HTTP reales en crowdradar_hu7_test local5447, incluidos aviso correcto/clave errónea, rollback, concurrencia y preservación. Sin SMTP ni acceso a bases históricas.
-- Recorrido Web y capturas portables en el frontend; [criterios y reproducción](REVISION_HU7.md), [contrato](CONTRATO_API.md). Android, lectores de pantalla, runners históricos R01/S3 y nube no se repitieron en este corte.
+- Observación de revisión corregida: R01 prepara001–009 y S3 añade007–009 antes de usar la API actual. R01 pasó6/6 en instancia nueva; S3 pasó7/7 en cuatro bases fresh/legacy, incluidas las de reproducción con esquemas006/007. Comprobaciones de preservación ampliadas para columnas nuevas y previas; migraciones históricas y guardas intactas. npm test200/200 y18 bloques HU7 repetidos.
+- Recorrido Web y capturas portables en el frontend; [criterios y reproducción](REVISION_HU7.md), [contrato](CONTRATO_API.md). Frontend sin cambios en esta corrección; Android, lectores de pantalla y nube siguen pendientes.
 
 ## Antecedentes anteriores a HU7
 

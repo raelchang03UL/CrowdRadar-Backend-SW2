@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 import {QueryTypes} from "sequelize";
 import {assertIsolatedConsolidationDatabase,consolidationQaDatabases,assertConsolidationQaProvenance} from "../src/database/databaseSafety.js";
 import {migrateValidation,assertValidationSchemaReady} from "../src/database/migrateValidation.js";
+import {migrateUserModeration,assertUserModerationSchemaReady} from "../src/database/migrateUserModeration.js";
+import {migrateReportModeration,assertReportModerationSchemaReady} from "../src/database/migrateReportModeration.js";
 const input=dotenv.parse(readFileSync(process.env.CROWDRADAR_QA_ENV_FILE));
 const qaRun=process.env.CROWDRADAR_QA_RUN;
 const qaDatabase=process.env.CROWDRADAR_S3_QA_DATABASE??consolidationQaDatabases(qaRun)[0];
@@ -21,8 +23,32 @@ try{
     await assertConsolidationQaProvenance(db,qaRun);
     const [identity]=await select('SELECT current_database() AS name');assert.equal(identity.name,qaDatabase);
     const baseline=await select('SELECT * FROM public.users ORDER BY id');
+    const reportsBefore=await select('SELECT * FROM public.saturation_reports ORDER BY id');
     await Promise.all([migrateValidation(db),migrateValidation(db)]);assert.equal(await migrateValidation(db),false);await assertValidationSchemaReady(db);
-    pass('007 aditiva, idempotente/concurrente; destino QA identificado, sin datos históricos alterados.');
+    await Promise.all([migrateUserModeration(db),migrateUserModeration(db)]);assert.equal(await migrateUserModeration(db),false);await assertUserModerationSchemaReady(db);
+    await Promise.all([migrateReportModeration(db),migrateReportModeration(db)]);assert.equal(await migrateReportModeration(db),false);await assertReportModerationSchemaReady(db);
+    const usersReady=await select('SELECT * FROM public.users ORDER BY id');
+    for(const original of baseline){
+        const current=usersReady.find(row=>row.id===original.id);
+        assert.ok(current);
+        if(Object.hasOwn(original,'moderation_version')) assert.deepEqual(current,original);
+        else {
+            const {moderation_version,...previousColumns}=current;
+            assert.equal(moderation_version,0);assert.deepEqual(previousColumns,original);
+        }
+    }
+    const reportsReady=await select('SELECT * FROM public.saturation_reports ORDER BY id');
+    for(const original of reportsBefore){
+        const current=reportsReady.find(row=>row.id===original.id);
+        assert.ok(current);
+        if(Object.hasOwn(original,'is_public')) assert.deepEqual(current,original);
+        else {
+            const {is_public,moderation_version,reviewed_denunciations,review_decision,...previousColumns}=current;
+            assert.deepEqual({is_public,moderation_version,reviewed_denunciations,review_decision},{is_public:true,moderation_version:0,reviewed_denunciations:0,review_decision:'PENDING'});
+            assert.deepEqual(previousColumns,original);
+        }
+    }
+    pass('007–009 aditivas, idempotentes/concurrentes; usuarios/reportes previos conservados y nuevas columnas con valores iniciales.');
     const {default:app}=await import('../app.js');
     await new Promise(resolve=>{server=app.listen(0,'127.0.0.1',resolve);});
     const root=`http://127.0.0.1:${server.address().port}`;
@@ -93,8 +119,10 @@ try{
     assert.equal((await call(analytics+'/history?'+range)).status,401);
     pass('SQL real:72 bloques Lima, conteos cronológicos, comparación insuficiente, recomendación3 días y vacíos honestos.');
     const after=await select('SELECT * FROM public.users ORDER BY id');
-    for(const original of baseline)assert.deepEqual(after.find(row=>row.id===original.id),original);
-    pass('usuarios preexistentes QA conservados; solo nuevas cuentas/observaciones sintéticas de esta ejecución.');
+    for(const original of usersReady)assert.deepEqual(after.find(row=>row.id===original.id),original);
+    const reportsAfter=await select('SELECT * FROM public.saturation_reports ORDER BY id');
+    for(const original of reportsReady)assert.deepEqual(reportsAfter.find(row=>row.id===original.id),original);
+    pass('usuarios y reportes preexistentes QA conservados; solo nuevas cuentas/observaciones sintéticas de esta ejecución.');
     console.log(`Resultado:${blocks}/${blocks} bloques S3 PostgreSQL/HTTP reales. Sin SMTP, SQL remoto ni moderación.`);
 }catch(error){
     console.error(`FAIL S3 QA (${error.code??error.name}); sin SQL ni secretos.`);
