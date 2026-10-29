@@ -1,4 +1,5 @@
 import PlaceRepository from "../repositories/PlaceRepository.js";
+import FavoriteRepository from "../repositories/FavoriteRepository.js";
 
 export function validCoordinates(latitud, longitud) {
     return Number.isFinite(latitud) && latitud >= -90 && latitud <= 90 &&
@@ -15,5 +16,9 @@ export default {
             const { id, nombre, categoria, referencia, latitud, longitud, demostrativo } = place;
             return { id, nombre, categoria, referencia, latitud, longitud, demostrativo };
         });
+    },
+
+    async removeFavorite(userId, placeId) {
+        await FavoriteRepository.remove(userId, placeId);
     }
 };

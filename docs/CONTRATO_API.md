@@ -18,6 +18,9 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
 | GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| DELETE `/api/places/:id/favorite` | JWT; ID de lugar | 204; operación idempotente y limitada al usuario autenticado | 400 ID inválido; 401 sesión; 503 indisponibilidad |
+
+La eliminación de favoritos requiere que esté aplicada la migración de favoritos `004-user-favorites`. Si la asociación ya no existe, la operación igualmente responde 204.
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
