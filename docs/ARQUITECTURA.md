@@ -34,6 +34,8 @@ El [contrato API](CONTRATO_API.md) define el intercambio con Flutter. No devolve
 
 `003-password-recovery` extiende ese runner sin editar las migraciones previas: crea `password_reset_tokens` (hash único y un enlace no consumido por usuario) y `password_recovery_limits`. Requiere 002 y rechaza tablas preexistentes sin historial. El arranque verifica ambas migraciones mediante SELECT, sin DDL.
 
+`004-saturation-push-alerts` añade `place_saturation`, `push_device_tokens` y la cola `push_notification_outbox`; no altera usuarios, lugares ni favoritos. El nivel se actualiza al recibir un evento interno autenticado con secreto, y la cola se crea en la misma transacción solo cuando el nivel cambia. El worker entrega por Firebase Admin/FCM y reintenta errores transitorios hasta cinco veces. La consulta de destinatarios usa la tabla `favorites` de HU 8.1; esa dependencia debe integrarse antes de activar la fuente. FCM usa credenciales externas ADC y nunca almacena claves privadas en el repositorio.
+
 Los scripts no eliminan la base histórica. Cada PC reproduce esquema/fixtures, no copia credenciales. Una migración aplicada no se reescribe para cambiar su significado; añadir una nueva y probar actualización/base limpia.
 
 ## Pruebas y límites

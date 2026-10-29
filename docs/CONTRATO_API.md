@@ -18,10 +18,16 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
 | GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| GET `/api/places/{id}` | JWT | 200 `{data: lugar}` | 400 ID inválido; 401 token; 404 lugar inactivo/inexistente; 503 consulta |
+| POST `/api/notifications/devices` | JWT; `{token,platform}` | 200 dispositivo registrado | 400 datos inválidos; 401 token; 503 persistencia |
+| DELETE `/api/notifications/devices` | JWT; `{token}` | 204 dispositivo desregistrado | 400 token inválido; 401 token; 503 persistencia |
+| POST `/api/internal/places/{id}/saturation` | Servicio interno; `x-saturation-event-secret`; `{level}` | 200 `{data:{changed,initialized,...}}` | 400 ID/nivel inválido; 401 secreto; 404 lugar; 503 fuente/esquema |
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
-`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. No hay dirección, saturación ni endpoint de detalle todavía.
+`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. No hay dirección ni una fuente de saturación integrada en esta rama.
+
+HU 8.3: el cliente registra su token FCM por usuario y lo elimina al cerrar sesión. Una fuente interna autenticada con secreto de al menos 32 caracteres publica el nivel actual como texto no vacío de hasta 50 caracteres. El primer valor establece estado y no alerta; los valores repetidos tampoco generan alerta. Solo una transición posterior crea entradas en la cola transaccional, una por dispositivo de usuarios que tengan el lugar en `favorites`. La migración de alertas crea el estado de saturación, tokens y cola; requiere que la historia que crea `favorites` esté integrada antes de procesar eventos. FCM usa `FCM_PROJECT_ID` y Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` en desarrollo); los mensajes incluyen `placeId`, `previousLevel` y `newLevel`.
 
 ## Validación y errores: distinguir API de interfaz
 

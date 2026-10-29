@@ -15,5 +15,16 @@ export default {
             const { id, nombre, categoria, referencia, latitud, longitud, demostrativo } = place;
             return { id, nombre, categoria, referencia, latitud, longitud, demostrativo };
         });
+    },
+
+    async findActiveById(id) {
+        if (!Number.isSafeInteger(id)) return null;
+        const place = await PlaceRepository.findActiveById(id);
+        if (!place) return null;
+        if (!validCoordinates(place.latitud, place.longitud)) {
+            throw new Error("Coordenadas de lugar inválidas.");
+        }
+        const { nombre, categoria, referencia, latitud, longitud, demostrativo } = place;
+        return { id, nombre, categoria, referencia, latitud, longitud, demostrativo };
     }
 };

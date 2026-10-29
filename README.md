@@ -1,6 +1,6 @@
 # CrowdRadar Backend
 
-API REST para registro, inicio de sesión, consulta/actualización del perfil, cambio seguro de contraseña, recuperación/restablecimiento y lectura autenticada de lugares. Recuperación tiene envío real deshabilitado hasta elegir proveedor/remitente; su flujo se prueba mediante correo en memoria exclusivo de pruebas. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
+API REST para registro, inicio de sesión, perfil, recuperación/restablecimiento, lugares autenticados y alertas push de cambios de saturación en favoritos. Recuperación requiere configurar un proveedor de correo; las alertas push requieren configurar Firebase Cloud Messaging y una fuente interna de cambios. Está construida con Node.js, Express, Sequelize y PostgreSQL. Los incrementos publicados en ramas siguen pendientes de integración en `develop`; verifica la rama del PR que revisas.
 
 Para colaborar con el equipo y usar IA sobre el código, empieza por [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) e [inicio del equipo](docs/INICIO_EQUIPO.md), que incluye un prompt sin tarea asignada. Las guías de [coordinación](docs/COORDINACION_EQUIPO.md), [arquitectura](docs/ARQUITECTURA.md) y [contrato API](docs/CONTRATO_API.md) viajan con el repositorio. `develop` reúne los aportes integrados de los siete: publicar una rama permite revisarla, pero no incorpora su trabajo a la base común hasta integrar el PR.
 
@@ -52,7 +52,7 @@ La línea base de desarrollo se verificó con Node.js 22.20.0, npm 10.9.3 y Post
 npm start
 ```
 
-Antes del primer arranque y de actualizar este incremento, ejecuta `npm run db:migrate`. Aplica `001-create-places`, `002-users-session-version` y `003-password-recovery`: 002 crea `users` en una base limpia o añade la versión de sesión a su esquema histórico reconocido; 003 añade tablas de tokens/límites, sin borrar usuarios. El arranque solo autentica y verifica el esquema; **no ejecuta DDL ni `User.sync()`**. Si falta la migración, se detiene con instrucciones. La respuesta de control está en `GET http://localhost:3000/`.
+Antes del primer arranque y de actualizar este incremento, ejecuta `npm run db:migrate`. Aplica `001-create-places`, `002-users-session-version`, `003-password-recovery` y `004-saturation-push-alerts`; esta última crea tokens de dispositivo, niveles actuales y una cola transaccional. El arranque solo autentica y verifica el esquema; **no ejecuta DDL ni `User.sync()`**. Si falta la migración, se detiene con instrucciones. La respuesta de control está en `GET http://localhost:3000/`.
 
 Los fixtures admiten únicamente `crowdradar_dev` o `crowdradar_hu31_test` en PostgreSQL local. El comando de migración es explícito y portable; bloquea la base de entrega, bases de sistema y hosts Supabase. En esta tarea todas las conexiones reales fueron locales. No se realizó despliegue.
 
@@ -92,6 +92,14 @@ npm run dev
 | `GET` | `/api/places` | Bearer JWT | Listar lugares activos con coordenadas válidas. |
 
 `GET /api/places` devuelve `{ "data": [...] }`, con `id`, `nombre`, `categoria`, `referencia`, `latitud`, `longitud` y `demostrativo`. Vacío: HTTP 200 y `data: []`. Sin autorización: 401. Fallo de datos/consulta: 503 con un mensaje público, sin detalles internos. No hay endpoint de alta/edición de lugares en esta HU.
+
+## HU 8.3 — alertas de cambios de saturación
+
+El cliente registra y desregistra el token de este dispositivo en `POST`/`DELETE /api/notifications/devices` usando el JWT de la sesión. En Android/iOS, inicializa Firebase con las opciones públicas de la app entregadas mediante `--dart-define`: `FIREBASE_API_KEY`, `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_PROJECT_ID`, `FIREBASE_ANDROID_APP_ID` y, para iOS, `FIREBASE_IOS_APP_ID`. Web push no está habilitado en esta implementación.
+
+El backend requiere `FCM_PROJECT_ID` y credenciales de Application Default Credentials para enviar. En desarrollo, `GOOGLE_APPLICATION_CREDENTIALS` debe apuntar a un archivo de cuenta de servicio fuera del repositorio. Nunca copies la clave en Git o en el chat. Sin FCM configurado, la cola conserva alertas pendientes y el servidor lo indica en su log.
+
+La fuente de saturación debe llamar `POST /api/internal/places/{id}/saturation`, enviar `{ "level": "..." }` y el encabezado `x-saturation-event-secret`. Configura `SATURATION_EVENT_SECRET` con un valor aleatorio de al menos 32 caracteres tanto en la fuente como en el backend. El primer nivel reportado inicializa el estado; repetirlo no genera notificaciones; solo un cambio real encola alertas. Se envían a los tokens de usuarios asociados al lugar mediante `favorites`, por lo que la migración/esquema de favoritos debe estar disponible antes de procesar cambios. El envío se reintenta mediante la cola hasta cinco veces. `GET /api/places/{id}` proporciona el detalle que abre la notificación.
 
 Ejemplo de registro:
 

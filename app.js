@@ -9,17 +9,28 @@ import sequelize from "./src/config/database.js";
 import { assertAuthSchemaReady } from "./src/database/migrateAuth.js";
 import { assertRecoverySchemaReady } from "./src/database/migrateRecovery.js";
 import placeRoutes from "./src/routes/place.routes.js";
+import { createNotificationRoutes } from "./src/routes/notification.routes.js";
+import { createInternalRoutes } from "./src/routes/internal.routes.js";
 import { corsOptions, validateEnvironment } from "./src/config/environment.js";
+import PushNotificationService from "./src/services/PushNotificationService.js";
+import { startPushOutboxWorker } from "./src/services/PushOutboxWorker.js";
+import { assertSaturationAlertsSchemaReady } from "./src/database/migrateSaturationAlerts.js";
 
 dotenv.config();
 
-export function createApp({ recoveryService } = {}) {
+export function createApp({
+    recoveryService,
+    pushNotificationService = PushNotificationService,
+    saturationEventSecret = process.env.SATURATION_EVENT_SECRET
+} = {}) {
     const app = express();
     app.use(cors(corsOptions()));
     app.use(express.json());
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
+    app.use("/api/notifications", createNotificationRoutes(pushNotificationService));
+    app.use("/api/internal", createInternalRoutes(pushNotificationService, { secret: saturationEventSecret }));
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
@@ -36,10 +47,14 @@ export const startServer = async ({ port = PORT } = {}) => {
     // Toda creación/cambio de esquema es explícita: npm run db:migrate.
     await assertAuthSchemaReady(sequelize);
     await assertRecoverySchemaReady(sequelize);
+    await assertSaturationAlertsSchemaReady(sequelize);
 
-    return app.listen(port, () => {
+    const server = app.listen(port, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
     });
+    const stopWorker = startPushOutboxWorker();
+    server.once("close", stopWorker);
+    return server;
 };
 
 const currentFile = fileURLToPath(import.meta.url);

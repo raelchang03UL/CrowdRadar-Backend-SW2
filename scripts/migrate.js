@@ -2,6 +2,7 @@ import sequelize from "../src/config/database.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { migrateAuth, authMigration } from "../src/database/migrateAuth.js";
 import { migrateRecovery, recoveryMigration } from "../src/database/migrateRecovery.js";
+import { migrateSaturationAlerts, saturationAlertsMigration } from "../src/database/migrateSaturationAlerts.js";
 import { assertMigrationTarget } from "../src/database/databaseSafety.js";
 
 try {
@@ -12,6 +13,8 @@ try {
     console.log(authApplied ? `${authMigration} aplicada.` : `${authMigration} ya aplicada; sin cambios.`);
     const recoveryApplied = await migrateRecovery(sequelize);
     console.log(recoveryApplied ? `${recoveryMigration} aplicada.` : `${recoveryMigration} ya aplicada; sin cambios.`);
+    const alertsApplied = await migrateSaturationAlerts(sequelize);
+    console.log(alertsApplied ? `${saturationAlertsMigration} aplicada.` : `${saturationAlertsMigration} ya aplicada; sin cambios.`);
 } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
