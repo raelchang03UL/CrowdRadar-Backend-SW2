@@ -17,11 +17,13 @@ Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`.
 | POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
 | GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
 | PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
-| GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| GET `/api/places` | JWT | 200 `{data: lugar[]}`; cada lugar incluye `esFavorito`; vacío `[]` | 401 token; 503 mensaje público de carga |
+| GET `/api/places/favorites` | JWT | 200 `{data: lugar[]}` solo del usuario autenticado; vacío `[]` | 401 token; 503 mensaje público de carga |
+| POST `/api/places/:id/favorite` | JWT; ID de lugar activo | 201 `{message,data:{placeId,esFavorito:true}}` | 400 ID inválido; 401 token; 404 lugar no disponible; 409 `FAVORITE_ALREADY_EXISTS`; 503 servicio |
 
 `usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
 
-`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. No hay dirección, saturación ni endpoint de detalle todavía.
+`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180, `demostrativo` booleano y `esFavorito` booleano para el usuario autenticado. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. El listado general devuelve activos en orden ascendente de ID; favoritos devuelve activos primero por fecha de registro descendente. No hay dirección, saturación ni endpoint de detalle todavía.
 
 ## Validación y errores: distinguir API de interfaz
 

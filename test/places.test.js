@@ -3,23 +3,27 @@ import assert from "node:assert/strict";
 process.env.JWT_SECRET = "hu31-test-only-not-a-real-secret";
 const { default: app } = await import("../app.js");
 const { default: repository } = await import("../src/repositories/PlaceRepository.js");
+const { default: favoriteRepository } = await import("../src/repositories/FavoriteRepository.js");
 const { default: userRepository } = await import("../src/repositories/UserRepository.js");
 const { default: Place } = await import("../src/models/Place.js");
 const { default: jwt } = await import("../src/utils/jwt.js");
 const { seedPlacesDemo } = await import("../src/database/seedPlacesDemo.js");
 let server, baseUrl, places;
 const original = repository.findActive;
+const originalFavoriteIds = favoriteRepository.findPlaceIdsByUser;
 const originalSession = userRepository.findSessionById;
 const validPlace = { id: 1, nombre: "Lugar de prueba", categoria: "Parque", referencia: "Prueba", latitud: -12.0464, longitud: -77.0428, activo: true, demostrativo: true };
 before(() => {
     userRepository.findSessionById = async () => ({ id: 1, status: "ACTIVO", rol: "USUARIO", sessionVersion: 0 });
     repository.findActive = async () => places;
+    favoriteRepository.findPlaceIdsByUser = async () => [];
     server = app.listen(0);
     baseUrl = `http://127.0.0.1:${server.address().port}/api/places`;
 });
 beforeEach(() => { places = []; repository.findActive = async () => places; });
 after(async () => {
     repository.findActive = original;
+    favoriteRepository.findPlaceIdsByUser = originalFavoriteIds;
     userRepository.findSessionById = originalSession;
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
@@ -39,7 +43,8 @@ test("HU 3.1 entrega coordenadas y campos mínimos sin datos internos", async ()
     places = [validPlace];
     const res = await request();
     assert.equal(res.status, 200);
-    const { activo, ...expected } = validPlace;
+    const { activo, ...expectedPlace } = validPlace;
+    const expected = { ...expectedPlace, esFavorito: false };
     assert.deepEqual(await res.json(), { data: [expected] });
 });
 test("HU 3.1 no expone coordenadas inválidas", async () => {

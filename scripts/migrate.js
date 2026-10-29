@@ -2,6 +2,7 @@ import sequelize from "../src/config/database.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
 import { migrateAuth, authMigration } from "../src/database/migrateAuth.js";
 import { migrateRecovery, recoveryMigration } from "../src/database/migrateRecovery.js";
+import { migrateFavorites, favoritesMigration } from "../src/database/migrateFavorites.js";
 import { assertMigrationTarget } from "../src/database/databaseSafety.js";
 
 try {
@@ -12,6 +13,8 @@ try {
     console.log(authApplied ? `${authMigration} aplicada.` : `${authMigration} ya aplicada; sin cambios.`);
     const recoveryApplied = await migrateRecovery(sequelize);
     console.log(recoveryApplied ? `${recoveryMigration} aplicada.` : `${recoveryMigration} ya aplicada; sin cambios.`);
+    const favoritesApplied = await migrateFavorites(sequelize);
+    console.log(favoritesApplied ? `${favoritesMigration} aplicada.` : `${favoritesMigration} ya aplicada; sin cambios.`);
 } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

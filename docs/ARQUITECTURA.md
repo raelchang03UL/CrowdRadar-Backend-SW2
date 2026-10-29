@@ -34,6 +34,8 @@ El [contrato API](CONTRATO_API.md) define el intercambio con Flutter. No devolve
 
 `003-password-recovery` extiende ese runner sin editar las migraciones previas: crea `password_reset_tokens` (hash único y un enlace no consumido por usuario) y `password_recovery_limits`. Requiere 002 y rechaza tablas preexistentes sin historial. El arranque verifica ambas migraciones mediante SELECT, sin DDL.
 
+`004-user-favorites` crea la relación `favorites` entre usuarios y lugares activos, con clave primaria compuesta para impedir duplicados y borrado en cascada. El arranque verifica su historial/esquema; se aplica únicamente con `npm run db:migrate`.
+
 Los scripts no eliminan la base histórica. Cada PC reproduce esquema/fixtures, no copia credenciales. Una migración aplicada no se reescribe para cambiar su significado; añadir una nueva y probar actualización/base limpia.
 
 ## Pruebas y límites

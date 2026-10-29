@@ -11,7 +11,8 @@
     "db:seed:user-demo": "node scripts/seed-demo-user.js",
     "test:db:places": "node scripts/verify-places-db.js",
     "test:db:auth": "node scripts/verify-auth-db.js",
-    "test:db:recovery": "node scripts/verify-recovery-db.js"
+    "test:db:recovery": "node scripts/verify-recovery-db.js",
+    "test:db:favorites": "node scripts/verify-favorites-db.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",
