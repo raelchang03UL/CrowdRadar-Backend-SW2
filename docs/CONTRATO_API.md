@@ -1,30 +1,100 @@
 # Contrato API compartido
 
-Fuente canónica backend para coordinar con Flutter. Refleja HU 3.1 y los incrementos A/B/C de revisión al08/10/2026, todavía sin integrar en `develop`. El par C usa `feature/hu-2-1-2-recuperacion` en ambos repositorios desde los padres B backend `97e607e`/frontend `1e62c75`; pruebas en ESTADO_ACTUAL. No es un catálogo de endpoints futuros. Al publicar un cambio de contrato, registrar ambos SHA y pruebas en los PR relacionados cuando sus bases permitan abrirlos.
+JSON UTF-8, JWT Bearer en rutas protegidas; el cliente nunca conecta directamente a PostgreSQL. Esta sección describe HU7 vigente,28/10/2026; las rutas previas se conservan debajo.
 
-Base local: `http://localhost:3000`; Android emulado usa `http://10.0.2.2:3000`. JSON UTF-8. Rutas protegidas reciben `Authorization: Bearer <token>`. No incluir token real en este archivo ni evidencias.
+## HU7 — usuarios y moderación
 
-## Rutas actuales
+ADMIN activo revalidado desde BD y sesión vigente en cada operación; registro público conserva USUARIO. Respuestas administrativas no-store. Sin edición de roles; acciones solo sobre ciudadanos. Migraciones008/009 explícitas antes del arranque, que solo comprueba esquema.
 
-| Método/ruta | Entrada | Éxito | Fallos actuales |
-| --- | --- | --- | --- |
-| GET `/` | Sin autenticación | 200 `{message: "CrowdRadar API"}` | — |
-| POST `/api/auth/register` | `nombre`, `apellido`, `email`, `password`; `telefono`/`distrito` opcionales en API | 201 `{message, data: {id,nombre,apellido,email}}` | 400 validación/correo repetido/error del servicio |
-| POST `/api/auth/login` | `email`, `password` | 200 `{message, data: {token,user: {id,nombre,apellido,email,rol}}}` | 400 schema; 401 credenciales/error del servicio |
-| POST `/api/auth/password/change` | JWT; `currentPassword`, `newPassword`, `confirmPassword` | 200 `{message: "Contraseña actualizada. Inicia sesión nuevamente."}` sin JWT | 400 validación/confirmación/reutilización; 403 actual incorrecta; 401 sesión; 503 indisponibilidad |
-| POST `/api/auth/password/forgot` | Público; `{email}` | 202 `{message: "Si el correo corresponde a una cuenta, recibirás un enlace para restablecer tu contraseña."}` con transporte configurado | 400 formato; 429 abuso; 503 recuperación deshabilitada/servicio |
-| POST `/api/auth/password/reset/validate` | Público; `{token}` | 200 `{valid: true}`; no consume ni envía correo | 400 enlace inválido/expirado/usado; 429 abuso; 503 servicio |
-| POST `/api/auth/password/reset` | Público; `{token,newPassword,confirmPassword}` | 200 `{message: "Contraseña restablecida. Inicia sesión nuevamente."}` sin JWT | 400 enlace/contraseña/confirmación/reutilización; 429 abuso; 503 servicio |
-| GET `/api/users/profile` | JWT | 200 `{data: usuario}` | 401 token; 404 usuario/error del servicio |
-| PUT `/api/users/profile` | JWT; subconjunto de `nombre`, `apellido`, `telefono`, `distrito` | 200 `{message,data: usuario}` | 401 token; 400 validación/usuario/error del servicio |
-| GET `/api/places` | JWT | 200 `{data: lugar[]}`; vacío `[]` | 401 token; 503 mensaje público de carga |
-| DELETE `/api/places/:id/favorite` | JWT; ID de lugar | 204; operación idempotente y limitada al usuario autenticado | 400 ID inválido; 401 sesión; 503 indisponibilidad |
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/admin/users | q parcial literal de nombre/correo, máximo160 caracteres, sin distinguir mayúsculas; status ACTIVO/SUSPENDIDO opcional; page1..10000, limit1..50 (por defecto1/20). Filtros AND;200 data:usuarioAdmin[] y pagination:{page,limit,hasNext}. |
+| GET /api/admin/users/:id | ID entero PostgreSQL positivo;200 data:usuarioAdmin;404 USER_NOT_FOUND. |
+| POST /api/admin/users/:id/suspend | JSON exacto reason,expectedVersion. Motivo recortado1..500; ciudadano ACTIVO. |
+| POST /api/admin/users/:id/reactivate | JSON expectedVersion,note opcional. Observación hasta500, vacío=null; ciudadano SUSPENDIDO. |
+| GET /api/admin/users/:id/history | before BIGINT textual opcional;20 eventos por página, ID descendente; data:accion[],pagination:{nextBefore}. |
 
-La eliminación de favoritos requiere que esté aplicada la migración de favoritos `004-user-favorites`. Si la asociación ya no existe, la operación igualmente responde 204.
+usuarioAdmin contiene id,nombre,apellido,email,rol,status,denouncedReportCount,moderationVersion. El conteo es de reportes distintos con denuncias, incluidos revisados/retirados. Campos históricos ausentes permanecen null. Nunca hashes, tokens ni versión privada de sesión. accion contiene id textual,action SUSPEND/REACTIVATE,reason nullable,previousStatus,newStatus,createdAt UTC,adminId,adminName capturado y moderationVersion.
 
-`usuario` es la representación actual de Sequelize de `users` sin `passwordHash` ni `sessionVersion`: id/nombre/apellido/email/telefono/distrito/rol/status y timestamps. No prometer estos campos internos como contrato nuevo para otros modelos. Flutter consume solo los datos necesarios de `UserModel`.
+Suspender/reactivar confirma estado, revisión, invalidación de sesiones/recuperación y auditoría en una transacción;200 devuelve data:usuarioAdmin. Motivo obligatorio al suspender; observación opcional al reactivar. Sin duración programada: reactivación manual y nuevo login. No modifica reportes, karma ni rol.409 ACCOUNT_STATE_CHANGED exige actualizar.
 
-`lugar` contiene `id` entero, `nombre` texto, `categoria` texto, `referencia` texto o null, `latitud` número finito entre -90/90, `longitud` número finito entre -180/180 y `demostrativo` booleano. Los fixtures reservan IDs negativos, por tanto no suponer `id > 0`. Solo se devuelven activos en orden ascendente de ID. No hay dirección, saturación ni endpoint de detalle todavía.
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/admin/reports | state PENDING (predeterminado),KEPT,REMOVED,ALL; authorId opcional; before BIGINT textual opcional. Hasta20 reportes con denuncias, ID descendente; data:reporteAdmin[],pagination:{nextBefore}. |
+| GET /api/admin/reports/:id | data:reporteAdmin más reasons:[{reason nullable,count}]; history y historyPagination:{nextBefore}. beforeHistory opcional pagina eventos anteriores de20 en20. |
+| POST /api/admin/reports/:id/decision | JSON exacto decision KEEP/REMOVE,reason recortado1..500,expectedVersion,expectedDenunciationCount.200 devuelve detalle actualizado con historial. |
+
+reporteAdmin contiene id textual,placeId,placeName,level,createdAt,author:{id,name,rol},denunciationCount,reviewedDenunciationCount,reviewState,isPublic,moderationVersion. Motivos idénticos recortados se agrupan; null/vacío es Sin motivo y la suma coincide con el total. Sin identidades de denunciantes. Cada evento contiene id textual,decision,reason,adminId,adminName,createdAt,reviewedDenunciationCount,moderationVersion. Total, grupos e historial se leen coherentemente.
+
+KEEP conserva visibilidad; denuncia posterior vuelve a PENDING conservando historial. No se repite KEEP sin denuncias nuevas. REMOVE también puede seguir a KEEP y deja solo lectura; no hay restauración en este alcance. Revisión y total se comparan bajo locks;409 REPORT_STATE_CHANGED exige nueva lectura. Cambio y auditoría son atómicos. Un resultado incierto exige actualizar, sin reenvío automático.
+
+Retirar conserva evidencia, votos, denuncias, premios e historial privado del autor; no suspende ni quita karma/cooldown. Excluye lista/detalle/participación y cálculos públicos actuales e históricos, incluidos mapa, comparación y recomendaciones. own-validation sigue exigiendo autor y devuelve removedFromPublic:true; historial propio incluye isPublic:false. No cambia mínimos, ventanas ni ponderaciones.
+
+Errores administrativos:401 SESSION_INVALID,403 ADMIN_REQUIRED/MODERATION_CITIZEN_ONLY,400 ADMIN_QUERY_INVALID/ADMIN_USER_ID_INVALID/ADMIN_REPORT_ID_INVALID/MODERATION_INPUT_INVALID/REPORT_MODERATION_INPUT_INVALID,404 por recurso ausente y503 SERVICE_UNAVAILABLE sin detalles internos. Parámetros desconocidos/repetidos se rechazan; %, _ y barra invertida se buscan literalmente.
+
+## HU7.3 — aviso al iniciar sesión
+
+POST /api/auth/login devuelve403 ACCOUNT_SUSPENDED y el mensaje público «Tu cuenta está suspendida. Un administrador debe reactivarla para que puedas volver a ingresar.» únicamente si la contraseña es válida y el estado es SUSPENDIDO. No incluye token ni datos de cuenta. Correo inexistente/clave incorrecta devuelve401 INVALID_CREDENTIALS uniforme; otros estados inactivos conservan ese fallo cerrado. Recuperación de contraseña sigue siendo uniforme. Este ajuste autorizado por Nicolás el28/10 satisface el aviso de HU7.3 sin informar estado antes de verificar la clave.
+
+## Antecedentes anteriores a HU7
+
+Los cortes inferiores conservan su fecha y alcance originales. El estado vigente de HU7 es el resumen superior; sus iteraciones previas se conservan en Git.
+
+## Rutas del Release 01
+
+| Método/ruta | Entrada | Éxito / errores |
+| --- | --- | --- |
+| GET / | Pública | 200 mensaje de API |
+| POST /api/auth/register | nombre,apellido,email,password; telefono/distrito opcionales en API | 201;400 validación/duplicado;503 interno |
+| POST /api/auth/login | email,password | 200 token+user;400 formato;401 uniforme;403 ACCOUNT_SUSPENDED con clave válida;503 interno |
+| POST /api/auth/password/change | JWT;currentPassword,newPassword,confirmPassword | 200 sin JWT;400/401/403/503 según reglas inferiores |
+| POST /api/auth/password/forgot | email | 202 uniforme con transporte;400/429/503 |
+| POST /api/auth/password/reset/validate | token | 200 valid;400/429/503 |
+| POST /api/auth/password/reset | token,newPassword,confirmPassword | 200 sin JWT;400/429/503 |
+| GET /api/users/profile | JWT | 200 data:usuario;401/404/503 |
+| PUT /api/users/profile | JWT;nombre,apellido,telefono,distrito | 200 data:usuario;400/401/404/503 |
+| GET /api/users/karma | JWT | 200 data:{karmaPoints:entero};401/404/503 |
+| GET /api/users/reports | JWT;siempre usuario de sesión | 200 data:reporte[];401/503 |
+| GET /api/places/categories | JWT;sin query | 200 data:string[];400/401/503 |
+| GET /api/places | JWT;nombre,categoria,nivel opcionales | 200 data:lugar[];400/401/503;Cache-Control:no-store |
+| GET /api/places/:id | JWT;entero PostgreSQL no cero, incluye demos negativas | 200 data:lugar;400/401/404/503 |
+| GET /api/places/:id/saturation | JWT;ID válido | 200 snapshot;400/401/404/503;no-store |
+| POST /api/places/:placeId/reports | JWT;solo {level} | 201 data:reporte+premio;400/401/404/409/503 |
+
+`lugar`: id,nombre,categoria,referencia,direccion nullable,latitud,longitud,demostrativo. Solo activos, coordenadas finitas y DTO explícito; nunca estado interno ni votos. Dirección ausente no se sustituye por referencia.
+
+Filtros combinables **AND**: nombre parcial ILIKE literal (recortado,160 caracteres); categoria igualdad literal sensible a mayúsculas (80 Unicode); nivel exacto TRANQUILO/MODERADO/SATURADO. Vacío desactiva su filtro. Arrays/repetidos/clave desconocida se rechazan. Comodines %,_,barra y apóstrofes son texto parametrizado, no SQL. Catálogo de categorías procede de activos y no admite query. Sin coincidencias:200 [].
+
+Saturación: snapshot con placeId,level nullable,reportCount,minimumReports=3,windowMinutes=30,reason INSUFFICIENT_REPORTS/TIE/null,evaluatedAt,updatedAt. Último reporte por persona en ventana inclusiva; empate de máximos o menos de3 personas no produce nivel. Política provisional aprobada por Rael; no es aforo ni monitoreo en tiempo real.
+
+Reporte: nivel TRANQUILO/MODERADO/SATURADO. Errores INVALID_PLACE/INVALID_REPORT_LEVEL (400),PLACE_NOT_FOUND(404),REPORT_COOLDOWN(409),SESSION_INVALID(401),SERVICE_UNAVAILABLE(503). Un reporte por usuario/lugar cada3 minutos según reloj SQL. Se revalida usuario/versión bajo lock. Reporte, ledger único por reporte y +10 karma se confirman en la misma transacción; fallo revierte los tres. Duplicado/rechazo no premia. Recompensa real:pointsAwarded,karmaPoints enteros. Flutter no inventa10 si faltan esos campos.
+
+Historial propio: id como texto BIGINT,createdAt,level,placeId,placeName; parámetros de otro usuario no cambian la identidad JWT. Sin reportes:200 []. El estado de validación HU5.3 se consulta por las rutas nuevas de reportes. Perfil excluye hashes/versiones; karma se devuelve como entero seguro (0..9007199254740991), nunca como BIGINT textual ni número truncado.
+
+## Rutas Sprint 3 — HU5 y HU6
+
+Solo usuarios activos autenticados, Cache-Control:no-store, JSON UTF-8. Ninguna ruta acepta actor/peso/karma enviados por el cliente. Rutas de reportes no admiten query; las analíticas solo los parámetros indicados.
+
+| Método/ruta | Entrada y respuesta |
+| --- | --- |
+| GET /api/reports | data: últimos 50 reportes de lugares activos, orden createdAt/id descendente |
+| GET /api/reports/:id | data: reporte + conteos/estado/confiabilidad; no correo ni autor identificable |
+| GET /api/reports/:id/own-validation | Mismo DTO, pero solo autor; ajeno 403 REPORT_FORBIDDEN |
+| POST /api/reports/:id/validations | Solo {decision:CONFIRM o REJECT}; 201 data:{decision}; elección definitiva |
+| POST /api/reports/:id/denunciations | Solo {reason?:texto hasta 500 caracteres}; 201 data:{report_id:texto}; no ocultar/eliminar |
+| GET /api/places/:id/history?from=AAAA-MM-DD&to=AAAA-MM-DD | data:{placeId,placeName,period,blocks,counts,sufficient,insufficient,hasReports} |
+| GET /api/places/:id/comparison?from=...&to=...&compareFrom=...&compareTo=... | data:{placeId,timezone,first,second,comparable} |
+| GET /api/places/:id/quiet-hours?from=...&to=... | data:{placeId,period,minimumDays:3,reason,recommendations} |
+
+Reporte: id es string decimal positivo hasta 9223372036854775807 (no convertir a Number); placeId entero, placeName, level, createdAt UTC, isOwn, ownDecision nullable, alreadyDenounced, confirmations/rejections enteros, reliability. Sin validaciones: ambos conteos cero, no confiabilidad ficticia.
+
+Reliability: {level:ALTO/MEDIO/BAJO/null,reason:INSUFFICIENT_VALIDATIONS/null,minimumValidators:3,confirmWeight,totalWeight}. Política provisional aprobada: mínimo 3 personas; cada peso = 1 + min(floor(karma/10),4), congelado al votar; apoyo >=2/3 ALTO, <=1/3 BAJO, intermedio MEDIO. No probabilidad certificada. Un voto y una denuncia por persona/reporte, protegidos por PK y transacción; autor recibe 403 SELF_PARTICIPATION. No premios por validar/denunciar. 409 ALREADY_VALIDATED/ALREADY_DENOUNCED; no sobrescribir primera participación.
+
+Historial: fechas reales e inclusivas en America/Lima, de 1 a 31 días por período, final SQL exclusivo. Cada bloque incluye start/end UTC, level nullable, reportCount y reason. Último reporte/persona dentro de esa hora; mínimo 3 y empate de máximos insuficiente. Los bloques sin datos siguen visibles en el resumen; no equivalen a TRANQUILO. Máximo 10000 observaciones distintas por consulta; 422 PERIOD_TOO_DENSE pide acortar período, no devuelve análisis truncado.
+
+Comparación conserva ambas series/conteos; comparable solo si cada período tiene al menos un bloque suficiente. No normaliza períodos de distinta duración ni promedia categorías. Recomendación exige 3 días suficientes por hora de Lima y al menos un bloque tranquilo; ordena proporción quietDays/days, conserva empates (rank), excluye horas con cero bloques tranquilos. Vacío reason INSUFFICIENT_HISTORY o NO_QUIET_HOURS, nunca una recomendación inventada.
+
+Entradas inválidas: 400 REPORT_ID_INVALID/REPORT_INPUT_INVALID/DECISION_INVALID/REASON_INVALID/PERIOD_INVALID/QUERY_INVALID; recurso ausente/inactivo 404; JWT/estado/versión/expiración inválida 401; falla interna 503 público. Cuerpo global máximo 32 KB (413 BODY_TOO_LARGE); JSON malformado 400 INVALID_JSON. Se revalida la sesión bajo lock antes de escribir. No moderación HU7 ni aceptación humana implícita.
 
 ## Validación y errores: distinguir API de interfaz
 
@@ -32,7 +102,7 @@ Registro API exige nombre/apellido de al menos 2 caracteres y correo con formato
 
 El formulario Flutter es más estricto: teléfono obligatorio de exactamente 9 dígitos y distrito mínimo 2 caracteres. El backend actual permite estos dos campos opcionales como texto. Es una diferencia comprobada, no una garantía de validación equivalente. Alinear reglas debe ser un cambio explícito con pruebas, no una corrección silenciosa del contrato.
 
-Errores usan `{message}` y las rutas auth afectadas añaden `code`; schema histórico añade `errors` de Ajv. Registro/login/cambio y verificación de sesión ocultan fallos internos con 503 `SERVICE_UNAVAILABLE`. Registro conserva su 400 de correo repetido y login 401 de credenciales. `UserController` histórico todavía requiere normalización de errores. Los clientes no deben mostrar trazas, SQL o cuerpos arbitrarios al usuario.
+Errores usan `{message}` y las rutas auth afectadas añaden `code`; schema histórico añade `errors` de Ajv. Registro/login/cambio y verificación de sesión ocultan fallos internos con 503 `SERVICE_UNAVAILABLE`. Registro conserva su 400 de correo repetido y login 401 de credenciales. Perfil y karma devuelven 404 solo para ausencia comprobada y 503 público ante fallos internos. El karma del perfil se normaliza desde BIGINT a entero seguro. Los clientes no deben mostrar trazas, SQL o cuerpos arbitrarios al usuario.
 
 ### HU 2.3: cambiar contraseña
 
@@ -53,7 +123,7 @@ Ante 200, el frontend borra sesión local y dirige a login. Ante 401, hace lo mi
 
 Decisión autorizada del hito C: una solicitud no informa si el correo existe. Sustituye el criterio heredado del Issue backend #3 que distinguía cuentas; el Issue permanece sin editar. Correo se recorta y compara en minúsculas; contraseña se conserva literalmente. Si el esquema histórico contiene más de una cuenta activa con el mismo correo normalizado, la solicitud conserva la respuesta uniforme y no elige una cuenta.
 
-Sin proveedor/remitente elegidos, el arranque normal **no envía correo**. `forgot` responde siempre 503 `RECOVERY_UNAVAILABLE` antes de consultar cuentas o generar tokens; configurar `PASSWORD_RESET_URL` por sí solo no habilita envío. El 202 se prueba mediante un transporte exclusivo de pruebas, sin demostrar entrega real.
+La entrega usa SMTP (Brevo) cuando el servidor tiene `SMTP_*` configurado (ver [configuración](CONFIGURACION_LOCAL.md)); entonces `forgot` responde 202 con el mensaje uniforme. Sin esa configuración, el arranque normal **no envía correo** y `forgot` responde siempre 503 `RECOVERY_UNAVAILABLE` antes de consultar cuentas o generar tokens; configurar `PASSWORD_RESET_URL` por sí solo no habilita envío. Ninguna ruta, cuerpo ni código cambia para el frontend.
 
 | HTTP | `code` | Significado |
 | --- | --- | --- |
@@ -72,7 +142,7 @@ Límites persistentes PostgreSQL en ventanas de 15 minutos: solicitud 10 por IP 
 
 La base del enlace proviene exclusivamente de `PASSWORD_RESET_URL`, nunca de `Host`/`Origin`. En Flutter Web local: `http://localhost:5500/#/reset-password`; el token se añade a la query **dentro del fragmento GoRouter**. HTTPS fuera de desarrollo/pruebas loopback. La URL no admite credenciales, query prefijada ni una ruta distinta. Las respuestas usan `Cache-Control: no-store` y `Referrer-Policy: no-referrer`; Web también define política de referencia. No capturar URLs con tokens en evidencias o logs.
 
-Tras reset exitoso se incrementa `sessionVersion`, se exige login y se programa un aviso de cambio a través de la misma interfaz de entrega, sin contraseña/token. La notificación ocurre después del commit; su entrega real sigue pendiente junto con la del enlace. Criterios basados en [OWASP Forgot Password](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
+Tras reset exitoso se incrementa `sessionVersion`, se exige login y se programa un aviso de cambio a través de la misma interfaz de entrega, sin contraseña/token. La notificación ocurre después del commit y usa el mismo adaptador SMTP que el enlace. Criterios basados en [OWASP Forgot Password](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html).
 
 CORS local admite por defecto `http://localhost:5500`, `http://127.0.0.1:5500` y `http://[::1]:5500`, configurable mediante `CORS_ORIGINS`. No utiliza cookies; JWT sigue siendo obligatorio. CORS no reemplaza autenticación/autorización.
 
@@ -80,8 +150,12 @@ CORS local admite por defecto `http://localhost:5500`, `http://127.0.0.1:5500` y
 
 JWT dura dos horas, HS256, con `id` y `sessionVersion` enteros. Cada ruta protegida consulta la versión persistida y el estado ACTIVO; no acepta JWT legacy sin versión. HU 2.3 incrementa la versión en la misma transacción que cambia el hash, invalidando todas las sesiones anteriores incluso tras reiniciar backend. Exige login nuevo, no emite reemplazo automáticamente. Las peticiones ya en curso no se cancelan retroactivamente. Flutter conserva token en memoria; recargar pierde la sesión. HU 2.4 sigue siendo cierre local y por sí solo no revoca un JWT.
 
-## Cambiar este contrato
 
-Antes de implementar una nueva HU, acordar ruta/método, entrada/validación, salida, códigos de error, autenticación y casos negativos con la persona del otro componente. Enlazar los PR. Preferir cambios aditivos compatibles; si se rompe un campo/ruta, definir transición y orden de integración. Registrar el par probado, no solo el SHA del repo actual.
 
-Las rutas de recuperación están implementadas y probadas con correo en memoria exclusivo de pruebas; entrega real permanece deshabilitada. No hay `/api/places/:id`, búsqueda, filtros, reportes ni saturación. Escribir una propuesta no hace disponible una API; registrarla como propuesta en PLAN_TECNICO hasta implementarla y comprobarla.
+## Cambios y límites
+
+Contrato local conciliado, no autorización de publicación ni aceptación humana. SMTP es Adapter de Diego, no reimplementado. Recepción real histórica identificada en ESTADO_ACTUAL; sin SMTP privado la recuperación responde503. No se han habilitado nube, moderación ni favoritos.
+
+## HU8.4 — eliminación de favoritos
+
+`DELETE /api/places/:id/favorite`, JWT Bearer; elimina exclusivamente el favorito del usuario autenticado y responde204 de forma idempotente.

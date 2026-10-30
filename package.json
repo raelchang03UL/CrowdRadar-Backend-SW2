@@ -10,8 +10,15 @@
     "db:seed:demo": "node scripts/seed-places-demo.js",
     "db:seed:user-demo": "node scripts/seed-demo-user.js",
     "test:db:places": "node scripts/verify-places-db.js",
+    "test:local:places": "node scripts/verify-places-local.js",
     "test:db:auth": "node scripts/verify-auth-db.js",
-    "test:db:recovery": "node scripts/verify-recovery-db.js"
+    "test:db:recovery": "node scripts/verify-recovery-db.js",
+    "test:db:consolidation": "node scripts/verify-consolidation-db.js",
+    "test:db:sprint3": "node scripts/verify-sprint3-db.js",
+    "qa:serve": "node scripts/serve-consolidation-qa.js",
+    "demo:local": "node scripts/demo-local.js",
+    "test:db:saturation": "node scripts/verify-saturation-db.js",
+    "test:db:saturation-filter": "node scripts/verify-saturation-filter-db.js"
   },
   "dependencies": {
     "ajv": "^8.17.1",
@@ -21,6 +28,7 @@
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.0.10",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7"

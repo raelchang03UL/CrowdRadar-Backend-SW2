@@ -4,16 +4,16 @@ Entrada compartida de backend y frontend. No requiere el historial de chats ni l
 
 ## Descarga de revisión del equipo
 
-La rama `integration/base-equipo` de **ambos** repositorios reúne los avances publicados A/B/C y estas guías. Es una instantánea compartida para lectura, ejecución y revisión, no una entrega aprobada ni un reemplazo de `develop`. No iniciar nuevas funcionalidades desde ella: primero revisar/integrar el par mediante sus PR y después crear tareas desde `develop` actualizado.
+Para revisar este cierre, usar `integration/cierre-web-r01-s03-20261019` de ambos repositorios cuando esté publicada. Conserva aportes del equipo,HU1–6 e I1/I2/I3/C2/F11. Rama de revisión no es develop ni entrega aceptada. PR #27/#10 de base-equipo son antecedentes conservados, no la versión final del candidato.
 
 En una carpeta nueva y vacía, con Git instalado:
 
 ```powershell
-git clone -b integration/base-equipo https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git CrowdRadar-Backend
-git clone -b integration/base-equipo https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
+git clone -b integration/cierre-web-r01-s03-20261019 https://github.com/raelchang03UL/CrowdRadar-Backend-SW2.git CrowdRadar-Backend
+git clone -b integration/cierre-web-r01-s03-20261019 https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2.git CrowdRadar-FrontEnd
 ```
 
-Abrir la carpeta padre con la IA y usar el prompt del final. Leer los documentos no exige instalar dependencias ni crear una base. Para ejecutar la aplicación, seguir la configuración canónica con servicios/secretos propios. Si se detecta un defecto durante revisión, acordar su rama y alcance antes de editar; no trabajar siete personas sobre esta rama compartida.
+Abrir la carpeta padre con la IA y usar el prompt del final. [Demo canónica](CATALOGO_DEMO_LOCAL.md): requisitos/locks,configuración privada propia,aprovisionamiento inicial manual,migraciones/seed/API3043/Web5543; sin tmp ni DB QA ajena. Leer no instala nada. Acordar cambios de revisión y no editar siete personas sobre la misma consolidación; nuevas tareas desde develop integrado.
 
 ## 1. Elegir la base correcta
 

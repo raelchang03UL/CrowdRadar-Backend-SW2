@@ -1,28 +1,41 @@
 import "dotenv/config";
+import dotenv from "dotenv";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import pg from "pg";
 import bcrypt from "bcrypt";
 import { QueryTypes } from "sequelize";
-import { assertIsolatedAuthTestDatabase } from "../src/database/databaseSafety.js";
+import { assertIsolatedAuthTestDatabase, assertIsolatedConsolidationDatabase, consolidationQaDatabases, assertConsolidationQaProvenance } from "../src/database/databaseSafety.js";
 import { migrateAuth } from "../src/database/migrateAuth.js";
 import { migrateRecovery, assertRecoverySchemaReady, recoveryMigration } from "../src/database/migrateRecovery.js";
 import { createMemoryRecoveryDelivery } from "../test/helpers/memoryRecoveryDelivery.js";
 
 // Destino fijo, protegido antes de conectar. No usa DB_NAME/DATABASE_URL como destino.
-const database = "crowdradar_auth_test";
-assertIsolatedAuthTestDatabase({ config: { database, host: process.env.DB_HOST } });
+const qaRun = process.env.CROWDRADAR_QA_RUN;
+if (qaRun) {
+    const input = dotenv.parse(readFileSync(process.env.CROWDRADAR_QA_ENV_FILE));
+    assert.ok(!input.DATABASE_URL && ["localhost", "127.0.0.1", "::1"].includes(input.DB_HOST), "Solo DB_* local.");
+    Object.assign(process.env, { DB_HOST: input.DB_HOST, DB_PORT: input.DB_PORT ?? "5432", DB_USER: input.DB_USER,
+        DB_PASSWORD: input.DB_PASSWORD, DB_SSL: "false", NODE_ENV: "test", JWT_SECRET: randomBytes(48).toString("hex") });
+    for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "MAIL_FROM", "PASSWORD_RESET_URL"]) delete process.env[key];
+}
+const database = qaRun ? consolidationQaDatabases(qaRun)[0] : "crowdradar_auth_test";
+const assertTarget = (db) => qaRun ? assertIsolatedConsolidationDatabase(db, qaRun) : assertIsolatedAuthTestDatabase(db);
+assertTarget({ config: { database, host: process.env.DB_HOST } });
 const credentials = { host: process.env.DB_HOST, port: Number(process.env.DB_PORT || 5432), user: process.env.DB_USER, password: process.env.DB_PASSWORD };
-const admin = new pg.Client({ ...credentials, database: "postgres" });
-try {
-    await admin.connect();
-    if (!(await admin.query("SELECT 1 FROM pg_database WHERE datname = $1", [database])).rowCount) {
-        await admin.query('CREATE DATABASE "crowdradar_auth_test"');
-    }
-} finally { await admin.end(); }
+if (!qaRun) {
+    const admin = new pg.Client({ ...credentials, database: "postgres" });
+    try {
+        await admin.connect();
+        if (!(await admin.query("SELECT 1 FROM pg_database WHERE datname = $1", [database])).rowCount) {
+            await admin.query('CREATE DATABASE "crowdradar_auth_test"');
+        }
+    } finally { await admin.end(); }
+}
 process.env.DB_NAME = database;
-delete process.env.DATABASE_URL;
+process.env.DATABASE_URL = "";
 const { default: sequelize } = await import("../src/config/database.js");
 const { default: repository } = await import("../src/repositories/PasswordRecoveryRepository.js");
 const { default: PasswordRecoveryService, digest, forgotMessage } = await import("../src/services/PasswordRecoveryService.js");
@@ -43,7 +56,8 @@ let server;
 let stage = "migración";
 try {
     await sequelize.authenticate();
-    assertIsolatedAuthTestDatabase(sequelize);
+    assertTarget(sequelize);
+    if (qaRun) await assertConsolidationQaProvenance(sequelize, qaRun);
     await migrateAuth(sequelize);
     const before = await select("SELECT to_jsonb(u) AS data FROM public.users u ORDER BY id");
     await migrateRecovery(sequelize);
