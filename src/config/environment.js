@@ -46,8 +46,17 @@ export function validateEnvironment(env = process.env) {
     const missing = required.filter((name) => env[name] === undefined || (name !== "DB_PASSWORD" && !env[name].trim()));
     if (missing.length) throw new Error(`Faltan variables de entorno requeridas: ${missing.join(", ")}. Copia .env.example como .env y completa los valores.`);
     if (env.DB_SSL && !["true", "false"].includes(env.DB_SSL)) throw new Error("DB_SSL debe ser true o false.");
+<<<<<<< HEAD
     reportCooldownMinutes(env);
     karmaPointsPerReport(env);
+=======
+    if (env.SATURATION_EVENT_SECRET && env.SATURATION_EVENT_SECRET.length < 32) {
+        throw new Error("SATURATION_EVENT_SECRET debe tener al menos 32 caracteres.");
+    }
+    if (env.FCM_PROJECT_ID && !/^[a-z0-9][a-z0-9-]{4,28}[a-z0-9]$/.test(env.FCM_PROJECT_ID)) {
+        throw new Error("FCM_PROJECT_ID no es válido.");
+    }
+>>>>>>> origin/feature/hu-8-3-saturacion-favoritos
     if (env.DATABASE_URL) {
         let url;
         try { url = new URL(env.DATABASE_URL); } catch { throw new Error("DATABASE_URL no es una URL PostgreSQL válida."); }
@@ -68,7 +77,7 @@ export function corsOptions(env = process.env) {
         // Apps Android/CLI no envían Origin. Esto NO sustituye la validación JWT.
         origin: (origin, callback) => callback(null, !origin || origins.includes(origin)),
         credentials: false,
-        methods: ["GET", "POST", "PUT", "OPTIONS"],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"]
     };
 }

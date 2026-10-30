@@ -195,3 +195,9 @@ test("CORS admite preflight Web JSON y Authorization sin omitir JWT", async () =
         assert.equal(unlisted.status, 401);
     } finally { await new Promise((resolve) => server.close(resolve)); }
 });
+
+test("CORS permite la baja autenticada de un token push", async () => {
+    const { corsOptions } = await import("../src/config/environment.js");
+    const options = corsOptions({ CORS_ORIGINS: "http://localhost:5500" });
+    assert.ok(options.methods.includes("DELETE"));
+});
