@@ -1,8 +1,8 @@
 # Estado actual
 
-## HU8 integrado localmente para revisión — 30/10/2026
+## HU8 publicada para revisión; recepción de alertas pendiente — 30/10/2026
 
-Implementación backend22486caba0a9d831597e3382988947be890361cc sobre develop06de599f494a66131cfe339557306e31a2d34c31, rama feature/hu-8-4-eliminar-favoritos. Tres merges locales preservan los aportes originales1762613/853781a/3c68fca y sus autores; correcciones registradas como colaboración delegada asistida. No se fusionó develop ni se desplegó. El par frontend y publicación/revisión se deben comprobar en los PR existentes.
+Implementación backend22486caba0a9d831597e3382988947be890361cc sobre develop06de599f494a66131cfe339557306e31a2d34c31, rama feature/hu-8-4-eliminar-favoritos. Tres merges preservan los aportes originales1762613/853781a/3c68fca y sus autores; correcciones registradas como colaboración delegada asistida. HEAD y referencia local origin de esa rama coinciden en f33db103ae105bd25440ef9dfd7dca8e5d258a18, publicado en el [PR existente B#46](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/46). No se fusionó develop ni se desplegó. El par frontend definitivo y la revisión humana permanecen separados de esta comprobación backend.
 
 HU8.1/8.2/8.4 backend comprobadas con HTTP/PostgreSQL: marcar/doble envío409/PK, lista propia, estado en detalle/lista, eliminar idempotente, re-agregar y cuenta ajena sin cambios. Capas, SMTP, sesiones, HU1–7 y migraciones001–009 conservadas.010/011 nuevas desde esquema vacío y repetidas; filas existentes de favoritos/baseline se conservaron. Los nombres004 de las ramas HU8 previas requieren revisión explícita si alguien ya los aplicó; no se adopta esquema desconocido.
 
@@ -10,7 +10,11 @@ HU8.3 implementación local: primer favorito fija baseline real atómico;3 POST 
 
 Validación final: npm test219/219 (0 fallos/omitidas),130JS con node --check, git diff --check correcto. Clúster QA nuevo127.0.0.1:55488, crowdradar_hu8_test con procedencia CrowdRadar/SW2/hu8-20261030/v1:7 bloques HU8 aprobados; regresión PostgreSQL R01:6/6, S3:7/7fresh+7/7legacy, HU7:18/18. Ninguna conexión a bases personales/Sprint1/Supabase ni correo real. [Evidencia reproducible](evidencias/hu8_2026_10_30/backend-verificacion.txt).
 
-Límite abierto: NO se demostró recepción ni apertura FCM real en Web. Falta configuración Firebase/VAPID/ADC autorizada y recorrido navegador/proveedor; no compartir secretos por chat. El worker local opt-in y endpoint interno están implementados, pero Vercel requiere ejecutor/scheduler durable aprobado y validado. No se declara HU8.3 terminada ni “solo falta despliegue”. npm ci reprodujo el lock aportado con Firebase Admin14.5:301paquetes,9 avisos audit (5 moderados/3 altos/1 crítico); no se hicieron actualizaciones automáticas.
+Configuración externa autorizada posterior: proyecto exclusivo Spark crowdradar-hu8-web / 1073227225099, WebApp y VAPID del titular, FCM v1 habilitada y cuenta de servicio dedicada con el único permiso cloudmessaging.messages.create. La clave ADC permanece fuera de Git con acceso privado; el OAuth temporal de configuración fue revocado. El worker local utiliza Firebase Admin14.5 real sin dryRun y mantiene SMTP deshabilitado. No se habilitaron pagos, Auth, Firestore, Functions ni Hosting para esta prueba.
+
+Ensayos con proveedor real: reportes HTTP de personas sintéticas distintas produjeron transiciones calculadas por CrowdRadar y filas SENT; repetir sin cambio añadió cero eventos. La cuenta B sin favorito del lugar no recibió eventos de esa transición. Chrome también fue probado tras logout/login de la misma cuenta y activación de alertas: cinco POST201 SATURADO conservaron los siete reportes anteriores; el cálculo devolvió nueve votos vigentes y SATURADO, con doce filas históricas. El outbox observado quedó SENT4/PENDING0/FAILED0. Un probe de transporte separado con prioridad Web alta y TTL60 obtuvo dos ACK del proyecto correcto; no se contabiliza como aceptación del negocio. La instrumentación pasiva no observó push real del worker ni mensaje FCM en la ventana; el titular no recibió notificación ni pudo abrirla. [Corte y fuentes](evidencias/hu8_2026_10_30/fcm-proveedor-sin-recepcion.txt).
+
+Límite abierto: NO se demostró recepción ni apertura FCM real en Web; la configuración externa ya no es el bloqueo. HU8.3 sigue pendiente de diagnóstico y aceptación de extremo a extremo. El worker local opt-in y endpoint interno están implementados, pero Vercel requiere ejecutor/scheduler durable aprobado y validado. No se declara HU8.3 terminada ni “solo falta despliegue”. npm ci reprodujo el lock aportado con Firebase Admin14.5:301paquetes,9 avisos audit (5 moderados/3 altos/1 crítico); no se hicieron actualizaciones automáticas.
 
 
 ## HU7 para revisión — 28/10/2026
