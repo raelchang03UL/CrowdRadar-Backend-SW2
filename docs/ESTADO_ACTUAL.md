@@ -1,5 +1,18 @@
 # Estado actual
 
+## HU8 integrado localmente para revisión — 30/10/2026
+
+Implementación backend22486caba0a9d831597e3382988947be890361cc sobre develop06de599f494a66131cfe339557306e31a2d34c31, rama feature/hu-8-4-eliminar-favoritos. Tres merges locales preservan los aportes originales1762613/853781a/3c68fca y sus autores; correcciones registradas como colaboración delegada asistida. No se fusionó develop ni se desplegó. El par frontend y publicación/revisión se deben comprobar en los PR existentes.
+
+HU8.1/8.2/8.4 backend comprobadas con HTTP/PostgreSQL: marcar/doble envío409/PK, lista propia, estado en detalle/lista, eliminar idempotente, re-agregar y cuenta ajena sin cambios. Capas, SMTP, sesiones, HU1–7 y migraciones001–009 conservadas.010/011 nuevas desde esquema vacío y repetidas; filas existentes de favoritos/baseline se conservaron. Los nombres004 de las ramas HU8 previas requieren revisión explícita si alguien ya los aplicó; no se adopta esquema desconocido.
+
+HU8.3 implementación local: primer favorito fija baseline real atómico;3 POST de reportes de usuarios distintos cambian SIN_DATOS→SATURADO, producen1 evento y1 llamada al doble FCM. Reconciliar sin cambio no duplica; retiro HU7 y expiración30min también cambian el cálculo. Re-registro con mismo JWT cambia binding; logout antiguo, transferencia de FID, favorito retirado o versión revocada no autorizan entrega a otra sesión/cuenta. Web recibe DATA-ONLY y depende de comprobación de binding en app/SW antes de mostrar/abrir.
+
+Validación final: npm test219/219 (0 fallos/omitidas),130JS con node --check, git diff --check correcto. Clúster QA nuevo127.0.0.1:55488, crowdradar_hu8_test con procedencia CrowdRadar/SW2/hu8-20261030/v1:7 bloques HU8 aprobados; regresión PostgreSQL R01:6/6, S3:7/7fresh+7/7legacy, HU7:18/18. Ninguna conexión a bases personales/Sprint1/Supabase ni correo real. [Evidencia reproducible](evidencias/hu8_2026_10_30/backend-verificacion.txt).
+
+Límite abierto: NO se demostró recepción ni apertura FCM real en Web. Falta configuración Firebase/VAPID/ADC autorizada y recorrido navegador/proveedor; no compartir secretos por chat. El worker local opt-in y endpoint interno están implementados, pero Vercel requiere ejecutor/scheduler durable aprobado y validado. No se declara HU8.3 terminada ni “solo falta despliegue”. npm ci reprodujo el lock aportado con Firebase Admin14.5:301paquetes,9 avisos audit (5 moderados/3 altos/1 crítico); no se hicieron actualizaciones automáticas.
+
+
 ## HU7 para revisión — 28/10/2026
 
 Rama feature/hu-7-moderacion-kou; aporte de Nicolás Kou, cuenta kowisprox. [Backend42](https://github.com/raelchang03UL/CrowdRadar-Backend-SW2/pull/42) y [frontend23](https://github.com/raelchang03UL/CrowdRadar-FrontEnd-SW2/pull/23). Los heads de los PR identifican el par publicado. Pendiente revisión ajena e integración; no se cierran historias automáticamente.

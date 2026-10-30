@@ -1,0 +1,41 @@
+CrowdRadar HU8 — backend local, 30/10/2026 America/Lima
+Implementación: 22486caba0a9d831597e3382988947be890361cc
+Base develop: 06de599f494a66131cfe339557306e31a2d34c31
+Aportes preservados: 1762613183ad5d63cbe6e169434dd2d0665d4f2c, 853781a13f007805901e4a592ac32daaac02e2b1, 3c68fca
+Correcciones: colaboración delegada asistida; autores originales sin modificar.
+
+npm test (suite final después del baseline atómico):
+# tests 219
+# pass 219
+# fail 0
+# cancelled 0
+# skipped 0
+# duration_ms 24889.8632
+
+node --check:130 archivos JS,0 fallos. git diff --check:0.
+
+CROWDRADAR_HU8_QA_ENV_FILE=<config local externa> npm run test:db:favorites
+Clúster QA NUEVO loopback127.0.0.1:55488; DB crowdradar_hu8_test.
+Procedencia exigida CrowdRadar/SW2/hu8-20261030/v1.
+Runner final hu8-20261030-122702.log, exit0:
+PASS: 001–009 preservadas; 010 favoritos y 011 push, esquema vacío/repetición segura sin DDL de arranque.
+PASS: HTTP real agregar/concurrencia409/lista privada/detalle/eliminar idempotente/volver a agregar/JWT.
+PASS: repetir migraciones010/011 conserva favoritos y baseline ya registrados.
+PASS: re-registro con MISMO JWT cambia binding y logout tardío del binding anterior conserva el dispositivo nuevo.
+PASS: 3 reportes HTTP reales → cálculo CrowdRadar → transición única → outbox → entrega FCM doble data-only Web (NO recepción FCM real).
+PASS: HU7 retiro/caducidad30m cambian cálculo; sin cambio no hay alerta; transferencia FID purga cola y binding/versión caducados no entregan a otra sesión/cuenta.
+PASS: entorno HU8 aislado conservado para inspección; ningún SMTP ni FCM real, bases personales sin acceso.
+
+Regresiones PostgreSQL independientes (exit0):
+R01 verify-consolidation-db.js:6/6; log r01-20261030-121928.log.
+S3 verify-sprint3-db.js:fresh7/7 y legacy7/7; logs s3-fresh-20261030-121948.log y s3-legacy-20261030-122008.log.
+HU7 verify-user-moderation-db.js, verify-admin-users-db.js, verify-report-moderation-db.js:18/18 en conjunto; logs hu7-users-20261030-121815.log, hu7-accounts-20261030-121819.log y hu7-reports-20261030-121822.log.
+Migraciones001–009: sin diferencias contra origin/develop; nuevas010/011, repetición con favoritos/baseline ya existentes preserva filas.
+
+Dependencias: npm ci desde lock existente de las ramas integradas;301paquetes.
+Firebase Admin14.5.0 aportado conservado (FID directo); sin paquetes adicionales para las correcciones.
+Auditoría automática de npm ci:9 avisos,5 moderados/3 altos/1 crítico; sin audit fix ni actualización masiva.
+
+No se enviaron SMTP ni FCM reales. No se accedió a bases personales, Sprint1 ni Supabase.
+HU8.3 recepción/apertura Web real PENDIENTE: falta configuración Firebase/VAPID/ADC autorizada y prueba de navegador.
+Worker opt-in local no garantiza ejecución permanente en Vercel; scheduler/ejecutor durable pendiente de decisión/verificación, sin despliegue.
