@@ -25,26 +25,30 @@ export function validCoordinates(latitud, longitud) {
         Number.isFinite(longitud) && longitud >= -180 && longitud <= 180;
 }
 
-function toPublicPlace(place) {
+function toPublicPlace(place, esFavorito) {
     if (!validCoordinates(place.latitud, place.longitud)) throw new Error("Coordenadas de lugar inválidas.");
     const { id, nombre, categoria, referencia, direccion, latitud, longitud, demostrativo } = place;
-    return { id, nombre, categoria, referencia, direccion: direccion ?? null, latitud, longitud, demostrativo };
+    return { id, nombre, categoria, referencia, direccion: direccion ?? null, latitud, longitud, demostrativo, ...(esFavorito === undefined ? {} : { esFavorito }) };
 }
 
 export default {
+    async listFavorites(userId) { return (await FavoriteRepository.findActivePlacesByUser(userId)).map((place) => toPublicPlace(place, true)); },
+    async addFavorite(userId, placeId) { return FavoriteRepository.add(userId, placeId); },
     async removeFavorite(userId, placeId) {
         await FavoriteRepository.remove(userId, placeId);
     },
-    async listActive(filters = {}) {
+    async listActive(filters = {}, userId) {
         const nivel = parseSaturationFilter(filters);
         const places = nivel === null ? await PlaceRepository.findActive(filters) :
             await PlaceRepository.findActiveWithSaturation({ nombre: filters.nombre ?? '', categoria: filters.categoria ?? '', nivel: filters.nivel, windowMinutes: saturationPolicy.windowMinutes });
+        const favoriteIds = userId === undefined ? null : new Set(await FavoriteRepository.findPlaceIdsByUser(userId));
         return (nivel === null ? places : places.filter((place) =>
-            evaluateSaturation({ placeId: place.id, evaluatedAt: place.evaluatedAt, votes: place.votes }).level === nivel)).map(toPublicPlace);
+            evaluateSaturation({ placeId: place.id, evaluatedAt: place.evaluatedAt, votes: place.votes }).level === nivel)).map((place) => toPublicPlace(place, favoriteIds === null ? undefined : favoriteIds.has(place.id)));
     },
-    async getActiveById(id) {
+    async getActiveById(id, userId) {
         const place = await PlaceRepository.findActiveById(id);
-        return place ? toPublicPlace(place) : null;
+        const favoriteIds = place && userId !== undefined ? new Set(await FavoriteRepository.findPlaceIdsByUser(userId)) : null;
+        return place ? toPublicPlace(place, favoriteIds === null ? undefined : favoriteIds.has(place.id)) : null;
     },
     async listActiveCategories() {
         return (await PlaceRepository.findActiveCategories()).map(({ categoria }) => {

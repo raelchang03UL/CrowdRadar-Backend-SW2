@@ -1,3 +1,4 @@
+import { assertFavoritesSchemaReady } from "./src/database/migrateFavorites.js";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -76,6 +77,7 @@ export const startServer = async ({ port = PORT, host } = {}) => {
     await assertValidationSchemaReady(sequelize);
     await assertUserModerationSchemaReady(sequelize);
     await assertReportModerationSchemaReady(sequelize);
+    await assertFavoritesSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
     return server.listen(port, host, () => {

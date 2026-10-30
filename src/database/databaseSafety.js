@@ -62,6 +62,12 @@ export function assertIsolatedPlacesTestDatabase(connection) {
     }
 }
 
+export function assertIsolatedFavoritesTestDatabase({ config: { database, host } }) {
+    if (!localHosts.includes(host) || database !== "crowdradar_hu81_test") {
+        throw new Error("La comprobación aislada solo admite crowdradar_hu81_test en PostgreSQL local.");
+    }
+}
+
 // El comando de migración es portable, no una allowlist de desarrollo.
 // Se conserva una barrera contra los destinos históricos/protegidos conocidos.
 export function assertMigrationTarget({ config: { database, host } }) {

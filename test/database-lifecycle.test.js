@@ -4,7 +4,8 @@ import { startServer } from "../app.js";
 import sequelize from "../src/config/database.js";
 import User from "../src/models/User.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
-import { assertLocalDevelopmentDatabase, assertIsolatedPlacesTestDatabase, assertMigrationTarget } from "../src/database/databaseSafety.js";
+import { migrateFavorites } from "../src/database/migrateFavorites.js";
+import { assertLocalDevelopmentDatabase, assertIsolatedPlacesTestDatabase, assertIsolatedFavoritesTestDatabase, assertMigrationTarget } from "../src/database/databaseSafety.js";
 
 // Estas pruebas sustituyen la conexión por dobles: no necesitan el .env de
 // ninguna persona ni deben construir un transporte SMTP de su terminal.
@@ -52,10 +53,11 @@ test("arranque remoto no usa allowlist ni ejecuta ningún DDL", async () => {
         Object.assign(sequelize.config, { host: "db.staging.example", database: "crowdradar_staging" });
         sequelize.authenticate = async () => calls.push("authenticate");
         sequelize.transaction = () => assert.fail("Arranque no debe migrar");
-        sequelize.query = async (sql) => {
+        sequelize.query = async (sql, options = {}) => {
             assert.match(sql, /^SELECT /);
             calls.push("schema-read");
-            return [{ name: "002-users-session-version" }, { name: "004-saturation-reports" }, { name: "005-reconcile-report-schema" }, { name: "006-report-karma-ledger" }, { name: "007-report-validation" }];
+            return [{ name: options.replacements?.name || "002-users-session-version" }, { name: "004-saturation-reports" }, { name: "005-reconcile-report-schema" }, { name: "006-report-karma-ledger" }, { name: "007-report-validation" }];
+
         };
         User.sync = () => assert.fail("Arranque no debe sincronizar modelos");
         server = await startServer({ port: 0, host: "127.0.0.1" });
@@ -98,6 +100,57 @@ test("migración explícita portable conserva transacción e idempotencia", asyn
     assert.ok(queries.every((q) => !/DROP|DELETE|ALTER TABLE|users/i.test(q)));
 });
 
+test("migración de favoritos exige esquema previo y es aditiva e idempotente", async () => {
+    const history = new Set([
+        "001-create-places",
+        "002-users-session-version",
+        "003-password-recovery"
+    ]);
+    let transactions = 0;
+    const queries = [];
+    const connection = {
+        transaction: async (callback) => {
+            transactions++;
+            return callback({});
+        },
+        query: async (sql, options = {}) => {
+            queries.push(sql);
+            if (sql.includes("WHERE name IN")) {
+                return [...history].map((name) => ({ name }));
+            }
+            if (sql.includes("WHERE name = :name")) {
+                return history.has(options.replacements.name) ? [{ name: options.replacements.name }] : [];
+            }
+            if (sql.startsWith("SELECT table_name")) return [];
+            if (sql.startsWith("INSERT INTO public.crowdradar_migrations")) {
+                history.add(options.replacements.name);
+            }
+            return [];
+        }
+    };
+    assert.equal(await migrateFavorites(connection), true);
+    assert.equal(await migrateFavorites(connection), false);
+    assert.equal(transactions, 2);
+    assert.equal(queries.filter((sql) => sql.startsWith("CREATE TABLE public.favorites")).length, 1);
+    assert.ok(queries.some((sql) => sql.includes("PRIMARY KEY (user_id, place_id)")));
+    assert.ok(queries.every((sql) => !/DROP|DELETE|ALTER TABLE/i.test(sql)));
+});
+
+test("migración de favoritos rechaza historial incompleto sin crear tabla", async () => {
+    const queries = [];
+    const connection = {
+        transaction: async (callback) => callback({}),
+        query: async (sql) => {
+            queries.push(sql);
+            return sql.includes("WHERE name IN")
+                ? [{ name: "001-create-places" }, { name: "002-users-session-version" }]
+                : [];
+        }
+    };
+    await assert.rejects(migrateFavorites(connection), /Aplica 001, 002 y 003/);
+    assert.ok(!queries.some((sql) => sql.startsWith("CREATE TABLE public.favorites")));
+});
+
 test("políticas demo y prueba aislada rechazan destinos protegidos antes de conectar", () => {
     for (const config of [
         { host: "localhost", database: "crowdradar_sprint1" },
@@ -110,6 +163,9 @@ test("políticas demo y prueba aislada rechazan destinos protegidos antes de con
     }
     assert.throws(() => assertIsolatedPlacesTestDatabase({ config: { host: "localhost", database: "crowdradar_dev" } }), /solo admite/);
     assert.doesNotThrow(() => assertIsolatedPlacesTestDatabase({ config: { host: "localhost", database: "crowdradar_hu31_test" } }));
+    assert.throws(() => assertIsolatedFavoritesTestDatabase({ config: { host: "db.remote.example", database: "crowdradar_hu81_test" } }), /solo admite/);
+    assert.throws(() => assertIsolatedFavoritesTestDatabase({ config: { host: "localhost", database: "crowdradar_dev" } }), /solo admite/);
+    assert.doesNotThrow(() => assertIsolatedFavoritesTestDatabase({ config: { host: "localhost", database: "crowdradar_hu81_test" } }));
 });
 
 test("CLI de migración conserva barreras para entrega, sistema y Supabase", () => {
