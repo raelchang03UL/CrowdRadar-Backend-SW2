@@ -12,7 +12,8 @@ function validTokenBody(body) {
 
 function validRemovalBody(body) {
     return body && typeof body === "object" && !Array.isArray(body) &&
-        Object.keys(body).length === 1 &&
+        Object.keys(body).every(key => ["token", "registrationId"].includes(key)) &&
+        (body.registrationId === undefined || (typeof body.registrationId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.registrationId))) &&
         typeof body.token === "string" && body.token.length >= 20 &&
         body.token.length <= 4096 && !/\s/.test(body.token);
 }
@@ -27,13 +28,15 @@ export function createNotificationController(service) {
                 });
             }
             try {
-                await service.registerDevice({
+                const registrationId = await service.registerDevice({
                     userId: req.user.id,
                     token: req.body.token,
-                    platform: req.body.platform
+                    platform: req.body.platform,
+                    sessionVersion: req.user.sessionVersion, expiresAt: req.user.exp
                 });
-                return res.status(200).json({ message: "Dispositivo registrado para alertas." });
+                return res.status(200).json({ message: "Dispositivo registrado para alertas.", data: { registrationId } });
             } catch (error) {
+                if (error.code === "SESSION_INVALID") return res.status(401).json({ code: error.code, message: "La sesión ya no está vigente." });
                 const code = typeof error?.code === "string" ? error.code : "DEVICE_REGISTRATION_FAILED";
                 console.error("No se pudo registrar un dispositivo push.", { code });
                 return res.status(503).json({
@@ -51,9 +54,10 @@ export function createNotificationController(service) {
                 });
             }
             try {
-                await service.removeDevice({ userId: req.user.id, token: req.body.token });
+                await service.removeDevice({ userId: req.user.id, token: req.body.token, registrationId: req.body.registrationId, sessionVersion: req.user.sessionVersion, expiresAt: req.user.exp });
                 return res.status(204).end();
             } catch (error) {
+                if (error.code === "SESSION_INVALID") return res.status(401).json({ code: error.code, message: "La sesión ya no está vigente." });
                 const code = typeof error?.code === "string" ? error.code : "DEVICE_REMOVAL_FAILED";
                 console.error("No se pudo desactivar un dispositivo push.", { code });
                 return res.status(503).json({

@@ -61,7 +61,7 @@ test("HU 3.6 sin filtro, vacío y espacios conservan flujo original y DTO de lug
         const respuesta = await consultar(consulta);
         assert.equal(respuesta.status, 200);
         assert.equal(respuesta.headers.get("cache-control"), "no-store");
-        assert.deepEqual(await respuesta.json(), { data: lugares.map(dto) });
+        assert.deepEqual(await respuesta.json(), { data: lugares.map((place) => ({ ...dto(place), esFavorito: false })) });
     }
     assert.equal(consultasTodos, 3);
     assert.equal(consultasNiveles, 0);
@@ -71,7 +71,7 @@ test("HU 3.6 muestra cada nivel; insuficiencia y empate solo permanecen en Todos
     for (const [nivel, id] of [["TRANQUILO", -36], ["MODERADO", 1], ["SATURADO", 2]]) {
         const respuesta = await consultar(`?nivel=${nivel}`);
         assert.equal(respuesta.status, 200);
-        assert.deepEqual(await respuesta.json(), { data: [dto(lugares.find((fila) => fila.id === id))] });
+        assert.deepEqual(await respuesta.json(), { data: [{ ...dto(lugares.find((fila) => fila.id === id)), esFavorito: false }] });
         assert.equal(respuesta.headers.get("cache-control"), "no-store");
     }
     assert.equal(consultasTodos, 0);
@@ -81,7 +81,7 @@ test("HU 3.6 muestra cada nivel; insuficiencia y empate solo permanecen en Todos
 test("HU 3.6 cambiar y quitar el filtro vuelve a consultar el listado correcto", async () => {
     assert.equal((await (await consultar("?nivel=TRANQUILO")).json()).data[0].id, -36);
     assert.equal((await (await consultar("?nivel=%20SATURADO%20")).json()).data[0].id, 2);
-    assert.deepEqual((await (await consultar()).json()).data, lugares.map(dto));
+    assert.deepEqual((await (await consultar()).json()).data, lugares.map((place) => ({ ...dto(place), esFavorito: false })));
     assert.equal(consultasNiveles, 2);
     assert.equal(consultasTodos, 1);
 });
@@ -209,3 +209,9 @@ test("HU 3.6 llamadas directas del servicio también rechazan filtros inválidos
     assert.equal(consultasTodos, 0);
     assert.equal(consultasNiveles, 0);
 });
+
+// HU8 añade estado privado a lista/detalle; este doble conserva la prueba aislada de HU previas.
+const { default: favoriteStateRepository } = await import("../src/repositories/FavoriteRepository.js");
+const originalFavoriteStateLookup = favoriteStateRepository.findPlaceIdsByUser;
+test.before(() => { favoriteStateRepository.findPlaceIdsByUser = async () => []; });
+test.after(() => { favoriteStateRepository.findPlaceIdsByUser = originalFavoriteStateLookup; });

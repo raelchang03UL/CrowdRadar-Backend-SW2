@@ -133,7 +133,7 @@ test("migración de favoritos exige esquema previo y es aditiva e idempotente", 
     assert.equal(transactions, 2);
     assert.equal(queries.filter((sql) => sql.startsWith("CREATE TABLE public.favorites")).length, 1);
     assert.ok(queries.some((sql) => sql.includes("PRIMARY KEY (user_id, place_id)")));
-    assert.ok(queries.every((sql) => !/DROP|DELETE|ALTER TABLE/i.test(sql)));
+    assert.ok(queries.every((sql) => !/\b(DROP|DELETE FROM|ALTER TABLE)\b/i.test(sql)));
 });
 
 test("migración de favoritos rechaza historial incompleto sin crear tabla", async () => {

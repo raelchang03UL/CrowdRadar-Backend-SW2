@@ -72,3 +72,9 @@ test("HU 3.4 repositorio busca nombre literal y conserva todos los activos", asy
         await original.list({ nombre: "50%_\\" });
     } finally { Place.findAll = findAll; }
 });
+
+// HU8 añade estado privado a lista/detalle; este doble conserva la prueba aislada de HU previas.
+const { default: favoriteStateRepository } = await import("../src/repositories/FavoriteRepository.js");
+const originalFavoriteStateLookup = favoriteStateRepository.findPlaceIdsByUser;
+test.before(() => { favoriteStateRepository.findPlaceIdsByUser = async () => []; });
+test.after(() => { favoriteStateRepository.findPlaceIdsByUser = originalFavoriteStateLookup; });

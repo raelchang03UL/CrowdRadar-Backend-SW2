@@ -36,7 +36,7 @@ test("HU 3.3 acepta ID demo negativo y devuelve dirección sin estado interno", 
     const response = await request("/-103");
     const { activo, ...publico } = lugar;
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { data: publico });
+    assert.deepEqual(await response.json(), { data: { ...publico, esFavorito: false } });
 });
 test("HU 3.3 dirección antigua queda null, no se sustituye por referencia", async () => {
     repository.findActiveById = async () => ({ ...lugar, direccion: undefined });
@@ -71,3 +71,9 @@ test("HU 3.3 fallos de DB y coordenadas devuelven error público", async () => {
         await original.detail(-103);
     } finally { Place.findOne = findOne; }
 });
+
+// HU8 añade estado privado a lista/detalle; este doble conserva la prueba aislada de HU previas.
+const { default: favoriteStateRepository } = await import("../src/repositories/FavoriteRepository.js");
+const originalFavoriteStateLookup = favoriteStateRepository.findPlaceIdsByUser;
+test.before(() => { favoriteStateRepository.findPlaceIdsByUser = async () => []; });
+test.after(() => { favoriteStateRepository.findPlaceIdsByUser = originalFavoriteStateLookup; });

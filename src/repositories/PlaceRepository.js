@@ -2,7 +2,6 @@ import Place from "../models/Place.js";
 import { Op, QueryTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-<<<<<<< HEAD
 export const literalNamePattern = (nombre) => `%${nombre.replace(/[\\%_]/g, "\\$&")}%`;
 
 export const createPlaceRepository = (model = Place) => ({
@@ -48,15 +47,6 @@ export const createPlaceRepository = (model = Place) => ({
         GROUP BY lugares.id, lugares.nombre, lugares.categoria, lugares.referencia, lugares.direccion,
             lugares.latitud, lugares.longitud, lugares.demostrativo, reloj.evaluated_at
         ORDER BY lugares.id ASC`, { replacements: { windowMinutes, nombre, pattern: literalNamePattern(nombre), categoria }, transaction, type: QueryTypes.SELECT });
-=======
-export default {
-    async findActive() {
-        return Place.findAll({ where: { activo: true }, order: [["id", "ASC"]], raw: true });
-    },
-
-    async findActiveById(id) {
-        return Place.findOne({ where: { id, activo: true }, raw: true });
->>>>>>> origin/feature/hu-8-3-saturacion-favoritos
     }
 });
 export default createPlaceRepository();

@@ -5,26 +5,26 @@ export default {
         try {
             return res.status(200).json({ data: await PlaceService.listFavorites(req.user.id) });
         } catch {
-            return res.status(503).json({ message: "No se pudieron cargar tus favoritos. Int�ntalo de nuevo." });
+            return res.status(503).json({ message: "No se pudieron cargar tus favoritos. Inténtalo de nuevo." });
         }
     },
 
     async addFavorite(req, res) {
         const placeId = Number(req.params.id);
         if (!/^-?[1-9]\d*$/.test(req.params.id) || !Number.isInteger(placeId) || placeId < -2147483648 || placeId > 2147483647) {
-            return res.status(400).json({ message: "El identificador del lugar no es v�lido.", code: "INVALID_PLACE_ID" });
+            return res.status(400).json({ message: "El identificador del lugar no es válido.", code: "INVALID_PLACE_ID" });
         }
         try {
             const result = await PlaceService.addFavorite(req.user.id, placeId);
             if (result === "notFound") {
-                return res.status(404).json({ message: "El lugar no existe o no est� disponible.", code: "PLACE_NOT_FOUND" });
+                return res.status(404).json({ message: "El lugar no existe o no está disponible.", code: "PLACE_NOT_FOUND" });
             }
             if (result === "exists") {
                 return res.status(409).json({ message: "Este lugar ya pertenece a tus favoritos.", code: "FAVORITE_ALREADY_EXISTS" });
             }
             return res.status(201).json({ message: "Lugar agregado a tus favoritos.", data: { placeId, esFavorito: true } });
         } catch {
-            return res.status(503).json({ message: "No se pudo guardar el favorito. Int�ntalo de nuevo." });
+            return res.status(503).json({ message: "No se pudo guardar el favorito. Inténtalo de nuevo." });
         }
     },
     async removeFavorite(req, res) {
@@ -57,7 +57,6 @@ export default {
             return res.status(503).json({ message: "No se pudieron cargar los lugares. Inténtalo de nuevo." });
         }
     },
-<<<<<<< HEAD
     async detail(req, res) {
         const id = Number(req.params.id);
         if (!/^-?[1-9]\d*$/.test(req.params.id) || !Number.isInteger(id) || id < -2147483648 || id > 2147483647) {
@@ -79,26 +78,6 @@ export default {
             return res.status(200).json({ data: await PlaceService.listActiveCategories() });
         } catch {
             return res.status(503).json({ message: "No se pudieron cargar las categorías. Inténtalo de nuevo." });
-=======
-
-    async detail(req, res) {
-        const id = Number(req.params.id);
-        if (!Number.isSafeInteger(id)) {
-            return res.status(400).json({
-                code: "PLACE_INVALID",
-                message: "El lugar indicado no es válido."
-            });
-        }
-        try {
-            const place = await PlaceService.findActiveById(id);
-            return place
-                ? res.status(200).json({ data: place })
-                : res.status(404).json({ code: "PLACE_NOT_FOUND", message: "No encontramos ese lugar." });
-        } catch (error) {
-            const code = typeof error?.code === "string" ? error.code : "PLACE_LOOKUP_FAILED";
-            console.error("No se pudo consultar el detalle del lugar.", { code });
-            return res.status(503).json({ message: "No pudimos cargar la información del lugar." });
->>>>>>> origin/feature/hu-8-3-saturacion-favoritos
         }
     }
 };

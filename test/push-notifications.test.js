@@ -10,23 +10,23 @@ test("una inicialización y un nivel sin cambios no crean alertas", async () => 
     const calls = [];
     const service = new PushNotificationService({
         repository: {
-            async applySaturation(value) {
-                calls.push(value);
+            async reconcilePlace(value) {
+                calls.push(value.placeId);
                 return { kind: calls.length === 1 ? "INITIALIZED" : "UNCHANGED" };
             }
         }
     });
-    assert.deepEqual(await service.applySaturation({ placeId: 7, level: "MEDIO" }), {
+    assert.deepEqual(await service.reconcilePlace({ placeId: 7 }), {
         changed: false,
         initialized: true
     });
-    assert.deepEqual(await service.applySaturation({ placeId: 7, level: "MEDIO" }), {
+    assert.deepEqual(await service.reconcilePlace({ placeId: 7 }), {
         changed: false,
         initialized: false
     });
     assert.deepEqual(calls, [
-        { placeId: 7, level: "MEDIO" },
-        { placeId: 7, level: "MEDIO" }
+        7,
+        7
     ]);
 });
 
@@ -34,19 +34,20 @@ test("un nivel distinto crea una transición y despacha el evento a los disposit
     const sent = [];
     const delivered = [];
     const repository = {
-        async applySaturation() {
-            return { kind: "CHANGED", previousLevel: "BAJO" };
+        async reconcilePlace() {
+            return { kind: "CHANGED", previousLevel: "TRANQUILO", level: "SATURADO" };
         },
+        async isEligible() { return true; },
         async claimPending() {
             return [{
                 id: 1,
                 deviceTokenId: 2,
                 placeId: 7,
                 placeName: "Parque Central",
-                previousLevel: "BAJO",
-                newLevel: "ALTO",
+                previousLevel: "TRANQUILO",
+                newLevel: "SATURADO",
                 token: "registered-device-token",
-                attempts: 1
+                attempts: 1, userId: 12, sessionVersion: 0, registrationId: "qa-binding", platform: "web"
             }];
         },
         async markDelivered(id) {
@@ -66,17 +67,18 @@ test("un nivel distinto crea una transición y despacha el evento a los disposit
             }
         }
     });
-    assert.deepEqual(await service.applySaturation({ placeId: 7, level: "ALTO" }), {
+    assert.deepEqual(await service.reconcilePlace({ placeId: 7 }), {
         changed: true,
-        previousLevel: "BAJO",
-        newLevel: "ALTO"
+        previousLevel: "TRANQUILO",
+        newLevel: "SATURADO"
     });
     assert.deepEqual(await service.dispatchPending(), { configured: true, sent: 1 });
     assert.equal(sent[0].fid, "registered-device-token");
+    assert.equal(sent[0].notification, undefined);
     assert.deepEqual(sent[0].data, {
-        placeId: "7",
-        previousLevel: "BAJO",
-        newLevel: "ALTO"
+        placeId: "7", userId: "12", sessionVersion: "0", registrationId: "qa-binding",
+        previousLevel: "TRANQUILO",
+        newLevel: "SATURADO"
     });
     assert.deepEqual(delivered, [1]);
 });
@@ -126,4 +128,14 @@ test("migración de alertas es transaccional e idempotente", async () => {
     assert.equal(queries.filter((query) => query.startsWith("CREATE TABLE public.place_saturation")).length, 1);
     assert.equal(queries.filter((query) => query.startsWith("CREATE TABLE public.push_notification_outbox")).length, 1);
     assert.ok(queries.every((query) => !/DROP|DELETE FROM public.users|ALTER TABLE public.users/i.test(query)));
+});
+
+
+test("una entrega reclamada antes de cambiar binding no llega al proveedor", async () => {
+    let sent = 0;
+    const service = new PushNotificationService({ repository: {
+        claimPending: async () => [{ id: 1 }], isEligible: async () => false
+    }, delivery: { isFcmConfigured: () => true, send: async () => { sent++; } } });
+    assert.deepEqual(await service.dispatchPending(), { configured: true, sent: 0 });
+    assert.equal(sent, 0);
 });

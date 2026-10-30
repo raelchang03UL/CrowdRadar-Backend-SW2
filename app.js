@@ -1,3 +1,8 @@
+import { createNotificationRoutes } from "./src/routes/notification.routes.js";
+import { createInternalRoutes } from "./src/routes/internal.routes.js";
+import PushNotificationService from "./src/services/PushNotificationService.js";
+import { startPushOutboxWorker } from "./src/services/PushOutboxWorker.js";
+import { assertSaturationAlertsSchemaReady } from "./src/database/migrateSaturationAlerts.js";
 import { assertFavoritesSchemaReady } from "./src/database/migrateFavorites.js";
 import express from "express";
 import cors from "cors";
@@ -36,7 +41,7 @@ export function recoveryServiceFromEnvironment(env = process.env, createDelivery
     return new PasswordRecoveryService({ delivery: createDelivery(mail), resetUrl: mail.resetUrl });
 }
 
-export function createApp({ recoveryService } = {}) {
+export function createApp({ recoveryService, pushNotificationService = PushNotificationService, saturationEventSecret = process.env.SATURATION_EVENT_SECRET } = {}) {
     const app = express();
     app.use(cors(corsOptions()));
     app.use(express.json({ limit: "32kb" }));
@@ -47,6 +52,8 @@ export function createApp({ recoveryService } = {}) {
     app.use("/api/places", historyRoutes);
     app.use("/api/reports", validationRoutes);
     app.use("/api/admin", adminRoutes);
+    app.use("/api/notifications", createNotificationRoutes(pushNotificationService));
+    app.use("/api/internal", createInternalRoutes(pushNotificationService, { secret: saturationEventSecret }));
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
@@ -78,12 +85,18 @@ export const startServer = async ({ port = PORT, host } = {}) => {
     await assertUserModerationSchemaReady(sequelize);
     await assertReportModerationSchemaReady(sequelize);
     await assertFavoritesSchemaReady(sequelize);
+    await assertSaturationAlertsSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
-    return server.listen(port, host, () => {
+    const listener = server.listen(port, host, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
         console.log(recoveryService ? "Recuperación de contraseña: envío por correo habilitado." : "Recuperación de contraseña: sin correo configurado (503 uniforme).");
     });
+    if (process.env.PUSH_WORKER_ENABLED === "true") {
+        const stopWorker = startPushOutboxWorker();
+        listener.once("close", stopWorker);
+    }
+    return listener;
 };
 
 const currentFile = fileURLToPath(import.meta.url);

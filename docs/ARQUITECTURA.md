@@ -1,5 +1,16 @@
 # Arquitectura backend
 
+## HU8 integrado para revisión — 30/10/2026
+
+Colaboración delegada asistida sobre develop06de599: merges conservan los commits originales de HU8.1/8.3/8.4 y sus autores. Rutas → PlaceController → PlaceService → FavoriteRepository combina marcado/lista/borrado con búsqueda, filtros y detalle de HU3. El DTO añade esFavorito exclusivamente para la identidad autenticada; PK(user_id,place_id) impide duplicación concurrente. Borrado bloquea el lugar y purga eventos pendientes antes de desmarcar, para que no reaparezcan al volver a marcar.
+
+Se conserva Firebase Admin14.5 y FID directo, junto al outbox aportado. PushNotificationService.reconcilePlace entrega evaluateSaturation al repositorio, que bloquea el lugar, lee el snapshot real compartido de reportes públicos/último por persona/ventana30min y guarda estado+eventos en una transacción. null se representa SIN_DATOS solo para comparar alertas: no modifica la política pública de saturación. Marcar el primer favorito fija una base del cálculo real bajo el mismo lock (también al volver desde cero favoritos); no genera alertas históricas ni pierde la primera transición antes del siguiente tick. Una primera lectura de datos heredados establece base sin alertar; igualdad no inserta eventos. reconcileAll pagina los lugares activos con favoritos; observará reportes, retiros HU7 y vencimiento de ventana al ejecutarse.
+
+Registro push revalida usuario/versión/expiración dentro de transacción, serializa cada FID y genera registrationId nuevo; transferirlo purga outbox previo. Claim y comprobación inmediatamente anterior al envío exigen cuenta activa, sesión vigente, favorito y binding original. Baja incluye opcionalmente registrationId para impedir que un logout tardío borre el nuevo binding. Un envío ya en vuelo no se puede retirar: Web usa DATA-ONLY y el cliente/SW debe validar binding antes de mostrar o abrir; el payload incluye userId/sessionVersion/registrationId/placeId. No se almacenan JWT en SQL ni se envían a FCM. Los reintentos conservan lease, backoff y máximo5 intentos; una respuesta de proveedor ambigua puede duplicar entrega.
+
+010/011 son migraciones explícitas nuevas después de001–009, conservadas sin reescritura. Los nombres004 de las ramas HU8 anteriores no se adoptan automáticamente: una tabla preexistente sin la identidad010/011 falla cerrada para revisión sin borrar datos. Arranque solo SELECT de readiness. Worker opt-in local y endpoint interno autenticado permiten reconciliar/drenar; setInterval no acredita ejecución en Vercel. Hace falta un ejecutor/scheduler durable aprobado y comprobación real de Firebase/Web, aún pendientes.
+
+
 ## Moderación HU7 — 28/10/2026
 
 Rutas/middleware → controlador → AdminUserService o AdminReportService → repositorio → PostgreSQL. El servicio valida entradas y limita DTO; el repositorio revalida ADMIN activo y sesión persistida dentro de la transacción. Permisos visuales no sustituyen esta autorización. No hay edición de roles ni moderación automática.

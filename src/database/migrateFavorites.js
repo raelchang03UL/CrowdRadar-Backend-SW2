@@ -1,6 +1,6 @@
 import { QueryTypes } from "sequelize";
 
-export const favoritesMigration = "004-user-favorites";
+export const favoritesMigration = "010-user-favorites";
 
 export async function migrateFavorites(sequelize) {
     return sequelize.transaction(async (transaction) => {
@@ -23,7 +23,7 @@ export async function migrateFavorites(sequelize) {
         if (!applied.has("001-create-places") ||
             !applied.has("002-users-session-version") ||
             !applied.has("003-password-recovery")) {
-            throw new Error("Aplica 001, 002 y 003 antes de 004-user-favorites.");
+            throw new Error("Aplica 001, 002 y 003 antes de 010-user-favorites.");
         }
         if (applied.has(favoritesMigration)) return false;
         const existing = await sequelize.query(

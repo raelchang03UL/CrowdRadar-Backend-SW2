@@ -72,10 +72,13 @@ test("HU 8.4 no expone errores de persistencia", async () => {
 
 test("HU 8.4 borra la asociación por usuario y lugar, sin ampliar el alcance", async () => {
     const originalQuery = sequelize.query;
+    const originalTransaction = sequelize.transaction;
     try {
         favoriteRepository.remove = originalRemove;
+        sequelize.transaction = async (callback) => callback({});
         sequelize.query = async (sql, options) => {
-            assert.match(sql, /DELETE FROM public\.favorites/);
+            if (sql.startsWith("SELECT")) { assert.match(sql, /FROM public\.places.*FOR UPDATE/); return []; }
+            assert.match(sql, /DELETE FROM public\.(favorites|push_notification_outbox)/);
             assert.match(sql, /WHERE user_id = :userId AND place_id = :placeId/);
             assert.deepEqual(options.replacements, { userId: 12, placeId: -7 });
             return [];
@@ -83,5 +86,6 @@ test("HU 8.4 borra la asociación por usuario y lugar, sin ampliar el alcance", 
         await favoriteRepository.remove(12, -7);
     } finally {
         sequelize.query = originalQuery;
+        sequelize.transaction = originalTransaction;
     }
 });

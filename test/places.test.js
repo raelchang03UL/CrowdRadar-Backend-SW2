@@ -10,11 +10,7 @@ const { default: jwt } = await import("../src/utils/jwt.js");
 const { seedPlacesDemo } = await import("../src/database/seedPlacesDemo.js");
 let server, baseUrl, places;
 const original = repository.findActive;
-<<<<<<< HEAD
 const originalFavoriteIds = favoriteRepository.findPlaceIdsByUser;
-=======
-const originalDetail = repository.findActiveById;
->>>>>>> origin/feature/hu-8-3-saturacion-favoritos
 const originalSession = userRepository.findSessionById;
 const validPlace = { id: 1, nombre: "Lugar de prueba", categoria: "Parque", referencia: "Prueba", direccion: "Dirección de prueba", latitud: -12.0464, longitud: -77.0428, activo: true, demostrativo: true };
 before(() => {
@@ -24,18 +20,10 @@ before(() => {
     server = app.listen(0);
     baseUrl = `http://127.0.0.1:${server.address().port}/api/places`;
 });
-beforeEach(() => {
-    places = [];
-    repository.findActive = async () => places;
-    repository.findActiveById = originalDetail;
-});
+beforeEach(() => { places = []; repository.findActive = async () => places; });
 after(async () => {
     repository.findActive = original;
-<<<<<<< HEAD
     favoriteRepository.findPlaceIdsByUser = originalFavoriteIds;
-=======
-    repository.findActiveById = originalDetail;
->>>>>>> origin/feature/hu-8-3-saturacion-favoritos
     userRepository.findSessionById = originalSession;
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 });
@@ -50,29 +38,6 @@ test("HU 3.1 devuelve lista vacía autenticada", async () => {
     const res = await request();
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { data: [] });
-});
-test("HU 8.3 permite consultar el detalle del lugar de una alerta", async () => {
-    repository.findActiveById = async (id) => id === 1 ? validPlace : null;
-    const headers = {
-        Authorization: ["Bearer", jwt.generateToken({ id: 1, email: "test@example.com", sessionVersion: 0 })].join(" ")
-    };
-    const response = await fetch(`${baseUrl}/1`, {
-        headers
-    });
-    assert.equal(response.status, 200);
-    assert.deepEqual((await response.json()).data, {
-        id: validPlace.id,
-        nombre: validPlace.nombre,
-        categoria: validPlace.categoria,
-        referencia: validPlace.referencia,
-        latitud: validPlace.latitud,
-        longitud: validPlace.longitud,
-        demostrativo: validPlace.demostrativo
-    });
-    const missing = await fetch(`${baseUrl}/99`, {
-        headers
-    });
-    assert.equal(missing.status, 404);
 });
 test("HU 3.1 entrega coordenadas y campos mínimos sin datos internos", async () => {
     places = [validPlace];

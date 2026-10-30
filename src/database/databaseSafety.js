@@ -76,3 +76,13 @@ export function assertMigrationTarget({ config: { database, host } }) {
         throw new Error("Destino protegido: no se permite migrar la entrega, bases de sistema ni Supabase.");
     }
 }
+
+export const favoritesQaProvenance = "CrowdRadar/SW2/hu8-20261030/v1";
+export function assertHu8QaDatabase({ config: { database, host } }) {
+    if (database !== "crowdradar_hu8_test" || !localHosts.includes(host)) throw new Error("HU8 QA solo admite crowdradar_hu8_test local.");
+}
+export async function assertHu8QaProvenance(db) {
+    assertHu8QaDatabase(db);
+    const [rows] = await db.query("SELECT current_database() AS name, shobj_description(oid, 'pg_database') AS provenance FROM pg_database WHERE datname = current_database()");
+    if (rows.length !== 1 || rows[0].name !== "crowdradar_hu8_test" || rows[0].provenance !== favoritesQaProvenance) throw new Error("HU8_QA_PROVENANCE_UNKNOWN: no adoptar ni modificar esta base.");
+}

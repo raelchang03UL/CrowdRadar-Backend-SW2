@@ -33,7 +33,7 @@ function toPublicPlace(place, esFavorito) {
 
 export default {
     async listFavorites(userId) { return (await FavoriteRepository.findActivePlacesByUser(userId)).map((place) => toPublicPlace(place, true)); },
-    async addFavorite(userId, placeId) { return FavoriteRepository.add(userId, placeId); },
+    async addFavorite(userId, placeId) { return FavoriteRepository.add(userId, placeId, evaluateSaturation); },
     async removeFavorite(userId, placeId) {
         await FavoriteRepository.remove(userId, placeId);
     },
@@ -58,16 +58,5 @@ export default {
             }
             return categoria;
         });
-    },
-
-    async findActiveById(id) {
-        if (!Number.isSafeInteger(id)) return null;
-        const place = await PlaceRepository.findActiveById(id);
-        if (!place) return null;
-        if (!validCoordinates(place.latitud, place.longitud)) {
-            throw new Error("Coordenadas de lugar inválidas.");
-        }
-        const { nombre, categoria, referencia, latitud, longitud, demostrativo } = place;
-        return { id, nombre, categoria, referencia, latitud, longitud, demostrativo };
     }
 };

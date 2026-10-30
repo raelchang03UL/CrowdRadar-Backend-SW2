@@ -24,6 +24,7 @@ function messagingClient(env = process.env) {
 }
 
 export default {
+    isFcmConfigured,
     async send(message) {
         return messagingClient().send(message);
     },
