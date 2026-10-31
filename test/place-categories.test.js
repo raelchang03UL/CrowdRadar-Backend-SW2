@@ -39,7 +39,7 @@ after(async () => {
 });
 const solicitar = (ruta = "", token = jwt.generateToken({ id: 1, sessionVersion: 0 })) =>
     fetch(url + ruta, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-const datosPublicos = ({ activo, ...lugar }) => ({ ...lugar, direccion: lugar.direccion ?? null });
+const datosPublicos = ({ activo, ...lugar }) => ({ ...lugar, direccion: lugar.direccion ?? null, esFavorito: false });
 
 test("HU 3.5 exige sesión en catálogo y lista filtrada", async () => {
     for (const ruta of ["/categories", "?categoria=Parque"]) {
@@ -131,9 +131,15 @@ test("HU 3.5 repositorio usa igualdad ORM, activos y órdenes determinísticos",
 });
 
 test("HU 3.5 servicio mantiene DTO mínimo y rechaza etiquetas de categoría corruptas", async () => {
-    assert.deepEqual(await servicio.listActive({ categoria: "Parque" }), lugares.filter((lugar) => lugar.categoria === "Parque").map(datosPublicos));
+    assert.deepEqual(await servicio.listActive({ categoria: "Parque" }, 1), lugares.filter((lugar) => lugar.categoria === "Parque").map(datosPublicos));
     for (const categoria of [null, 4, "", "   ", " Parque ", "a".repeat(81)]) {
         repositorio.findActiveCategories = async () => [{ categoria }];
         await assert.rejects(servicio.listActiveCategories(), /Categoría de lugar inválida/);
     }
 });
+
+// HU8 añade estado privado a lista/detalle; este doble conserva la prueba aislada de HU previas.
+const { default: favoriteStateRepository } = await import("../src/repositories/FavoriteRepository.js");
+const originalFavoriteStateLookup = favoriteStateRepository.findPlaceIdsByUser;
+test.before(() => { favoriteStateRepository.findPlaceIdsByUser = async () => []; });
+test.after(() => { favoriteStateRepository.findPlaceIdsByUser = originalFavoriteStateLookup; });

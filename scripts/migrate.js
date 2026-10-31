@@ -1,3 +1,6 @@
+import { migrateSaturationAlerts, saturationAlertsMigration } from "../src/database/migrateSaturationAlerts.js";
+import { migratePushTargetTypes, pushTargetTypesMigration } from "../src/database/migratePushTargetTypes.js";
+import { migrateFavorites, favoritesMigration } from "../src/database/migrateFavorites.js";
 import dotenv from "dotenv";
 import { createMigrationConnection } from "../src/config/migrationConnection.js";
 import { migratePlaces } from "../src/database/migratePlaces.js";
@@ -32,6 +35,9 @@ try {
     console.log(`${validationMigration}: ${await migrateValidation(sequelize) ? 'aplicada' : 'sin cambios'}.`);
     console.log(`${userModerationMigration}: ${await migrateUserModeration(sequelize) ? 'aplicada' : 'sin cambios'}.`);
     console.log(`${reportModerationMigration}: ${await migrateReportModeration(sequelize) ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${favoritesMigration}: ${await migrateFavorites(sequelize) ? "aplicada" : "sin cambios"}.`);
+    console.log(`${saturationAlertsMigration}: ${await migrateSaturationAlerts(sequelize) ? "aplicada" : "sin cambios"}.`);
+    console.log(`${pushTargetTypesMigration}: ${await migratePushTargetTypes(sequelize) ? "aplicada" : "sin cambios"}.`);
 } catch (error) {
     console.error("No se completaron las migraciones. Revisa configuración, permisos y destino autorizado; no se muestran SQL ni credenciales.");
     process.exitCode = 1;

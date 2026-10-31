@@ -1,3 +1,6 @@
+import { migrateFavorites, assertFavoritesSchemaReady } from "../src/database/migrateFavorites.js";
+import { migrateSaturationAlerts, assertSaturationAlertsSchemaReady } from "../src/database/migrateSaturationAlerts.js";
+import { migratePushTargetTypes, assertPushTargetTypesSchemaReady } from "../src/database/migratePushTargetTypes.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
@@ -82,6 +85,15 @@ try {
         await Promise.all([migrateValidation(db), migrateValidation(db)]);
         await Promise.all([migrateUserModeration(db), migrateUserModeration(db)]);
         await Promise.all([migrateReportModeration(db), migrateReportModeration(db)]);
+        await Promise.all([migrateFavorites(db), migrateFavorites(db)]);
+        await Promise.all([migrateSaturationAlerts(db), migrateSaturationAlerts(db)]);
+        await Promise.all([migratePushTargetTypes(db), migratePushTargetTypes(db)]);
+        assert.equal(await migratePushTargetTypes(db), false);
+        await assertPushTargetTypesSchemaReady(db);
+        assert.equal(await migrateFavorites(db), false);
+        assert.equal(await migrateSaturationAlerts(db), false);
+        await assertFavoritesSchemaReady(db);
+        await assertSaturationAlertsSchemaReady(db);
         assert.equal(await migratePlaceDetails(db), false);
         assert.equal(await migrateReportCompatibility(db), false);
         assert.equal(await migrateKarma(db), false);

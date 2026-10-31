@@ -95,3 +95,9 @@ test("HTTP combina tres filtros, recorta textos y mantiene DTO explícito", asyn
     assert.equal(response.status, 200); const { data } = await response.json();
     assert.equal(data.length, 1); assert.equal(data[0].activo, undefined); assert.equal(data[0].votes, undefined);
 });
+
+// HU8 añade estado privado a lista/detalle; este doble conserva la prueba aislada de HU previas.
+const { default: favoriteStateRepository } = await import("../src/repositories/FavoriteRepository.js");
+const originalFavoriteStateLookup = favoriteStateRepository.findPlaceIdsByUser;
+test.before(() => { favoriteStateRepository.findPlaceIdsByUser = async () => []; });
+test.after(() => { favoriteStateRepository.findPlaceIdsByUser = originalFavoriteStateLookup; });

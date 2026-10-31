@@ -1,0 +1,67 @@
+CrowdRadar HU8 — corte adicional FCM real, 30/10/2026 14:17 America/Lima
+
+Este registro complementa backend-verificacion.txt sin reescribir su ensayo histórico con dobles.
+Código backend publicado observado: f33db103ae105bd25440ef9dfd7dca8e5d258a18.
+El corte documental presente no ejecutó nuevas suites ni cambió código de producción.
+
+Configuración autorizada del titular:
+- Proyecto exclusivo crowdradar-hu8-web, número1073227225099, plan Spark confirmado por consola.
+- WebApp, VAPID y FCM v1 configurados. Sin pagos, Auth, Firestore, Functions ni Hosting nuevos.
+- Cuenta de servicio dedicada; rol custom con solo cloudmessaging.messages.create.
+- ADC JSON externo a Git con acceso privado; no se incluyen claves, JWT, FID ni registrationId.
+- OAuth temporal de configuración revocado; runtime conserva la credencial de servicio mínima.
+- PostgreSQL NUEVO aislado127.0.0.1:55488, crowdradar_hu8_test, procedencia CrowdRadar/SW2/hu8-20261030/v1.
+- API3053 y worker5s reales; SMTP siempre deshabilitado.
+
+Resultados separados:
+1. Negocio/proveedor: reportes HTTP reales de usuarios sintéticos distintos generaron cálculo CrowdRadar,
+   transición y SENT mediante Firebase Admin real. Sin cambio: cero eventos adicionales.
+   Cuenta B sin favorito del lugar6: tres POST201, SATURADO y cero eventos para esa cuenta/lugar.
+2. Chrome/lugar7: primera fase tres SATURADO; siguiente fase cuatro TRANQUILO nuevos; todos conservados.
+   Tras logout/login de C31 y activación mediante producto, Chrome conocido por comparación SHA256
+   recibió binding nuevo17, conservando el otro dispositivo15; no se eliminó este manualmente.
+   Cinco reporteros nuevos produjeron cinco POST201 SATURADO. API calculó SATURADO con nueve votos
+   vigentes; SQL conserva doce reportes históricos. Snapshot posterior: SENT4/PENDING0/FAILED0;
+   dispositivo15 SENT3 y Chrome17 SENT1. Los tres primeros SATURADO caducaron de la ventana30min.
+3. Probe de transporte QA independiente: replay data-only de datos SENT reales para dispositivos14/15,
+   Web Urgency high / TTL60; ambos obtuvieron success=true y ACK del proyecto esperado.
+   Sin reportes nuevos ni cambios del outbox por el probe. No es aceptación funcional de HU8.
+4. Observación: collector pasivo registró38 eventos de diagnóstico/control en este corte,
+   pero cero worker-push y cero window-message. El titular no observó notificación ni apertura.
+   Tener permiso, suscripción y ACK no demuestra recepción. HU8.3 sigue PENDIENTE.
+
+Fuentes QA locales conservadas fuera del repo (tmp/cierre-hu8-20261030/qa):
+- firebase-setup-evidence.json: metadatos públicos, rol mínimo y revocación OAuth.
+- real-fcm-phase-state.json y real-fcm-snapshot-2026-10-30T18-32-50-204Z.json: fases A/B.
+- chrome-fcm-state.json, afterResync DONE: cinco POST201, cálculo público y reportes conservados.
+- fid-binding-comparison.json: coincidencia por SHA256; no FID en claro ni token de autenticación.
+- fcm-channel-probe-high-data.json: probe DONE, dos ACK, solo resúmenes seguros.
+- diag-events.jsonl: observaciones permitidas, sin payloads privados.
+
+Revisión independiente del transporte, solo lectura:
+- Firebase Admin14.5.0 instalado y fuente tagged oficial coinciden: send(message) usa POST real
+  /v1/projects/{projectId}/messages:send. validate_only aparece solo si dryRun=true; nuestro adapter
+  no pasa ese argumento. El mismo handler y los mismos encabezados comunes sirven a fid y token.
+- El contrato REST y FidMessage aceptan fid sin appId/package/header adicional documentado.
+  La autorización requiere cloudmessaging.messages.create sobre el proyecto. La respuesta acredita
+  aceptación por FCM para entrega, no recepción del navegador; no se encontró requisito omitido probado.
+- SDK Web13.1.0 oficial: register toma Installations.getId y sincroniza al faltar metadata, cambiar FID
+  o cumplir7d. unregister elimina registro remoto/metadata, sin borrar instalación ni suscripción Push.
+  El ensayo posterior utilizó el flujo de producto logout/login/activación; su ACK no cerró la brecha.
+
+Referencias oficiales consultadas:
+https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages/send
+https://firebase.google.com/docs/reference/admin/node/firebase-admin.messaging.fidmessage.md
+https://raw.githubusercontent.com/firebase/firebase-admin-node/v14.5.0/src/messaging/messaging.ts
+https://raw.githubusercontent.com/firebase/firebase-admin-node/v14.5.0/src/messaging/messaging-api-request-internal.ts
+https://raw.githubusercontent.com/firebase/quickstart-js/master/messaging/README.md
+https://www.gstatic.com/firebasejs/13.1.0/firebase-messaging.js.map
+
+Control adicional, 14:21 America/Lima: se envió una sola notification genérica de diagnóstico al
+dispositivo17, con dos campos QA y Web Urgency high / TTL60. Firebase devolvió success=true y ACK del
+proyecto exacto. A las14:22 el observador continuaba en38 eventos y cero worker-push/window-message.
+No se usaron datos de cuenta/lugar en ese mensaje ni se modificó el outbox. No prueba aceptación HU8.
+Evidencia local separada: qa/fcm-channel-probe-visible-control.json.
+
+Sin merge ni despliegue. Sin atribuir recepción a dobles, probes, TCP establecido, permisos o ACK.
+El diagnóstico legacy A/B aislado aún no tiene resultado en este corte.

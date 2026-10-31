@@ -62,6 +62,12 @@ export function assertIsolatedPlacesTestDatabase(connection) {
     }
 }
 
+export function assertIsolatedFavoritesTestDatabase({ config: { database, host } }) {
+    if (!localHosts.includes(host) || database !== "crowdradar_hu81_test") {
+        throw new Error("La comprobación aislada solo admite crowdradar_hu81_test en PostgreSQL local.");
+    }
+}
+
 // El comando de migración es portable, no una allowlist de desarrollo.
 // Se conserva una barrera contra los destinos históricos/protegidos conocidos.
 export function assertMigrationTarget({ config: { database, host } }) {
@@ -69,4 +75,14 @@ export function assertMigrationTarget({ config: { database, host } }) {
         /(^|\.)supabase\.(co|com)$/i.test(host ?? "")) {
         throw new Error("Destino protegido: no se permite migrar la entrega, bases de sistema ni Supabase.");
     }
+}
+
+export const favoritesQaProvenance = "CrowdRadar/SW2/hu8-20261030/v1";
+export function assertHu8QaDatabase({ config: { database, host } }) {
+    if (database !== "crowdradar_hu8_test" || !localHosts.includes(host)) throw new Error("HU8 QA solo admite crowdradar_hu8_test local.");
+}
+export async function assertHu8QaProvenance(db) {
+    assertHu8QaDatabase(db);
+    const [rows] = await db.query("SELECT current_database() AS name, shobj_description(oid, 'pg_database') AS provenance FROM pg_database WHERE datname = current_database()");
+    if (rows.length !== 1 || rows[0].name !== "crowdradar_hu8_test" || rows[0].provenance !== favoritesQaProvenance) throw new Error("HU8_QA_PROVENANCE_UNKNOWN: no adoptar ni modificar esta base.");
 }

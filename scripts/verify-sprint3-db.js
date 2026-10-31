@@ -1,3 +1,6 @@
+import { migrateFavorites, assertFavoritesSchemaReady } from "../src/database/migrateFavorites.js";
+import { migrateSaturationAlerts, assertSaturationAlertsSchemaReady } from "../src/database/migrateSaturationAlerts.js";
+import { migratePushTargetTypes, assertPushTargetTypesSchemaReady } from "../src/database/migratePushTargetTypes.js";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {randomBytes} from "node:crypto";
@@ -26,7 +29,16 @@ try{
     const reportsBefore=await select('SELECT * FROM public.saturation_reports ORDER BY id');
     await Promise.all([migrateValidation(db),migrateValidation(db)]);assert.equal(await migrateValidation(db),false);await assertValidationSchemaReady(db);
     await Promise.all([migrateUserModeration(db),migrateUserModeration(db)]);assert.equal(await migrateUserModeration(db),false);await assertUserModerationSchemaReady(db);
-    await Promise.all([migrateReportModeration(db),migrateReportModeration(db)]);assert.equal(await migrateReportModeration(db),false);await assertReportModerationSchemaReady(db);
+    await Promise.all([migrateReportModeration(db),migrateReportModeration(db)]);
+        await Promise.all([migrateFavorites(db), migrateFavorites(db)]);
+        await Promise.all([migrateSaturationAlerts(db), migrateSaturationAlerts(db)]);
+        await Promise.all([migratePushTargetTypes(db), migratePushTargetTypes(db)]);
+        assert.equal(await migratePushTargetTypes(db), false);
+        await assertPushTargetTypesSchemaReady(db);
+        assert.equal(await migrateFavorites(db), false);
+        assert.equal(await migrateSaturationAlerts(db), false);
+        await assertFavoritesSchemaReady(db);
+        await assertSaturationAlertsSchemaReady(db);assert.equal(await migrateReportModeration(db),false);await assertReportModerationSchemaReady(db);
     const usersReady=await select('SELECT * FROM public.users ORDER BY id');
     for(const original of baseline){
         const current=usersReady.find(row=>row.id===original.id);
