@@ -10,13 +10,15 @@ JWT Bearer en favoritos/dispositivos; respuestas no-store. Se conservan rutas pr
 | POST /api/places/:id/favorite |201 {message,data:{placeId,esFavorito:true}};409 FAVORITE_ALREADY_EXISTS ante duplicado,404 PLACE_NOT_FOUND si no disponible,400 INVALID_PLACE_ID,401 de sesión o503 público. PK protege simultaneidad. |
 | DELETE /api/places/:id/favorite |204 idempotente; solo asociación del usuario autenticado; purga alertas pendientes del lugar para esa cuenta.400/401/503 públicos. |
 | GET /api/places y GET /api/places/:id | DTO existente +esFavorito:boolean calculado con la cuenta autenticada; lista conserva nombre/categoria/nivel y detalle conserva direccion. |
-| POST /api/notifications/devices | JSON exacto {token,platform}; token es FID de Firebase SDK vigente (20..4096 sin espacios), platform web/android/ios.200 {message,data:{registrationId}}; UUID nuevo en cada registro, asociado a usuario/versión/expiración JWT.400 DEVICE_TOKEN_INVALID,401 vigente o503. |
+| POST /api/notifications/devices | JSON {token,platform,targetType?}, sin claves adicionales. targetType es fid (por defecto compatible) o fcm-token explícito. token es el identificador opaco de ese tipo (20..4096 sin espacios; JWT evidente rechazado), platform web/android/ios. Un FID no es un registration token FCM.200 {message,data:{registrationId}}; UUID nuevo en cada registro, asociado a usuario/versión/expiración JWT.400 DEVICE_TOKEN_INVALID,401 vigente o503. |
 | DELETE /api/notifications/devices | JSON {token,registrationId?};204 idempotente filtrado por cuenta/sesión y binding cuando se indica. El cliente nuevo envía registrationId capturado para proteger logouts tardíos. |
 | POST /api/internal/places/:id/saturation | Secreto x-saturation-event-secret (mínimo32 configurado), cuerpo vacío/{}; recalcula reportes reales. No acepta level.200 {data:{changed,initialized? ,previousLevel?,newLevel?}},401 sin autorización,503 sin configuración. |
 | POST /api/internal/push/process | Mismo secreto/cuerpo vacío; pagina favoritos, recalcula y drena.200 {data:{evaluated,configured,sent}}; configured:false significa ningún envío FCM. No es ruta pública del cliente. |
 
 FCM data incluye strings placeId,userId,sessionVersion,registrationId,previousLevel,newLevel. Web DATA-ONLY sin notification: SW y app deben comprobar binding de sesión actual antes de mostrar/abrir y navegar al detalle autenticado correcto. Tras logout/login, el binding anterior se descarta incluso para la misma cuenta. Tokens/bindings de otra cuenta nunca autorizan consultas. Móvil conserva texto genérico. SIN_DATOS representa ausencia de nivel suficiente para comparar alertas; GET saturation mantiene level:null/reason original. La cola no demuestra recepción real ni apertura del navegador.
 
+
+El tipo declarado se persiste mediante012 y determina exactamente un destino Admin: fid o token. No se infiere por longitud/formato y no se reintenta usando otro tipo. Cambiar tipo o renovar registro rota el binding y purga eventos anteriores; claim/envío comprueban también el tipo vigente. DELETE conserva token+registrationId, cuenta y sesión. Web que use getToken declara fcm-token; register/onRegistered conserva fid.
 
 JSON UTF-8, JWT Bearer en rutas protegidas; el cliente nunca conecta directamente a PostgreSQL. Esta sección describe HU7 vigente,28/10/2026; las rutas previas se conservan debajo.
 

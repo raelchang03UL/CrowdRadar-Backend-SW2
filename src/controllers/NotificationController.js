@@ -1,12 +1,15 @@
 import { PushNotificationError } from "../services/PushNotificationService.js";
 
 const platforms = new Set(["android", "ios", "web"]);
+const targetTypes = new Set(["fid", "fcm-token"]);
 
 function validTokenBody(body) {
     return body && typeof body === "object" && !Array.isArray(body) &&
-        Object.keys(body).length === 2 &&
+        Object.keys(body).every(key => ["token", "platform", "targetType"].includes(key)) &&
+        (body.targetType === undefined || targetTypes.has(body.targetType)) &&
         typeof body.token === "string" && body.token.length >= 20 &&
         body.token.length <= 4096 && !/\s/.test(body.token) &&
+        !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(body.token) &&
         platforms.has(body.platform);
 }
 
@@ -32,6 +35,7 @@ export function createNotificationController(service) {
                     userId: req.user.id,
                     token: req.body.token,
                     platform: req.body.platform,
+                    targetType: req.body.targetType ?? "fid",
                     sessionVersion: req.user.sessionVersion, expiresAt: req.user.exp
                 });
                 return res.status(200).json({ message: "Dispositivo registrado para alertas.", data: { registrationId } });

@@ -20,14 +20,15 @@ try {
         ["migratePlaces", "migratePlaces"], ["migrateAuth", "migrateAuth"], ["migrateRecovery", "migrateRecovery"],
         ["migratePlaceDetails", "migratePlaceDetails"], ["migrateReportCompatibility", "migrateReportCompatibility"],
         ["migrateKarma", "migrateKarma"], ["migrateValidation", "migrateValidation"], ["migrateUserModeration", "migrateUserModeration"],
-        ["migrateReportModeration", "migrateReportModeration"], ["migrateFavorites", "migrateFavorites"], ["migrateSaturationAlerts", "migrateSaturationAlerts"]
+        ["migrateReportModeration", "migrateReportModeration"], ["migrateFavorites", "migrateFavorites"], ["migrateSaturationAlerts", "migrateSaturationAlerts"],
+        ["migratePushTargetTypes", "migratePushTargetTypes"]
     ];
     for (const [file, name] of migrations) {
         const migration = (await import(`../src/database/${file}.js`))[name];
         await migration(db);
         assert.equal(await migration(db), false);
     }
-    console.log("PASS: 001–009 preservadas; 010 favoritos y 011 push, esquema vacío/repetición segura sin DDL de arranque.");
+    console.log("PASS: 001–011 preservadas; 012 tipos de destino, repetición segura sin DDL de arranque.");
     const tag = randomBytes(8).toString("hex");
     const passwordHash = await bcrypt.hash(randomBytes(32).toString("hex"), 4);
     const users = [];
@@ -65,8 +66,11 @@ try {
     const stateBeforeRepeat = await select(`SELECT * FROM public.place_saturation WHERE place_id=:placeId`, { placeId });
     const { migrateFavorites } = await import("../src/database/migrateFavorites.js");
     const { migrateSaturationAlerts } = await import("../src/database/migrateSaturationAlerts.js");
+    const { migratePushTargetTypes, assertPushTargetTypesSchemaReady } = await import("../src/database/migratePushTargetTypes.js");
     assert.equal(await migrateFavorites(db), false);
     assert.equal(await migrateSaturationAlerts(db), false);
+    assert.equal(await migratePushTargetTypes(db), false);
+    await assertPushTargetTypesSchemaReady(db);
     assert.deepEqual(await select(`SELECT * FROM public.favorites WHERE user_id=:id ORDER BY place_id`, { id: users[0].id }), favoritesBeforeRepeat);
     assert.deepEqual(await select(`SELECT * FROM public.place_saturation WHERE place_id=:placeId`, { placeId }), stateBeforeRepeat);
     console.log("PASS: repetir migraciones010/011 conserva favoritos y baseline ya registrados.");
@@ -75,6 +79,7 @@ try {
     assert.equal(registration.status, 200);
     let bindingA = (await registration.json()).data.registrationId;
     assert.ok(bindingA);
+    assert.equal((await select("SELECT target_type FROM public.push_device_tokens WHERE token=:fid", { fid }))[0].target_type, "fid");
     const oldBindingSameJwt = bindingA;
     const refreshed = await request("/notifications/devices", { method: "POST", body: { token: fid, platform: "web" } });
     assert.equal(refreshed.status, 200);
@@ -111,7 +116,18 @@ try {
     const oldEvent = claimed.find(row => row.placeId === placeId);
     assert.ok(oldEvent);
     assert.equal(await pushRepository.isEligible(oldEvent), true);
-    const registrationB = await request("/notifications/devices", { actor: 1, method: "POST", body: { token: fid, platform: "web" } });
+    const typedRegistration = await request("/notifications/devices", { method: "POST", body: { token: fid, platform: "web", targetType: "fcm-token" } });
+    assert.equal(typedRegistration.status, 200);
+    const typedBinding = (await typedRegistration.json()).data.registrationId;
+    assert.notEqual(typedBinding, bindingA);
+    assert.equal(await pushRepository.isEligible(oldEvent), false);
+    assert.equal((await request("/notifications/devices", { method: "DELETE", body: { token: fid, registrationId: bindingA } })).status, 204);
+    const devicesBeforeRepeat = await select("SELECT * FROM public.push_device_tokens WHERE token=:fid", { fid });
+    assert.equal(devicesBeforeRepeat[0].registration_id, typedBinding);
+    assert.equal(devicesBeforeRepeat[0].target_type, "fcm-token");
+    assert.equal(await migratePushTargetTypes(db), false);
+    assert.deepEqual(await select("SELECT * FROM public.push_device_tokens WHERE token=:fid", { fid }), devicesBeforeRepeat);
+    const registrationB = await request("/notifications/devices", { actor: 1, method: "POST", body: { token: fid, platform: "web", targetType: "fcm-token" } });
     assert.equal(registrationB.status, 200);
     const bindingB = (await registrationB.json()).data.registrationId;
     assert.notEqual(bindingB, bindingA);
@@ -122,6 +138,8 @@ try {
     await db.query(`UPDATE public.saturation_reports SET is_public=TRUE, moderation_version=1, reviewed_denunciations=1, review_decision='KEEP', created_at=NOW() WHERE place_id=:placeId`, { replacements: { placeId } });
     assert.equal((await service.reconcilePlace({ placeId })).newLevel, "SATURADO");
     await service.dispatchPending();
+    assert.equal(sent.at(-1).token, fid);
+    assert.equal(sent.at(-1).fid, undefined);
     assert.equal(sent.at(-1).data.registrationId, bindingB);
     assert.equal(sent.at(-1).data.userId, String(users[1].id));
     await db.query(`UPDATE public.saturation_reports SET created_at=NOW()-INTERVAL '31 minutes' WHERE place_id=:placeId`, { replacements: { placeId } });
@@ -131,7 +149,7 @@ try {
     const beforeSend = sent.length;
     await service.dispatchPending();
     assert.equal(sent.length, beforeSend);
-    console.log("PASS: HU7 retiro/caducidad30m cambian cálculo; sin cambio no hay alerta; transferencia FID purga cola y binding/versión caducados no entregan a otra sesión/cuenta.");
+    console.log("PASS: HU7/caducidad cambian cálculo; tipo explícito conserva aislamiento, rota binding y purga cola; FID y token envían campos exclusivos; 012 repetida conserva destinos.");
     console.log("PASS: entorno HU8 aislado conservado para inspección; ningún SMTP ni FCM real, bases personales sin acceso.");
 } finally {
     if (server) await new Promise(resolve => server.close(resolve));

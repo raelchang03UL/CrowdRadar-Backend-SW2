@@ -47,7 +47,7 @@ test("un nivel distinto crea una transición y despacha el evento a los disposit
                 previousLevel: "TRANQUILO",
                 newLevel: "SATURADO",
                 token: "registered-device-token",
-                attempts: 1, userId: 12, sessionVersion: 0, registrationId: "qa-binding", platform: "web"
+                attempts: 1, userId: 12, sessionVersion: 0, registrationId: "qa-binding", platform: "web", targetType: "fid"
             }];
         },
         async markDelivered(id) {

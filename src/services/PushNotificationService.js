@@ -47,8 +47,11 @@ export class PushNotificationService {
         for (const notification of pending) {
             try {
                 if (!await this.repository.isEligible(notification)) continue;
+                if (!["fid", "fcm-token"].includes(notification.targetType)) {
+                    throw Object.assign(new Error("Tipo de destino push no válido."), { code: "PUSH_TARGET_TYPE_INVALID" });
+                }
                 await this.delivery.send({
-                    fid: notification.token,
+                    [notification.targetType === "fcm-token" ? "token" : "fid"]: notification.token,
                     ...(notification.platform === "web" ? {} : { notification: {
                         title: "Cambió la saturación de un lugar favorito",
                         body: "Abre CrowdRadar para consultar las novedades de tus favoritos."

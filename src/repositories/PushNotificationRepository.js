@@ -8,7 +8,7 @@ const eligible = `d.registration_id = o.registration_id AND d.user_id = o.user_i
     AND d.session_expires_at > CURRENT_TIMESTAMP AND p.activo = TRUE
     AND EXISTS (SELECT 1 FROM public.favorites f WHERE f.user_id = o.user_id AND f.place_id = o.place_id)`;
 export default {
-    async registerDevice({ userId, token, platform, sessionVersion, expiresAt }) {
+    async registerDevice({ userId, token, platform, targetType = "fid", sessionVersion, expiresAt }) {
         return sequelize.transaction(async (transaction) => {
             const registrationId = randomUUID();
             // Serializa las transferencias del mismo token sin depender de que la fila exista.
@@ -21,12 +21,12 @@ export default {
             await sequelize.query(`DELETE FROM public.push_notification_outbox WHERE device_token_id IN
                 (SELECT id FROM public.push_device_tokens WHERE token = :token)`, { transaction, replacements: { token } });
             await sequelize.query(`INSERT INTO public.push_device_tokens
-                (user_id, token, platform, registration_id, session_version, session_expires_at)
-                VALUES (:userId, :token, :platform, :registrationId, :sessionVersion, to_timestamp(:expiresAt))
+                (user_id, token, platform, target_type, registration_id, session_version, session_expires_at)
+                VALUES (:userId, :token, :platform, :targetType, :registrationId, :sessionVersion, to_timestamp(:expiresAt))
                 ON CONFLICT (token) DO UPDATE SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform,
-                    registration_id = EXCLUDED.registration_id, session_version = EXCLUDED.session_version,
+                    target_type = EXCLUDED.target_type, registration_id = EXCLUDED.registration_id, session_version = EXCLUDED.session_version,
                     session_expires_at = EXCLUDED.session_expires_at, updated_at = CURRENT_TIMESTAMP`,
-            { transaction, replacements: { userId, token, platform, registrationId, sessionVersion, expiresAt } });
+            { transaction, replacements: { userId, token, platform, targetType, registrationId, sessionVersion, expiresAt } });
             return registrationId;
         });
     },
@@ -78,7 +78,7 @@ export default {
             const rows = await select(`SELECT o.id, o.device_token_id AS "deviceTokenId", o.user_id AS "userId",
                     o.registration_id AS "registrationId", d.session_version AS "sessionVersion",
                     o.place_id AS "placeId", o.previous_level AS "previousLevel", o.new_level AS "newLevel", d.token,
-                    d.platform, o.attempts + 1 AS attempts
+                    d.platform, d.target_type AS "targetType", o.attempts + 1 AS attempts
                 FROM public.push_notification_outbox o JOIN public.push_device_tokens d ON d.id = o.device_token_id
                 JOIN public.users u ON u.id = o.user_id JOIN public.places p ON p.id = o.place_id
                 WHERE o.status = 'PENDING' AND o.attempts < 5 AND o.available_at <= CURRENT_TIMESTAMP
@@ -94,7 +94,8 @@ export default {
         const rows = await select(`SELECT o.id FROM public.push_notification_outbox o
             JOIN public.push_device_tokens d ON d.id = o.device_token_id JOIN public.users u ON u.id = o.user_id
             JOIN public.places p ON p.id = o.place_id WHERE o.id = :id AND o.status = 'PENDING'
-            AND o.attempts = :attempts AND d.token = :token AND o.registration_id = :registrationId AND ${eligible}`,
+            AND o.attempts = :attempts AND d.token = :token AND d.target_type = :targetType
+            AND o.registration_id = :registrationId AND ${eligible}`,
         { replacements: notification });
         return rows.length === 1;
     },

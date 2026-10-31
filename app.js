@@ -3,6 +3,7 @@ import { createInternalRoutes } from "./src/routes/internal.routes.js";
 import PushNotificationService from "./src/services/PushNotificationService.js";
 import { startPushOutboxWorker } from "./src/services/PushOutboxWorker.js";
 import { assertSaturationAlertsSchemaReady } from "./src/database/migrateSaturationAlerts.js";
+import { assertPushTargetTypesSchemaReady } from "./src/database/migratePushTargetTypes.js";
 import { assertFavoritesSchemaReady } from "./src/database/migrateFavorites.js";
 import express from "express";
 import cors from "cors";
@@ -86,6 +87,7 @@ export const startServer = async ({ port = PORT, host } = {}) => {
     await assertReportModerationSchemaReady(sequelize);
     await assertFavoritesSchemaReady(sequelize);
     await assertSaturationAlertsSchemaReady(sequelize);
+    await assertPushTargetTypesSchemaReady(sequelize);
 
     const server = recoveryService ? createApp({ recoveryService }) : app;
     const listener = server.listen(port, host, () => {
