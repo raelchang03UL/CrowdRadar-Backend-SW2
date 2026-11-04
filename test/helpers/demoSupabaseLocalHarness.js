@@ -24,9 +24,10 @@ export async function createDemoSupabaseLocalHarness() {
         secrets = { api: randomBytes(32).toString("base64url"), migration: randomBytes(32).toString("base64url"), jwt: randomBytes(40).toString("base64url") };
         await writeFile(privatePath, JSON.stringify(secrets), { flag: "wx" });
     }
-    const target = { deployment: "demo-vercel-20261104", projectRef, organizationId: "local-synthetic-org", organizationSlug: "local-synthetic",
-        ownerAccountId: "local-synthetic-owner", creationEvidenceSha256: "a".repeat(64), provenanceId: "b".repeat(64),
-        createdAt: "2026-11-04T12:00:00Z", verifiedAt: "2026-11-04T12:01:00Z", initialSchemas: ["auth", "public", "storage", "vault"],
+    const target = { deployment: "demo-vercel-20261104", projectRef, organizationId: "local-synthetic-org", organizationName: "local-synthetic",
+        ownerAccountEmail: "local-synthetic-owner", creationEvidenceKind: "dashboard-observed-creation",
+        creationEvidenceSha256: "a".repeat(64), provenanceId: "b".repeat(64),
+        observedCreationAt: "2026-11-04T12:00:00Z", verifiedAt: "2026-11-04T12:01:00Z", initialSchemas: ["auth", "public", "storage", "vault"],
         endpoints: Object.fromEntries(Object.entries({ api: "crowdradar_demo_api", migration: "crowdradar_demo_migrator", bootstrap: "postgres" })
             .map(([purpose, role]) => [purpose, { host: syntheticHost, port: purpose === "api" ? 6543 : 5432,
                 username: `${role}.${projectRef}`, caSha256: new X509Certificate(ca).fingerprint256.replaceAll(":", "").toLowerCase() }])) };

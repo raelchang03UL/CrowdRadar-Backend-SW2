@@ -13,14 +13,15 @@ export function isDemoDeployment(env = process.env) {
 
 export function requireVerifiedDemoTarget(target = demoSupabaseTarget) {
     if (!target || target.deployment !== demoDeployment || !/^[a-z]{20}$/.test(target.projectRef ?? "") ||
-        !target.organizationId || !target.organizationSlug || !target.ownerAccountId ||
+        !target.organizationId || !target.organizationName || !target.ownerAccountEmail ||
+        target.creationEvidenceKind !== "dashboard-observed-creation" ||
         !/^[a-f0-9]{64}$/.test(target.creationEvidenceSha256 ?? "") ||
         !/^[a-f0-9]{64}$/.test(target.provenanceId ?? "") ||
         !Array.isArray(target.initialSchemas) || !["public", "auth", "storage"].every(name => target.initialSchemas.includes(name)) ||
         target.initialSchemas.some(name => !/^[a-z][a-z0-9_]*$/.test(name) || name.startsWith("pg_") || name === "information_schema" || name === "crowdradar_demo_identity") ||
         new Set(target.initialSchemas).size !== target.initialSchemas.length ||
-        !Number.isFinite(Date.parse(target.createdAt)) || Date.parse(target.createdAt) < Date.parse("2026-11-04T00:00:00Z") ||
-        !Number.isFinite(Date.parse(target.verifiedAt)) || Date.parse(target.verifiedAt) < Date.parse(target.createdAt)) {
+        !Number.isFinite(Date.parse(target.observedCreationAt)) || Date.parse(target.observedCreationAt) < Date.parse("2026-11-04T00:00:00Z") ||
+        !Number.isFinite(Date.parse(target.verifiedAt)) || Date.parse(target.verifiedAt) < Date.parse(target.observedCreationAt)) {
         fail("DEMO_TARGET_UNVERIFIED");
     }
     for (const purpose of ["api", "migration", "bootstrap"]) {

@@ -66,9 +66,9 @@ export async function assertDemoProvenance(db, env, purpose, target = demoSupaba
         FROM crowdradar_demo_identity.provenance`, options);
     const row = rows[0];
     if (rows.length !== 1 || row.deployment !== target.deployment || row.project_ref !== target.projectRef ||
-        row.organization_id !== target.organizationId || row.owner_account_id !== target.ownerAccountId ||
+        row.organization_id !== target.organizationId || row.owner_account_id !== target.ownerAccountEmail ||
         row.creation_evidence_sha256 !== target.creationEvidenceSha256 || row.provenance_id !== target.provenanceId ||
-        row.initial_public_empty !== true || new Date(row.created_at).toISOString() !== new Date(target.createdAt).toISOString()) fail("DEMO_PROVENANCE_INVALID");
+        row.initial_public_empty !== true || new Date(row.created_at).toISOString() !== new Date(target.observedCreationAt).toISOString()) fail("DEMO_PROVENANCE_INVALID");
     const permissions = await select(db, `SELECT pg_get_userbyid(c.relowner) AS owner, pg_get_userbyid(n.nspowner) AS schema_owner,
         has_table_privilege(current_user, c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS can_change,
         has_any_column_privilege(current_user, c.oid, 'INSERT,UPDATE,REFERENCES') AS can_change_column,

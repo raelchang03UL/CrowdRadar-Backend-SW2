@@ -13,8 +13,9 @@ const fingerprint = new X509Certificate(ca).fingerprint256.replaceAll(":", "").t
 const ref = "abcdefghijklmnopqrst";
 const host = "aws-0-us-east-1.pooler.supabase.com";
 const target = {
-    deployment: demoDeployment, projectRef: ref, organizationId: "synthetic-organization", organizationSlug: "synthetic-org",
-    ownerAccountId: "synthetic-owner", createdAt: "2026-11-04T12:00:00Z", verifiedAt: "2026-11-04T12:01:00Z",
+    deployment: demoDeployment, projectRef: ref, organizationId: "synthetic-organization", organizationName: "synthetic-org",
+    ownerAccountEmail: "synthetic-owner@example.test", observedCreationAt: "2026-11-04T12:00:00Z", verifiedAt: "2026-11-04T12:01:00Z",
+    creationEvidenceKind: "dashboard-observed-creation",
     initialSchemas: ["public", "auth", "storage"],
     creationEvidenceSha256: "a".repeat(64), provenanceId: "b".repeat(64),
     endpoints: Object.fromEntries(Object.entries(demoRoles).map(([purpose, role]) => [purpose,
@@ -34,8 +35,8 @@ function connection(purpose = "api") {
         rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolreplication: false, rolbypassrls: false,
         member_of_role: false, database_create: false, database_temp: false, schema_create: purpose !== "api", owns_relation: purpose !== "api" };
     const provenance = { deployment: target.deployment, project_ref: ref, organization_id: target.organizationId,
-        owner_account_id: target.ownerAccountId, creation_evidence_sha256: target.creationEvidenceSha256,
-        provenance_id: target.provenanceId, initial_public_empty: true, created_at: target.createdAt };
+        owner_account_id: target.ownerAccountEmail, creation_evidence_sha256: target.creationEvidenceSha256,
+        provenance_id: target.provenanceId, initial_public_empty: true, created_at: target.observedCreationAt };
     const permissions = { owner: "postgres", schema_owner: "postgres", can_change: purpose === "bootstrap", can_change_column: purpose === "bootstrap", can_create: purpose === "bootstrap" };
     const queries = [];
     const db = {
@@ -54,10 +55,11 @@ function connection(purpose = "api") {
     return { db, env, identity, provenance, permissions, queries };
 }
 
-test("demo Supabase remains closed without the versioned identity, regardless of environment", async () => {
+test("missing identity and environment attempts to select another project fail before any SQL", async () => {
     const { db, env, queries } = connection("migration");
-    assert.throws(() => demoDatabaseConfiguration({ ...env, DEMO_PROJECT_REF: ref, DEMO_ALLOW_SUPABASE: "true" }), /DEMO_TARGET_UNVERIFIED/);
-    await assert.rejects(authorizeDemoMigration(db, env), /DEMO_TARGET_UNVERIFIED/);
+    assert.throws(() => demoDatabaseConfiguration(env, "api", null), /DEMO_TARGET_UNVERIFIED/);
+    assert.throws(() => demoDatabaseConfiguration({ ...env, DEMO_PROJECT_REF: ref, DEMO_ALLOW_SUPABASE: "true" }), /DEMO_CONNECTION_INVALID/);
+    await assert.rejects(authorizeDemoMigration(db, env), /DEMO_CONNECTION_INVALID/);
     assert.throws(() => assertMigrationTarget(db), /Destino protegido/);
     assert.equal(queries.length, 0);
     assert.throws(() => isDemoDeployment({ VERCEL: "1" }), /DEMO_DEPLOYMENT_REQUIRED/);
@@ -90,9 +92,18 @@ test("hostname similarity, old project, wrong organization provenance, TLS downg
     for (const value of [undefined, "not a certificate", `${ca}\n${ca}`, rootCertificates[1]]) {
         assert.throws(() => demoDatabaseConfiguration({ ...env, DB_SSL_CA: value }, "api", target), /DEMO_TLS_INVALID/);
     }
-    for (const patch of [{ organizationId: "" }, { ownerAccountId: "" }, { creationEvidenceSha256: "" }, { createdAt: "2026-10-01T00:00:00Z" }]) {
+    for (const patch of [{ organizationId: "" }, { organizationName: "" }, { ownerAccountEmail: "" }, { creationEvidenceKind: "provider-created-at" },
+        { creationEvidenceSha256: "" }, { observedCreationAt: "2026-10-01T00:00:00Z" }, { observedCreationAt: undefined },
+        { observedCreationAt: "2026-11-04T12:02:00Z" }]) {
         assert.throws(() => demoDatabaseConfiguration(env, "api", { ...target, ...patch }), /DEMO_TARGET_UNVERIFIED/);
     }
+});
+
+test("observed creation evidence does not require or substitute a provider creation timestamp", () => {
+    assert.equal(Object.hasOwn(target, "createdAt"), false);
+    assert.doesNotThrow(() => demoDatabaseConfiguration(environment(), "api", target));
+    assert.throws(() => demoDatabaseConfiguration(environment(), "api", { ...target,
+        observedCreationAt: undefined, createdAt: "2026-11-04T12:00:00Z" }), /DEMO_TARGET_UNVERIFIED/);
 });
 
 test("API read-only guard accepts matching identity/provenance and executes no DDL", async () => {

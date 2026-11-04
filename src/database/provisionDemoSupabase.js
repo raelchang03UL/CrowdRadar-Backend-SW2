@@ -45,10 +45,13 @@ export async function provisionDemoSupabase(db, env, target = demoSupabaseTarget
             creation_evidence_sha256 CHAR(64) NOT NULL, provenance_id CHAR(64) NOT NULL,
             initial_public_empty BOOLEAN NOT NULL CHECK(initial_public_empty), created_at TIMESTAMPTZ NOT NULL,
             provisioned_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp())`, options);
+        // Historical column labels in this new private table: owner_account_id
+        // holds the verified Dashboard email identifier; created_at is when the
+        // new project's creation was observed, not a provider API timestamp.
         await db.query(`INSERT INTO crowdradar_demo_identity.provenance
             (deployment,project_ref,organization_id,owner_account_id,creation_evidence_sha256,provenance_id,initial_public_empty,created_at)
             VALUES (:deployment,:projectRef,:organizationId,:ownerAccountId,:creationEvidenceSha256,:provenanceId,TRUE,:createdAt)`,
-        { ...options, replacements: target });
+        { ...options, replacements: { ...target, ownerAccountId: target.ownerAccountEmail, createdAt: target.observedCreationAt } });
         await db.query("REVOKE ALL ON crowdradar_demo_identity.provenance FROM PUBLIC,anon,authenticated,service_role", options);
         await db.query("GRANT USAGE ON SCHEMA crowdradar_demo_identity TO crowdradar_demo_api,crowdradar_demo_migrator", options);
         await db.query("GRANT SELECT ON crowdradar_demo_identity.provenance TO crowdradar_demo_api,crowdradar_demo_migrator", options);

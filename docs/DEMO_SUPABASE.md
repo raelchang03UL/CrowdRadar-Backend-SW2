@@ -1,10 +1,14 @@
 # Preparación de la base para la demo — 04/11/2026
 
-Preparación local, todavía **sin destino Supabase habilitado ni SQL remoto**. `src/config/demoSupabaseTarget.js` conserva `null`: la configuración demo falla antes de conectar. Las bases y fixtures históricos mantienen sus restricciones.
+El único destino fijado es el proyecto nuevo `crowdradar-demo-web`, ref `ycxuhejpehmdfbvdplpl`, de la organización Free `CrowdRadar Rael` (`uuvuyytnogzwbgikwdyy`). El coordinador comprobó creación/titular en Dashboard y ejecutó una inspección remota **READ ONLY** el04/11/2026 a21:50:37.245Z: PostgreSQL17.11, TLS verificado, objetos de usuario de `public` ausentes, `auth.users`/`storage.objects`/`storage.buckets` vacíos y roles demo aún inexistentes. Data API/exposición automática desactivadas y SSL obligatorio comprobados en la interfaz. **Bootstrap, migraciones, grants y catálogo remotos todavía no se declaran aplicados.** Las bases y fixtures históricos mantienen sus restricciones.
+
+`src/config/demoSupabaseTarget.js` fija exactamente project-ref, organización/titular, evidencia SHA-256, procedencia, esquemas observados, host/puertos/usuarios y CA. Evidencias depuradas del coordinador: `../qa/supabase-created-evidence.json` (SHA256 `b17e91771b65d68d1e5a971e6dd215e550ffa6d5c333e9193bd70838101da68e`) y `../qa/supabase-preflight-readonly.log`. Un perfil ausente o cualquier otro destino siguen rechazados antes de SQL.
 
 ## Identidad y autorización
 
-El futuro perfil versionado debe proceder de evidencia verificada del proyecto **nuevo**: project-ref, organización y titular, fecha de creación/verificación, huella de esa evidencia, identificador de procedencia, inventario inicial de esquemas, endpoints/usuarios exactos y huella SHA-256 de la CA de cada endpoint. No se aceptan estos datos desde una variable `ALLOW_*`, un dominio genérico, argumentos CLI ni una petición HTTP. Un nombre de host parecido no concede permiso.
+El futuro perfil versionado debe proceder de evidencia verificada del proyecto **nuevo**: project-ref, ID/nombre de organización, email del titular verificado en Dashboard, momento observado de creación/verificación, huella de esa evidencia, identificador de procedencia, inventario inicial de esquemas, endpoints/usuarios exactos y huella SHA-256 de la CA de cada endpoint. No se aceptan estos datos desde una variable `ALLOW_*`, un dominio genérico, argumentos CLI ni una petición HTTP. Un nombre de host parecido no concede permiso.
+
+`creationEvidenceKind=dashboard-observed-creation` identifica la evidencia de creación observada: `observedCreationAt` es el momento registrado durante esa creación y `verifiedAt` una comprobación igual o posterior. No se presenta como un `created_at` de la API del proveedor. `organizationName` y `ownerAccountEmail` nombran lo verificado en la interfaz; no inventan un slug ni un ID interno de cuenta. Se conservan los nombres SQL de la nueva tabla privada: `created_at` almacena ese momento observado y `owner_account_id` el identificador email verificado; `provisioned_at` sigue siendo el reloj PostgreSQL del aprovisionamiento. Esta aclaración no cambia migraciones001–012 ni adopta automáticamente una base.
 
 `CROWDRADAR_DEPLOYMENT=demo-vercel-20261104` selecciona la configuración estricta; no autoriza por sí solo. El runtime Vercel exige ese identificador. Las URLs deben carecer de parámetros y fragmentos: no pueden sustituir la verificación SSL. Se exige una CA con la huella prevista, `rejectUnauthorized:true` y comprobación de hostname. Los secretos siguen fuera de Git.
 
@@ -20,13 +24,13 @@ La API comprueba identidad efectiva, conexión TLS, privilegios y procedencia an
 
 ## Operaciones explícitas preparadas
 
-`scripts/demo-supabase.js` admite `preflight`, `bootstrap`, `check-api`, `check-migration`, `grants` y `catalog`. El archivo privado de configuración debe seleccionarse explícitamente mediante `node --env-file`; este script no carga `.env` de forma implícita. Ninguna operación funciona mientras el perfil versionado sea `null`. La migración sigue siendo `scripts/migrate.js`, con las funciones canónicas en su orden existente.
+`scripts/demo-supabase.js` admite `preflight`, `bootstrap`, `check-api`, `check-migration`, `grants` y `catalog`. El archivo privado de configuración debe seleccionarse explícitamente mediante `node --env-file`; este script no carga `.env` de forma implícita. La migración sigue siendo `scripts/migrate.js`, con las funciones canónicas en su orden existente. El coordinador dispone de helpers privados fuera del backend: preparan `../private/database-env.json` con creación exclusiva, roles aleatorios distintos y URLs codificadas, y ejecutan un modo explícito cada vez. La API/Vercel recibe únicamente las secciones `shared`+`api`; nunca credenciales de bootstrap/migrador.
 
 El catálogo contiene los cinco lugares demostrativos existentes, con identificadores negativos y sin observaciones de saturación ni usuarios ficticios remotos. Un conflicto de ID/nombre/datos detiene la operación. Los grants permiten solo las operaciones SQL utilizadas; `UPDATE(id)` sobre `places` es necesario para los locks de favoritos/alertas de PostgreSQL. La API puede borrar límites expirados para la limpieza acotada del ejecutor autenticado. No tiene escritura sobre historial de migraciones ni procedencia.
 
 API: Supavisor transaccional, una conexión Sequelize por instancia, mínimo cero y liberación ociosa breve. Migraciones: conexión directa o pooler de sesión en el endpoint exacto aprobado. Las consultas pg/Sequelize actuales no usan prepared statements con nombre. El pool de una conexión es una decisión conservadora para esta demo y exige comprobar que cada consulta dentro de una transacción reciba esa transacción. No limita por sí solo el total de conexiones al escalar ni acredita rendimiento remoto. [Conexiones oficiales de Supabase](https://supabase.com/docs/guides/database/connecting-to-postgres).
 
-La configuración de proveedor, el cierre de Data API/GraphQL, los permisos efectivos en Supabase y la compatibilidad real de Supavisor siguen pendientes. El fixture local no sustituye esas comprobaciones.
+La conexión administrativa de sesión y TLS remoto quedaron comprobados en la inspección READ ONLY; falta verificar roles mínimos y transacciones reales por el pooler de la API después del aprovisionamiento. Data API está desactivada en Dashboard; la comprobación efectiva de no exposición de REST/GraphQL sigue pendiente. El fixture local no sustituye esas comprobaciones.
 
 ## Evidencia local y límites
 
@@ -40,7 +44,7 @@ El adapter exclusivo de prueba hace exactamente tres transformaciones, registrad
 2. El `GRANT CONNECT ON DATABASE postgres` equivalente se dirige a esa misma base de usuario.
 3. La columna `current_database() AS database` se comprueba contra el nombre real del fixture y se normaliza al nombre contractual `postgres` para probar el resto de la guarda.
 
-El perfil y endpoint sintéticos se inyectan únicamente mediante el módulo de pruebas; producción conserva `null`. Estas transformaciones permiten probar SQL/permisos reales sin tocar una base de sistema; **no prueban identidad, propiedad, hostname ni TLS del Supabase futuro**.
+El perfil y endpoint sintéticos se inyectan únicamente mediante el módulo de pruebas; son independientes del proyecto real fijado. Estas transformaciones permiten probar SQL/permisos reales sin tocar una base de sistema; **no prueban identidad, propiedad, hostname ni TLS de Supabase**. Esa evidencia remota corresponde exclusivamente a la inspección del coordinador descrita al inicio.
 
 Resultados conservados bajo `../qa` respecto del backend:
 
@@ -50,7 +54,7 @@ Resultados conservados bajo `../qa` respecto del backend:
 - `db-migration-byte-preservation.json`:13 archivos históricos de migración idénticos byte por byte a HEAD.
 - `runtime-db-smoke-rerun.log`:7/7 bloques SQL/HTTP con rol API y pool uno; registro/login/favorito/tres reportes, reconciliación concurrente con un evento, claim sin envío doble, backoff/reintento con proveedor simulado y conexión libre durante la entrega. Ocho consumos concurrentes persistieron y tres fueron permitidos;701 límites vencidos se eliminaron en lotes500+201 conservando la ventana reciente. API temporal3054 y pools del runner cerrados; fixtures sintéticos locales conservados.
 
-No se enviaron correos ni push reales, no hubo SQL remoto y no se habilitó un proyecto. El resultado de la suite completa corresponde a la validación integrada registrada por el coordinador.
+Las pruebas locales anteriores no enviaron correos ni push reales ni ejecutaron SQL remoto. La inspección READ ONLY posterior y el proyecto fijado se distinguen en el corte inicial de este documento; no acreditan todavía el aprovisionamiento. El resultado de la suite completa corresponde a la validación integrada registrada por el coordinador.
 
 ## Ejecución periódica: investigación, no configuración
 
