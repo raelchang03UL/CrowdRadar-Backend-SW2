@@ -1,0 +1,12 @@
+{
+  "projectRef": "ycxuhejpehmdfbvdplpl",
+  "apiOrigin": "https://crowdradar-demo-api.vercel.app",
+  "verifiedAt": "2026-11-04T22:23:48.443Z",
+  "healthStatus": 200,
+  "unauthorizedPostStatus": 401,
+  "authorizedPostStatus": 200,
+  "redirects": false,
+  "evaluated": 0,
+  "sent": 0,
+  "configured": true
+}

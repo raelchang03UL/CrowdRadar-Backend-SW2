@@ -5,6 +5,7 @@
 node_modules
 test
 docs
+ops
 entrega
 tmp
 *.log

@@ -1,0 +1,3 @@
+# Runtime hash/prosrc bindings require these reviewed artifact bytes unchanged.
+scripts/ops/*.sql -text
+scripts/ops/*.json -text
