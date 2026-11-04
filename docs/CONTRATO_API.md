@@ -1,5 +1,20 @@
 # Contrato API compartido
 
+## Contrato de operación preparado localmente — 04/11/2026
+
+Sin despliegue ni recepción externa acreditados. El entrypoint Vercel espera la inicialización; configuración, conexión, procedencia o esquema incompletos responden503 `SERVICE_UNAVAILABLE`, mensaje genérico, `Cache-Control:no-store` y `Retry-After:5`. El cuerpo no revela errores SQL, URLs ni secretos. No hay DDL de arranque.
+
+| Método/ruta | Comportamiento del runtime preparado |
+| --- | --- |
+| GET /health/ready |200 `{"ready":true}` tras comprobar conexión/procedencia/esquema;503 `SERVICE_UNAVAILABLE` si falla alguna comprobación. `no-store`. No afirma disponibilidad SMTP/FCM/scheduler. |
+| POST /api/auth/register | En Vercel, máximo5 solicitudes por IP/ruta en15min; luego429 `RATE_LIMITED`, `Retry-After:900`, `no-store`. El límite incluye cuerpos inválidos; las respuestas funcionales anteriores se conservan. |
+| POST /api/auth/login | En Vercel, máximo20 solicitudes por IP/ruta en15min; misma respuesta429. Persistencia compartida entre instancias; error del control devuelve503 seguro. |
+| POST /api/internal/push/process | Conserva autorización y respuesta HU8. En Vercel realiza además limpieza acotada de límites vencidos antes de reconciliar/despachar; sin parámetros de mantenimiento ni nuevos campos de respuesta. |
+
+CORS del despliegue permite únicamente orígenes HTTPS exactos configurados, sin cookies; no sustituye JWT. IP pública procede del header que aporta Vercel, no del header genérico enviado por el cliente; ausencia/formato inválido en autenticación pública devuelve503. Local conserva su política anterior. La recuperación mantiene rutas/cuerpos/status existentes y límites persistidos; `waitUntil` mantiene viva cada entrega SMTP dentro de la duración de la Function, sin prometer entrega durable.
+
+Los apartados inferiores conservan el contrato funcional y su evidencia histórica. Detalles y límites operativos en [configuración](CONFIGURACION_LOCAL.md).
+
 ## HU8 — favoritos y alertas Web, 30/10/2026
 
 JWT Bearer en favoritos/dispositivos; respuestas no-store. Se conservan rutas previas y filtros HU3. Identificadores de lugar admiten los enteros PostgreSQL no cero, incluidos los negativos de demostración.

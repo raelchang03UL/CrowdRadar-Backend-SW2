@@ -36,16 +36,25 @@ import { createSmtpRecoveryDelivery } from "./src/services/RecoveryMailDelivery.
 dotenv.config();
 
 // Sin SMTP_* devuelve undefined: las rutas usan el servicio sin entrega (503 uniforme).
-export function recoveryServiceFromEnvironment(env = process.env, createDelivery = createSmtpRecoveryDelivery) {
+export function recoveryServiceFromEnvironment(env = process.env, createDelivery = createSmtpRecoveryDelivery, { deferDelivery } = {}) {
     const mail = mailConfiguration(env);
     if (!mail) return undefined;
-    return new PasswordRecoveryService({ delivery: createDelivery(mail), resetUrl: mail.resetUrl });
+    return new PasswordRecoveryService({ delivery: createDelivery(mail), resetUrl: mail.resetUrl, deferDelivery });
 }
 
-export function createApp({ recoveryService, pushNotificationService = PushNotificationService, saturationEventSecret = process.env.SATURATION_EVENT_SECRET } = {}) {
+export function createApp({ recoveryService, pushNotificationService = PushNotificationService,
+    saturationEventSecret = process.env.SATURATION_EVENT_SECRET, env = process.env,
+    publicAbuseMiddleware, readiness, maintenance } = {}) {
     const app = express();
-    app.use(cors(corsOptions()));
+    app.disable("x-powered-by");
+    app.use(cors(corsOptions(env)));
     app.use(express.json({ limit: "32kb" }));
+    if (publicAbuseMiddleware) app.use("/api/auth", publicAbuseMiddleware);
+    if (readiness) app.get("/health/ready", async (req, res) => {
+        res.set("Cache-Control", "no-store");
+        await readiness();
+        res.json({ ready: true });
+    });
     app.use("/api/auth", createAuthRoutes({ recoveryService }));
     app.use("/api/users", userRoutes);
     app.use("/api/places", placeRoutes);
@@ -54,7 +63,7 @@ export function createApp({ recoveryService, pushNotificationService = PushNotif
     app.use("/api/reports", validationRoutes);
     app.use("/api/admin", adminRoutes);
     app.use("/api/notifications", createNotificationRoutes(pushNotificationService));
-    app.use("/api/internal", createInternalRoutes(pushNotificationService, { secret: saturationEventSecret }));
+    app.use("/api/internal", createInternalRoutes(pushNotificationService, { secret: saturationEventSecret, maintenance }));
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
@@ -70,32 +79,42 @@ const app = createApp();
 
 const PORT = process.env.PORT || 3000;
 
-export const startServer = async ({ port = PORT, host } = {}) => {
-    validateEnvironment();
-    // Solo el servidor real construye la entrega SMTP; importar app.js (pruebas) nunca envía correo.
-    const recoveryService = recoveryServiceFromEnvironment();
-    await sequelize.authenticate();
+export async function checkApplicationReadiness({ env = process.env, database = sequelize,
+    assertDatabaseReady = async () => {} } = {}) {
+    await database.authenticate();
+    await assertDatabaseReady(database, env);
     // Toda creación/cambio de esquema es explícita: npm run db:migrate.
-    await assertAuthSchemaReady(sequelize);
-    await assertRecoverySchemaReady(sequelize);
-    await assertPlaceDetailsSchemaReady(sequelize);
+    await assertAuthSchemaReady(database);
+    await assertRecoverySchemaReady(database);
+    await assertPlaceDetailsSchemaReady(database);
+    await assertConsolidatedReportsSchemaReady(database);
+    await assertKarmaSchemaReady(database);
+    await assertValidationSchemaReady(database);
+    await assertUserModerationSchemaReady(database);
+    await assertReportModerationSchemaReady(database);
+    await assertFavoritesSchemaReady(database);
+    await assertSaturationAlertsSchemaReady(database);
+    await assertPushTargetTypesSchemaReady(database);
+}
 
-    await assertConsolidatedReportsSchemaReady(sequelize);
-    await assertKarmaSchemaReady(sequelize);
-    await assertValidationSchemaReady(sequelize);
-    await assertUserModerationSchemaReady(sequelize);
-    await assertReportModerationSchemaReady(sequelize);
-    await assertFavoritesSchemaReady(sequelize);
-    await assertSaturationAlertsSchemaReady(sequelize);
-    await assertPushTargetTypesSchemaReady(sequelize);
+export async function initializeApplication({ env = process.env, database = sequelize,
+    assertDatabaseReady = async () => {}, deferDelivery, publicAbuseMiddleware, maintenance } = {}) {
+    validateEnvironment(env);
+    const recoveryService = recoveryServiceFromEnvironment(env, createSmtpRecoveryDelivery, { deferDelivery });
+    const readiness = () => checkApplicationReadiness({ env, database, assertDatabaseReady });
+    await readiness();
+    return { app: createApp({ recoveryService, env, saturationEventSecret: env.SATURATION_EVENT_SECRET,
+        publicAbuseMiddleware, readiness, maintenance }), recoveryService };
+}
 
-    const server = recoveryService ? createApp({ recoveryService }) : app;
+export const startServer = async ({ port = PORT, host, startWorker = startPushOutboxWorker } = {}) => {
+    const { app: server, recoveryService } = await initializeApplication();
     const listener = server.listen(port, host, () => {
         console.log(`Servidor ejecutándose en el puerto ${port}`);
         console.log(recoveryService ? "Recuperación de contraseña: envío por correo habilitado." : "Recuperación de contraseña: sin correo configurado (503 uniforme).");
     });
     if (process.env.PUSH_WORKER_ENABLED === "true") {
-        const stopWorker = startPushOutboxWorker();
+        const stopWorker = startWorker();
         listener.once("close", stopWorker);
     }
     return listener;

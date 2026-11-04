@@ -5,8 +5,9 @@ export default function passwordRecoveryController(service, action, status) {
         res.set("Cache-Control", "no-store");
         res.set("Referrer-Policy", "no-referrer");
         try {
-            // Express no confía X-Forwarded-For: solo socket IP, salvo futuro proxy aprobado/configurado.
-            return res.status(status).json(await service[action](req.body, req.ip));
+            // clientAddress solo lo fija el middleware del runtime Vercel.
+            // Local sigue sin confiar en headers de proxy enviados por el cliente.
+            return res.status(status).json(await service[action](req.body, req.clientAddress ?? req.ip));
         } catch (error) {
             if (error instanceof AuthError) {
                 if (error.status === 429) res.set("Retry-After", "900");

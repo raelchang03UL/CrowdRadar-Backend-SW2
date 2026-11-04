@@ -41,13 +41,14 @@ export function createSaturationEventController(service, { secret = process.env.
     };
 }
 
-export function createPushProcessController(service, { secret = process.env.SATURATION_EVENT_SECRET } = {}) {
+export function createPushProcessController(service, { secret = process.env.SATURATION_EVENT_SECRET, maintenance } = {}) {
     return async (req, res) => {
         res.set("Cache-Control", "no-store");
         if (!secret) return res.status(503).json({ code: "SATURATION_SOURCE_UNAVAILABLE", message: "El reconciliador no está configurado." });
         if (!matchesSaturationSecret(req.get("x-saturation-event-secret"), secret)) return res.status(401).json({ code: "SATURATION_SOURCE_UNAUTHORIZED", message: "La fuente no está autorizada." });
         if (req.body && (typeof req.body !== "object" || Array.isArray(req.body) || Object.keys(req.body).length)) return res.status(400).json({ code: "SATURATION_BODY_INVALID", message: "El reconciliador no admite parámetros." });
         try {
+            if (maintenance) await maintenance();
             const reconciliation = await service.reconcileAll();
             const delivery = await service.dispatchPending();
             return res.status(200).json({ data: { ...reconciliation, ...delivery } });

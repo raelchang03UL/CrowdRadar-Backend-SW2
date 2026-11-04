@@ -1,5 +1,6 @@
-import { applicationDefault, getApps, initializeApp } from "firebase-admin/app";
+import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
+import { fcmServiceAccount } from "../config/fcmCredentials.js";
 
 const appName = "crowdradar-push";
 
@@ -15,8 +16,9 @@ function messagingClient(env = process.env) {
     }
     let app = getApps().find(({ name }) => name === appName);
     if (!app) {
+        const account = fcmServiceAccount(env);
         app = initializeApp({
-            credential: applicationDefault(),
+            credential: account ? cert(account) : applicationDefault(),
             projectId: env.FCM_PROJECT_ID
         }, appName);
     }

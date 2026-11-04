@@ -1,5 +1,35 @@
 # Configuración local reproducible
 
+## Runtime candidato Vercel — 04/11/2026
+
+Preparación local sobre develop `db926c84429f82fefbef492208e9f4d3f95fdfdb`, sin despliegue acreditado. `npm start` conserva el servidor persistente. Vercel debe usar el `vercel.json` versionado: preset Other (`framework:null`), Fluid, una Function `api/index.js`, duración máxima60s y archivos estáticos limitados a `public`. No seleccionar el preset Express que exportaría `app.js` sin pasar por la inicialización protegida. El handler importa la aplicación dentro de una promesa compartida por instancia; espera configuración, conexión, identidad/procedencia y esquema001–012 antes de atender. No aplica migraciones, escucha puertos ni inicia el worker. Un fallo responde503 genérico; otro intento puede comenzar después de5s, sin temporizador de reintento.
+
+Configuración del runtime mediante secretos privados del proyecto, nunca archivos versionados:
+
+| Variable | Condición |
+| --- | --- |
+| `NODE_ENV` | `production`. |
+| `CROWDRADAR_DEPLOYMENT` | Perfil exacto `demo-vercel-20261104`; el destino Supabase debe estar previamente verificado. |
+| `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA` | Conexión del rol API mínimo, pooler transaccional y TLS verificado según [barreras DB](DEMO_SUPABASE.md). Credenciales de migración/bootstrap no pertenecen a la Function. |
+| `JWT_SECRET` | Secreto privado aleatorio de al menos32 caracteres, diferente del secreto interno. |
+| `CORS_ORIGINS` | Orígenes HTTPS exactos del frontend, separados por coma; sin wildcard, rutas ni loopback. |
+| `PUSH_WORKER_ENABLED` | `false` obligatorio; no ejecutor por intervalos en Vercel. |
+| `SMTP_*`, `MAIL_FROM`, `PASSWORD_RESET_URL` | El adaptador SMTP existente; URL HTTPS de restablecimiento dentro del origen frontend permitido. Sin SMTP, forgot conserva503 uniforme. |
+| `SATURATION_EVENT_SECRET` | Secreto privado de al menos32 caracteres para el ejecutor, nunca en Flutter ni URLs. |
+| `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON` | Opcionales conjuntamente para alertas. JSON privado de la cuenta de servicio del mismo proyecto, limitado a envío FCM. El parser verifica formato/proyecto/claveRSA y omite errores sensibles. No usar claves en el repositorio ni copiar el JSON al chat. |
+
+El servicio de recuperación registra cada entrega individual con `waitUntil`, manteniendo el adaptador SMTP y la respuesta uniforme. Esta extensión de vida está limitada por los60s de la Function; **no es una cola durable ni ofrece reintentos después de caída/timeout**. No se llama `drainDeliveries` global para esperar otras solicitudes. FCM conserva Firebase Admin, outbox, binding y tipos de destino; local sin JSON conserva Application Default Credentials externas. La preparación con dobles no acredita recepción SMTP/FCM desde Internet.
+
+Registro y login en Vercel usan límites persistidos en `password_recovery_limits`:5 y20 solicitudes por IP/ruta en15min, respectivamente; incluyen intentos inválidos y sobreviven entre instancias. Se acepta exclusivamente la dirección aportada por `x-vercel-forwarded-for`; falta/formato inválido falla503 y no se confía en `X-Forwarded-For` del cliente. Recuperación recibe esa misma dirección y conserva sus límites existentes. El servidor local mantiene la IP del socket y sus rutas anteriores. Estos límites no sustituyen protección de infraestructura ni pruebas de carga.
+
+`POST /api/internal/push/process` conserva secreto en `x-saturation-event-secret` y cuerpo vacío/`{}`. En Vercel primero elimina hasta500 filas de límites con ventana iniciada hace más de24h, después reconcilia y despacha la cola. La limpieza no toca ventanas vigentes ni tokens de recuperación; sin invocaciones, las filas vencidas permanecen. Operar un scheduler externo autorizado, con POSTHTTPS y secreto privado, y verificar su resultado. No se ha configurado aquí ningún scheduler; el cron de Vercel Hobby solo permite frecuencia diaria, insuficiente para alertas oportunas. No añadir un temporizador al handler.
+
+Outbox conserva claim transaccional con `SKIP LOCKED`, lote50, lease2min, backoff y máximo5 intentos. La Function de60s termina antes del vencimiento de ese lease, pero una respuesta ambigua del proveedor todavía puede duplicar entrega. El claim libera la conexión antes de enviar; reconciliación y favoritos propagan la transacción a la consulta de saturación. Pool1/min0 es una decisión conservadora por instancia para esta demo, **no un límite global de conexiones ni garantía de rendimiento**. `attachDatabasePool` del paquete instalado no admite directamente el pool Sequelize; no se aplica como si fuera `pg.Pool`. Suspensión/reanudación y volumen de instancias requieren prueba en Vercel.
+
+`GET /health/ready` comprueba conexión, identidad/procedencia cuando corresponde y las lecturas de esquema en cada llamada:200 `{"ready":true}` o503 genérico, siempre `no-store`. No certifica disponibilidad de SMTP/FCM ni del scheduler. La raíz `/` identifica la API; no sustituye este control.
+
+Referencias oficiales consultadas: [Express](https://vercel.com/docs/frameworks/backend/express), [configuración de Vercel](https://vercel.com/docs/project-configuration/vercel-json), [waitUntil](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package), [conexiones](https://vercel.com/kb/guide/connection-pooling-with-functions), [headers del cliente](https://vercel.com/docs/headers/request-headers), [cron Hobby](https://vercel.com/docs/cron-jobs/manage-cron-jobs) y [Firebase Admin](https://firebase.google.com/docs/admin/setup). Se mantienen Node22/npm y el lock comprobado; no hay instrucción de habilitar pagos.
+
 ## HU8 local y preparación push — 30/10/2026
 
 Aplicar npm run db:migrate explícitamente: conserva001–011 y añade012-push-target-types después de010-user-favorites/011-saturation-push-alerts. La012 agrega target_type con valor fid a las filas existentes; no reclasifica identificadores, elimina dispositivos ni cambia eventos. El runtime solo comprueba esquema y requiere012 antes de servir. No ejecutar sobre bases personales de QA, Sprint1 ni Supabase histórica. Tablas HU8 anteriores identificadas como004 requieren revisión explícita de origen; el migrador no las adopta ni borra.
