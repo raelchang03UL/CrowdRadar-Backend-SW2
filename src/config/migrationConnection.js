@@ -1,8 +1,10 @@
 import { Sequelize } from "sequelize";
 import { databaseConfiguration, validateEnvironment } from "./environment.js";
+import { demoDatabaseConfiguration, isDemoDeployment } from "./demoSupabaseEnvironment.js";
 
 // La CLI puede usar un rol DDL distinto. La API nunca lee MIGRATION_DATABASE_URL.
 export function migrationConfiguration(env = process.env) {
+    if (isDemoDeployment(env)) return demoDatabaseConfiguration(env, "migration");
     const selected = { ...env, DATABASE_URL: env.MIGRATION_DATABASE_URL || env.DATABASE_URL };
     validateEnvironment(selected);
     const config = databaseConfiguration(selected);
