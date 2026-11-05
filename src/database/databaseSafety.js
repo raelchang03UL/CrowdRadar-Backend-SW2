@@ -1,4 +1,17 @@
+import { createDemoMigrationGate } from "./demoMigrationGate.js";
 const localHosts = ["localhost", "127.0.0.1", "::1"];
+const demoMigrationGate = createDemoMigrationGate(async (db, env) => {
+    const { assertDemoProvenance } = await import("./demoSupabaseSafety.js");
+    await assertDemoProvenance(db, env, "migration");
+});
+
+// No flag/env/hostname authorizes a protected destination. Only the verified
+// immutable project identity AND a read-only database check mint this capability.
+// WeakMap binds it to this Sequelize instance; changed config or expiry revokes it.
+export async function authorizeDemoMigration(db, env = process.env) {
+    await demoMigrationGate.authorize(db, env);
+}
+export function revokeDemoMigrationAuthorization(db) { demoMigrationGate.revoke(db); }
 
 // Entorno de demostración separado: no concede acceso a ningún runner QA.
 export const demoLocalDatabase = "crowdradar_demo_local";
@@ -70,9 +83,11 @@ export function assertIsolatedFavoritesTestDatabase({ config: { database, host }
 
 // El comando de migración es portable, no una allowlist de desarrollo.
 // Se conserva una barrera contra los destinos históricos/protegidos conocidos.
-export function assertMigrationTarget({ config: { database, host } }) {
+export function assertMigrationTarget(db) {
+    const { config: { database, host } } = db;
     if (["crowdradar_sprint1", "postgres", "template0", "template1"].includes(database) ||
         /(^|\.)supabase\.(co|com)$/i.test(host ?? "")) {
+        if (demoMigrationGate.permits(db)) return;
         throw new Error("Destino protegido: no se permite migrar la entrega, bases de sistema ni Supabase.");
     }
 }

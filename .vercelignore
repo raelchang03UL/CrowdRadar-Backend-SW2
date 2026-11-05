@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+.vercel
+node_modules
+test
+docs
+ops
+entrega
+tmp
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore

@@ -2,6 +2,9 @@
   "name": "crowdradar-backend",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
@@ -22,6 +25,7 @@
     "test:db:favorites": "node scripts/verify-favorites-db.js"
   },
   "dependencies": {
+    "@vercel/functions": "3.10.6",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "bcrypt": "^6.0.0",

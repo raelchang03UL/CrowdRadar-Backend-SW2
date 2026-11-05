@@ -4,6 +4,20 @@ import sequelize from "../config/database.js";
 const select = (sql, options = {}) => sequelize.query(sql, { ...options, type: QueryTypes.SELECT });
 
 class PasswordRecoveryRepository {
+    async pruneExpiredLimits() {
+        // Lote acotado del ejecutor autenticado; nunca borra ventanas vigentes.
+        // SKIP LOCKED evita competir con login/recuperación en otras instancias.
+        const [result] = await select(`WITH expired AS (
+            SELECT key_hash FROM public.password_recovery_limits
+            WHERE bucket_start < CURRENT_TIMESTAMP - INTERVAL '24 hours'
+            ORDER BY bucket_start, key_hash LIMIT 500 FOR UPDATE SKIP LOCKED
+        ), removed AS (
+            DELETE FROM public.password_recovery_limits target USING expired
+            WHERE target.key_hash = expired.key_hash RETURNING 1
+        ) SELECT COUNT(*)::integer AS removed FROM removed`);
+        return result.removed;
+    }
+
     async consumeLimits(entries) {
         return sequelize.transaction(async (transaction) => {
             let allowed = true;

@@ -14,17 +14,21 @@ const validTokenFormat = (value) => typeof value === "string" && /^[0-9a-f]{64}$
 const serviceUnavailable = () => new AuthError(503, "SERVICE_UNAVAILABLE", "No se pudo completar la solicitud. Inténtalo de nuevo.");
 
 export default class PasswordRecoveryService {
-    constructor({ delivery = null, resetUrl = process.env.PASSWORD_RESET_URL, repository: persistence = repository } = {}) {
+    constructor({ delivery = null, resetUrl = process.env.PASSWORD_RESET_URL, repository: persistence = repository, deferDelivery } = {}) {
         this.delivery = delivery;
         this.resetUrl = delivery ? trustedResetUrl(resetUrl) : null;
         this.repository = persistence;
         this.pendingDeliveries = new Set();
+        this.deferDelivery = deferDelivery;
     }
 
     queueDelivery(operation) {
         // No se espera I/O del proveedor en la respuesta HTTP, ni se registra contenido sensible.
         const pending = Promise.resolve().then(operation).catch(() => {}).finally(() => this.pendingDeliveries.delete(pending));
         this.pendingDeliveries.add(pending);
+        // El host serverless mantiene viva ESTA entrega; no espera la cola de
+        // otras solicitudes. Local conserva el mismo comportamiento anterior.
+        this.deferDelivery?.(pending);
     }
 
     async drainDeliveries() {

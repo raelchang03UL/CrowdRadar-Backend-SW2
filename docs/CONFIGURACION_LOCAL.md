@@ -1,5 +1,39 @@
 # Configuración local reproducible
 
+## Runtime Vercel de la demo — 04/11/2026
+
+API disponible en `https://crowdradar-demo-api.vercel.app`, despliegue `dpl_Ak4MTJFq4S9PzH44fVUvuTmcipj7`, fuente `7780db488892a0dc3c45edfc7a9622b846e71847`. El04/11/2026 el smoke público verificó raíz/readiness200 y recorrido autenticado con persistencia; detalle y evidencias en [estado actual](ESTADO_ACTUAL.md). `npm start` conserva el servidor persistente. Vercel usa el `vercel.json` versionado: preset Other (`framework:null`), Fluid, Function `api/index.js`, máximo60s y estáticos limitados a `public`. El handler comparte una inicialización por instancia y espera configuración, conexión, identidad/procedencia y esquema001–012. No aplica migraciones, escucha puertos ni inicia el worker.
+
+Sequelize recibe `pg` mediante import explícito y `dialectModule`, manteniendo TLS/opciones. El primer despliegue respondió503; el siguiente, con ese cambio y diagnóstico por etapas, pasó el smoke. No se conservó el error original suficiente para atribuirlo únicamente al empaquetado. Ante un fallo se registran solo etapas/códigos de listas fijas, sin mensaje, stack, SQL ni variables; la respuesta pública sigue503 genérica y admite otro intento después de5s, sin timer.
+
+Configuración del runtime mediante secretos privados del proyecto, nunca archivos versionados:
+
+| Variable | Condición |
+| --- | --- |
+| `NODE_ENV` | `production`. |
+| `CROWDRADAR_DEPLOYMENT` | Perfil exacto `demo-vercel-20261104`; el destino Supabase debe estar previamente verificado. |
+| `DATABASE_URL`, `DB_SSL`, `DB_SSL_CA` | Conexión del rol API mínimo, pooler transaccional y TLS verificado según [barreras DB](DEMO_SUPABASE.md). Credenciales de migración/bootstrap no pertenecen a la Function. |
+| `JWT_SECRET` | Secreto privado aleatorio de al menos32 caracteres, diferente del secreto interno. |
+| `CORS_ORIGINS` | Demo: `https://crowdradar-demo-web.vercel.app`; sin wildcard, rutas ni loopback. |
+| `PUSH_WORKER_ENABLED` | `false` obligatorio; no ejecutor por intervalos en Vercel. |
+| `SMTP_*`, `MAIL_FROM`, `PASSWORD_RESET_URL` | Adaptador SMTP existente, configurado con Brevo. URL de esta demo: `https://crowdradar-demo-web.vercel.app/#/reset-password`. Sin SMTP, forgot conserva503 uniforme. |
+| `SATURATION_EVENT_SECRET` | Secreto privado de al menos32 caracteres para el ejecutor, nunca en Flutter ni URLs. |
+| `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON` | Opcionales conjuntamente para alertas. JSON privado de la cuenta de servicio del mismo proyecto, limitado a envío FCM. El parser verifica formato/proyecto/claveRSA y omite errores sensibles. No usar claves en el repositorio ni copiar el JSON al chat. |
+
+El servicio de recuperación registra cada entrega individual con `waitUntil`, manteniendo el adaptador SMTP y la respuesta uniforme. Esta extensión de vida está limitada por los60s de la Function; **no es una cola durable ni ofrece reintentos después de caída/timeout**. No se llama `drainDeliveries` global. La comprobación privada inicial de Brevo validó autenticación/TLS sin correo. Después, la solicitud real202 de22:47:57UTC produjo los correos de recuperación y aviso de cambio: Rael confirmó ambos y acceso con su nueva contraseña. La lectura SQL comprobó consumo del enlace y sessionVersion0→1, sin leer credenciales; [evidencia pública](evidence/demo-20261104/public-recovery-human-acceptance.json). FCM conserva Firebase Admin, outbox, binding y tipos de destino; su aceptación humana se registra más abajo. Local sin JSON conserva ADC externas.
+
+Registro y login en Vercel usan límites persistidos en `password_recovery_limits`:5 y20 solicitudes por IP/ruta en15min, respectivamente; incluyen intentos inválidos y sobreviven entre instancias. Se acepta exclusivamente la dirección aportada por `x-vercel-forwarded-for`; falta/formato inválido falla503 y no se confía en `X-Forwarded-For` del cliente. Recuperación recibe esa misma dirección y conserva sus límites existentes. El servidor local mantiene la IP del socket y sus rutas anteriores. Estos límites no sustituyen protección de infraestructura ni pruebas de carga.
+
+`POST /api/internal/push/process` conserva secreto en `x-saturation-event-secret` y cuerpo vacío/`{}`. En Vercel elimina hasta500 límites con ventana iniciada hace más de24h, después reconcilia y despacha. La limpieza no toca ventanas vigentes ni tokens; sin invocaciones, las filas vencidas permanecen. El sondeo manual pasó401 sin secreto y200 autenticado (`evaluated:0,sent:0,configured:true`). El cron Supabase autorizado está activo: primera ejecución automática22:33:00 y ciclo22:35:00 con `sent:1`/outboxSENT después de reportes QA, sin dispatch manual. [Operación y límites](DEMO_SUPABASE.md): CLI versionada `scripts/ops/demo-cron.mjs`, configuración privada externa, check READ ONLY y disable para ambos interruptores. HTTP55s no cancela una Function60s; el resultado incierto impone pausa65s y tres fallos consecutivos detienen el job. No añadir un temporizador al handler.
+
+Outbox conserva claim transaccional con `SKIP LOCKED`, lote50, lease2min, backoff y máximo5 intentos. La Function de60s termina antes del vencimiento de ese lease, pero una respuesta ambigua del proveedor todavía puede duplicar entrega. El claim libera la conexión antes de enviar; reconciliación y favoritos propagan la transacción a la consulta de saturación. Pool1/min0 es una decisión conservadora por instancia para esta demo, **no un límite global de conexiones ni garantía de rendimiento**. `attachDatabasePool` del paquete instalado no admite directamente el pool Sequelize; no se aplica como si fuera `pg.Pool`. Suspensión/reanudación y volumen de instancias requieren prueba en Vercel.
+
+`GET /health/ready` comprueba conexión, identidad/procedencia cuando corresponde y las lecturas de esquema en cada llamada:200 `{"ready":true}` o503 genérico, siempre `no-store`. No certifica disponibilidad de SMTP/FCM ni del scheduler. La raíz `/` identifica la API; no sustituye este control.
+
+Después de repetir la transición QA, el cron22:46 produjo el evento2SENT y Rael confirmó recepción y apertura de Parque Kennedy. Es una comprobación del flujo Web en la demo con pestaña viva, sin dispatch manual; no cubre Android ni navegador cerrado. Correlación y aceptación humana en [DEMO_SUPABASE](DEMO_SUPABASE.md).
+
+Referencias oficiales consultadas: [Express](https://vercel.com/docs/frameworks/backend/express), [configuración de Vercel](https://vercel.com/docs/project-configuration/vercel-json), [waitUntil](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package), [conexiones](https://vercel.com/kb/guide/connection-pooling-with-functions), [headers del cliente](https://vercel.com/docs/headers/request-headers), [cron Hobby](https://vercel.com/docs/cron-jobs/manage-cron-jobs) y [Firebase Admin](https://firebase.google.com/docs/admin/setup). Se mantienen Node22/npm y el lock comprobado; no hay instrucción de habilitar pagos.
+
 ## HU8 local y preparación push — 30/10/2026
 
 Aplicar npm run db:migrate explícitamente: conserva001–011 y añade012-push-target-types después de010-user-favorites/011-saturation-push-alerts. La012 agrega target_type con valor fid a las filas existentes; no reclasifica identificadores, elimina dispositivos ni cambia eventos. El runtime solo comprueba esquema y requiere012 antes de servir. No ejecutar sobre bases personales de QA, Sprint1 ni Supabase histórica. Tablas HU8 anteriores identificadas como004 requieren revisión explícita de origen; el migrador no las adopta ni borra.
