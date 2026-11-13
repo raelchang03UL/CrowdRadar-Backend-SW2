@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import sequelize from "../config/database.js";
 import recoveryRepository from "./PasswordRecoveryRepository.js";
+import { normalizeEmail } from "../utils/normalization.js";
 
 class UserRepository {
 
@@ -28,10 +29,12 @@ class UserRepository {
     }
 
     async findByEmail(email) {
+        // Igual que la recuperación: LOWER(BTRIM(email)) para cuentas antiguas con mayúsculas.
         return await User.findOne({
-            where: {
-                email
-            }
+            where: sequelize.where(
+                sequelize.fn("LOWER", sequelize.fn("BTRIM", sequelize.col("email"))),
+                normalizeEmail(email)
+            )
         });
     }
 

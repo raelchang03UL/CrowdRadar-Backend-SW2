@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import UserRepository from "../repositories/UserRepository.js";
 import jwt from "../utils/jwt.js";
 import { validPassword, AuthError, invalidSession } from "../utils/passwordPolicy.js";
+import { normalizeEmail, trimFields } from "../utils/normalization.js";
 
 class AuthService {
 
@@ -11,7 +12,8 @@ class AuthService {
             throw new AuthError(400, "PASSWORD_VALIDATION", "La contraseña debe tener al menos 8 caracteres y no superar 72 bytes.");
         }
 
-        const existingUser = await UserRepository.findByEmail(userData.email);
+        const email = normalizeEmail(userData.email);
+        const existingUser = await UserRepository.findByEmail(email);
 
         if (existingUser) {
             throw new AuthError(400, "EMAIL_EXISTS", "El correo ya está registrado.");
@@ -19,9 +21,10 @@ class AuthService {
 
         const passwordHash = await bcrypt.hash(userData.password, 10);
 
-        const { password, ...publicData } = userData;
+        const { password, ...publicData } = trimFields(userData, ["nombre", "apellido", "telefono", "distrito"]);
         const newUser = await UserRepository.create({
             ...publicData,
+            email,
             passwordHash,
             rol: "USUARIO",
             status: "ACTIVO"
@@ -42,7 +45,7 @@ class AuthService {
             throw new AuthError(401, "INVALID_CREDENTIALS", "Correo o contraseña incorrectos.");
         }
 
-        const user = await UserRepository.findByEmail(email);
+        const user = await UserRepository.findByEmail(normalizeEmail(email));
 
         if (!user) {
             throw new AuthError(401, "INVALID_CREDENTIALS", "Correo o contraseña incorrectos.");
