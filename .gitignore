@@ -22,3 +22,6 @@ pgdata/
 *.p12
 *.jks
 *.keystore
+!.env.test.example
+reports/
+.stryker-tmp/

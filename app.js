@@ -67,6 +67,9 @@ export function createApp({ recoveryService, pushNotificationService = PushNotif
     app.get("/", (req, res) => {
         res.json({ message: "CrowdRadar API" });
     });
+    app.use((req, res) => {
+        res.status(404).json({ code: "NOT_FOUND", message: "El recurso solicitado no existe." });
+    });
     app.use((error,req,res,next) => {
         if(res.headersSent) return next(error);
         const status=error.type==='entity.too.large'?413:error.type==='entity.parse.failed'?400:503;

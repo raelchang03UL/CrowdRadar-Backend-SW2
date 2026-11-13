@@ -6,11 +6,20 @@ import passwordRecoveryController from "../controllers/PasswordRecoveryControlle
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 import validateSchema from "../middlewares/validateSchema.js";
+import { normalizeEmail } from "../utils/normalization.js";
 
 import {
     registerSchema,
     loginSchema
 } from "../validations/authSchemas.js";
+
+// Normaliza el correo antes de validar: " Ana@Mail.com " y "ana@mail.com" son la misma cuenta.
+export function normalizeEmailField(req, res, next) {
+    if (req.body && typeof req.body === "object" && !Array.isArray(req.body) && typeof req.body.email === "string") {
+        req.body.email = normalizeEmail(req.body.email);
+    }
+    next();
+}
 
 export function createAuthRoutes({ recoveryService = new PasswordRecoveryService() } = {}) {
     const router = Router();
@@ -28,8 +37,8 @@ export function createAuthRoutes({ recoveryService = new PasswordRecoveryService
         return next();
     }, AuthController.changePassword);
 
-    router.post("/register", validateSchema(registerSchema), AuthController.register);
-    router.post("/login", validateSchema(loginSchema), AuthController.login);
+    router.post("/register", normalizeEmailField, validateSchema(registerSchema), AuthController.register);
+    router.post("/login", normalizeEmailField, validateSchema(loginSchema), AuthController.login);
     return router;
 }
 

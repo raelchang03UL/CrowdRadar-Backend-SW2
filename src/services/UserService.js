@@ -1,5 +1,6 @@
 import UserRepository from "../repositories/UserRepository.js";
 import ReportRepository from "../repositories/ReportRepository.js";
+import { trimFields } from "../utils/normalization.js";
 
 
 export class UserNotFoundError extends Error {}
@@ -36,7 +37,7 @@ class UserService {
 
     async updateProfile(id, data) {
 
-        const user = await UserRepository.update(id, data);
+        const user = await UserRepository.update(id, trimFields(data, ["nombre", "apellido", "telefono", "distrito"]));
 
         if (!user) {
             throw new UserNotFoundError("Usuario no encontrado.");

@@ -1,5 +1,16 @@
 # Contrato API compartido
 
+## Rama `pruebas` — correcciones de validación, 13/11/2026
+
+Compatibles con el frontend actual (envía todos los campos del formulario):
+
+| Ruta | Cambio |
+| --- | --- |
+| POST /api/auth/register y /login | El correo se normaliza (sin espacios, minúsculas) antes de validar, guardar y buscar. La búsqueda usa `LOWER(BTRIM(email))`, igual que la recuperación, para que `Ana@x.com` y `ana@x.com` sean la misma cuenta. |
+| POST /api/auth/register y PUT /api/users/profile | `nombre`/`apellido` exigen dos caracteres visibles y se guardan sin espacios sobrantes; texto (incluido email) admite hasta 255 caracteres (VARCHAR(255)). Antes un valor más largo terminaba en 503 de la BD; ahora es 400. |
+| PUT /api/users/profile | Cuerpo vacío `{}` responde 400 (no había nada que actualizar). |
+| Cualquier ruta inexistente | 404 JSON `{code:"NOT_FOUND", message}` en lugar de la página HTML de Express. |
+
 ## Contrato de operación preparado localmente — 04/11/2026
 
 Sin despliegue ni recepción externa acreditados. El entrypoint Vercel espera la inicialización; configuración, conexión, procedencia o esquema incompletos responden503 `SERVICE_UNAVAILABLE`, mensaje genérico, `Cache-Control:no-store` y `Retry-After:5`. El cuerpo no revela errores SQL, URLs ni secretos. No hay DDL de arranque.
