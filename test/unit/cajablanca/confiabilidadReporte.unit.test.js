@@ -88,6 +88,11 @@ describe("reportDto — función interna count()", () => {
         assert.equal(dto.confirmations, 2);
         assert.equal(dto.reliability.level, "ALTO");
     });
+    it("valor límite: un conteo 0 es válido (mata el mutante `< 0` → `<= 0`)", () => {
+        const dto = reportDto(fila({ confirmations: "0", rejections: "0", confirmWeight: "0", rejectWeight: "0" }));
+        assert.equal(dto.confirmations, 0);
+        assert.equal(dto.reliability.reason, "INSUFFICIENT_VALIDATIONS");
+    });
     it("camino de error: conteo negativo o no entero lanza excepción", () => {
         for (const confirmations of ["-1", "1.5", "abc", "9007199254740992"]) {
             assert.throws(() => reportDto(fila({ confirmations })), /Invalid report count/, confirmations);
