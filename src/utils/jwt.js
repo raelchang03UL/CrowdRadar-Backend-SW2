@@ -8,7 +8,8 @@ class Jwt {
             {
                 id: user.id,
                 email: user.email,
-                rol: user.rol
+                rol: user.rol,
+                sessionVersion: user.sessionVersion
             },
             process.env.JWT_SECRET,
             {
@@ -22,7 +23,8 @@ class Jwt {
 
         return jwt.verify(
             token,
-            process.env.JWT_SECRET
+            process.env.JWT_SECRET,
+            { algorithms: ["HS256"] }
         );
 
     }

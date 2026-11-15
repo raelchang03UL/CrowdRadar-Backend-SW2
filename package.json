@@ -2,24 +2,51 @@
   "name": "crowdradar-backend",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:unit": "node --test \"test/unit/**/*.test.js\"",
+    "test:integration": "node --test \"test/integration/**/*.test.js\"",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-include=app.js",
+    "test:coverage:unit": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" \"test/unit/**/*.test.js\"",
+    "test:verify": "npm run test:unit && npm run test:integration",
+    "test:mutation": "stryker run",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed:demo": "node scripts/seed-places-demo.js",
+    "db:seed:user-demo": "node scripts/seed-demo-user.js",
+    "test:db:places": "node scripts/verify-places-db.js",
+    "test:local:places": "node scripts/verify-places-local.js",
+    "test:db:auth": "node scripts/verify-auth-db.js",
+    "test:db:recovery": "node scripts/verify-recovery-db.js",
+    "test:db:consolidation": "node scripts/verify-consolidation-db.js",
+    "test:db:sprint3": "node scripts/verify-sprint3-db.js",
+    "qa:serve": "node scripts/serve-consolidation-qa.js",
+    "demo:local": "node scripts/demo-local.js",
+    "test:db:saturation": "node scripts/verify-saturation-db.js",
+    "test:db:saturation-filter": "node scripts/verify-saturation-filter-db.js",
+    "test:db:favorites": "node scripts/verify-favorites-db.js"
   },
   "dependencies": {
+    "@vercel/functions": "3.10.6",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "firebase-admin": "^14.5.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.0.10",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.1",
     "nodemon": "^3.1.10"
   }
 }

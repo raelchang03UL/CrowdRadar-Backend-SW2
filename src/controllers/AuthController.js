@@ -1,6 +1,17 @@
 import AuthService from "../services/AuthService.js";
+import { AuthError } from "../utils/passwordPolicy.js";
 
 class AuthController {
+
+    async changePassword(req, res) {
+        try {
+            await AuthService.changePassword(req.user.id, req.user.sessionVersion, req.body);
+            return res.status(200).json({ message: "Contraseña actualizada. Inicia sesión nuevamente." });
+        } catch (error) {
+            if (error instanceof AuthError) return res.status(error.status).json({ message: error.message, code: error.code });
+            return res.status(503).json({ message: "No se pudo actualizar la contraseña. Inténtalo de nuevo.", code: "SERVICE_UNAVAILABLE" });
+        }
+    }
 
     async register(req, res) {
 
@@ -14,11 +25,8 @@ class AuthController {
             });
 
         } catch (error) {
-
-            return res.status(400).json({
-                message: error.message
-            });
-
+            if (error instanceof AuthError) return res.status(error.status).json({ message: error.message, code: error.code });
+            return res.status(503).json({ message: "No se pudo crear la cuenta. Inténtalo de nuevo.", code: "SERVICE_UNAVAILABLE" });
         }
 
     }
@@ -37,11 +45,8 @@ class AuthController {
             });
 
         } catch (error) {
-
-            return res.status(401).json({
-                message: error.message
-            });
-
+            if (error instanceof AuthError) return res.status(error.status).json({ message: error.message, code: error.code });
+            return res.status(503).json({ message: "No se pudo iniciar sesión. Inténtalo de nuevo.", code: "SERVICE_UNAVAILABLE" });
         }
 
     }

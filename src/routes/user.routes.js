@@ -9,6 +9,12 @@ import { updateUserSchema } from "../validations/userSchemas.js";
 const router = Router();
 
 router.get(
+    "/karma",
+    authMiddleware,
+    UserController.getKarma
+);
+
+router.get(
     "/profile",
     authMiddleware,
     UserController.getProfile
@@ -19,6 +25,12 @@ router.put(
     authMiddleware,
     validateSchema(updateUserSchema),
     UserController.updateProfile
+);
+
+router.get(
+    "/reports",
+    authMiddleware,
+    UserController.getReports
 );
 
 export default router;

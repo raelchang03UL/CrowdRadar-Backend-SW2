@@ -1,6 +1,13 @@
 import User from "../models/User.js";
+import sequelize from "../config/database.js";
+import recoveryRepository from "./PasswordRecoveryRepository.js";
+import { normalizeEmail } from "../utils/normalization.js";
 
 class UserRepository {
+
+    async invalidatePasswordResetTokens(id, transaction) {
+        await recoveryRepository.invalidateForUser(id, transaction);
+    }
 
     async create(data) {
         return await User.create(data);
@@ -9,16 +16,36 @@ class UserRepository {
     async findById(id) {
         return await User.findByPk(id, {
             attributes: {
-                exclude: ["passwordHash"]
+                exclude: ["passwordHash", "sessionVersion"]
             }
         });
     }
 
+    async findKarmaPoints(id) {
+        return User.findByPk(id, {
+            attributes: ["id", "karmaPoints"],
+            raw: true
+        });
+    }
+
     async findByEmail(email) {
+        // Igual que la recuperación: LOWER(BTRIM(email)) para cuentas antiguas con mayúsculas.
         return await User.findOne({
-            where: {
-                email
-            }
+            where: sequelize.where(
+                sequelize.fn("LOWER", sequelize.fn("BTRIM", sequelize.col("email"))),
+                normalizeEmail(email)
+            )
+        });
+    }
+
+    async findSessionById(id) {
+        return User.findByPk(id, { attributes: ["id", "rol", "status", "sessionVersion"], raw: true });
+    }
+
+    async withLockedUser(id, operation) {
+        return sequelize.transaction(async (transaction) => {
+            const user = await User.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE });
+            return operation(user, transaction);
         });
     }
 
@@ -34,7 +61,7 @@ class UserRepository {
 
         return await User.findByPk(id, {
             attributes: {
-                exclude: ["passwordHash"]
+                exclude: ["passwordHash", "sessionVersion"]
             }
         });
 

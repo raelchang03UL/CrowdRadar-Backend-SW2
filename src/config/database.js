@@ -1,18 +1,17 @@
 import { Sequelize } from "sequelize";
+import pg from "pg";
 import dotenv from "dotenv";
+import { databaseConfiguration } from "./environment.js";
+import { demoDatabaseConfiguration, isDemoDeployment } from "./demoSupabaseEnvironment.js";
 
 dotenv.config();
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD ?? "",
-    {
-        host: process.env.DB_HOST,
-        port: Number.parseInt(process.env.DB_PORT ?? "5432", 10),
-        dialect: "postgres",
-        logging: false
-    }
-);
+const config = isDemoDeployment() ? demoDatabaseConfiguration() : databaseConfiguration();
+// Make the PostgreSQL driver visible to serverless dependency tracing. Preserve
+// the same connection/TLS settings and avoid Sequelize's dynamic require(name).
+const options = { ...config.options, dialectModule: pg };
+const sequelize = config.url
+    ? new Sequelize(config.url, options)
+    : new Sequelize(config.database, config.username, config.password, options);
 
 export default sequelize;

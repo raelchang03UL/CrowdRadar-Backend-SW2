@@ -1,0 +1,238 @@
+﻿# Frontend a1808d2 (fix/web-referrer-mapa), 10/10/2026 16:47, Flutter 3.41.9 • channel [user-branch] • unknown source, Windows 11
+
+## flutter analyze --no-pub
+Analyzing CR-FrontEnd...
+No issues found! (ran in 5.4s)
+
+## flutter test --no-pub (reporter expanded)
+00:00 +0: loading test/auth_navigation_test.dart
+00:00 +0: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +1: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +2: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +3: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +4: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +5: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +6: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +7: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +8: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +9: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +10: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:00 +10 ~1: test/auth_navigation_test.dart: sin sesión, la entrada directa a /map redirige a login
+00:01 +11 ~1: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +12 ~1: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +12 ~2: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +13 ~2: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +14 ~2: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +15 ~2: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +16 ~2: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +17 ~2: test/auth_usability_test.dart: login mantiene formulario, bloquea doble envío y muestra error estable
+00:01 +18 ~2: test/auth_navigation_test.dart: logout redirige sin navegación explícita y elimina la pila protegida
+00:02 +19 ~2: test/auth_usability_test.dart: registro mantiene formulario, bloquea doble envío y muestra error estable
+00:02 +20 ~2: test/map_page_test.dart: muestra carga mientras espera al backend
+00:02 +21 ~2: test/map_page_test.dart: muestra carga mientras espera al backend
+00:02 +22 ~2: test/map_page_test.dart: muestra carga mientras espera al backend
+00:02 +23 ~2: test/map_page_test.dart: muestra carga mientras espera al backend
+00:02 +24 ~2: test/map_page_test.dart: muestra carga mientras espera al backend
+00:03 +25 ~2: test/auth_navigation_test.dart: después de logout, go y push a /favoritos siguen bloqueados
+00:03 +26 ~2: test/map_page_test.dart: lista vacía no fabrica marcadores y permite actualizar
+00:03 +27 ~2: test/auth_navigation_test.dart: después de logout, go y push a /profile siguen bloqueados
+00:03 +28 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +29 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +30 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +31 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +32 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +33 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +34 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +35 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +36 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +37 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +38 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +39 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +40 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +41 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +42 ~2: test/map_page_test.dart: marcadores coinciden con backend y selección solo identifica el lugar
+00:03 +43 ~2: test/auth_navigation_test.dart: después de logout, go y push a /profile/edit siguen bloqueados
+00:03 +44 ~2: test/auth_navigation_test.dart: después de logout, go y push a /profile/edit siguen bloqueados
+00:03 +45 ~2: test/password_change_test.dart: tiempo de espera máximo 15 segundos
+00:03 +46 ~2: test/password_change_test.dart: tiempo de espera máximo 15 segundos
+00:03 +47 ~2: test/password_change_test.dart: tiempo de espera máximo 15 segundos
+00:04 +48 ~2: test/map_page_test.dart: cerrar sesión retira los marcadores ya cargados
+00:04 +49 ~2: test/map_page_test.dart: cerrar sesión retira los marcadores ya cargados
+00:04 +50 ~2: test/map_page_test.dart: cerrar sesión retira los marcadores ya cargados
+00:04 +51 ~2: test/map_page_test.dart: cerrar sesión retira los marcadores ya cargados
+00:04 +52 ~2: test/map_page_test.dart: cerrar sesión retira los marcadores ya cargados
+00:04 +53 ~2: test/map_page_test.dart: cerrar sesión retira los marcadores ya cargados
+00:04 +54 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +55 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +56 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +57 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +58 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +59 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +60 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +61 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +62 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +63 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +64 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +65 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +66 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +67 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +68 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +69 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +70 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +71 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +72 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +73 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:04 +74 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +75 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +76 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +77 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +78 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +79 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +80 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +81 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +82 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +83 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +84 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +85 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +86 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +87 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +88 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +89 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +90 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +91 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +92 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +93 ~2: test/password_change_test.dart: campos ocultos, formulario estable, botones bloqueados y error corregible
+00:05 +94 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +95 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +96 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +97 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +98 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +99 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +100 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +101 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +102 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +103 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +104 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +105 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +106 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +107 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +108 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +109 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +110 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +111 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +112 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +113 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +114 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +115 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +116 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +117 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +118 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +119 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +120 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +121 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +122 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +123 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +124 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +125 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +126 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +127 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +128 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +129 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +130 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +131 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:05 +132 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +133 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +134 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +135 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +136 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +137 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +138 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +139 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +140 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +141 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +142 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +143 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +144 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +145 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +146 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +147 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +148 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +149 ~2: test/profile_usability_test.dart: edición conserva campos, impide doble envío y permite corregir tras error
+00:06 +150 ~2: test/recovery_test.dart: login ofrece recuperación pública y formulario valida email
+00:06 +151 ~2: test/recovery_test.dart: login ofrece recuperación pública y formulario valida email
+00:06 +152 ~2: test/recovery_test.dart: login ofrece recuperación pública y formulario valida email
+00:06 +153 ~2: test/recovery_test.dart: login ofrece recuperación pública y formulario valida email
+00:07 +154 ~2: test/recovery_test.dart: login ofrece recuperación pública y formulario valida email
+00:07 +155 ~2: test/password_change_test.dart: ruta nueva protegida después de logout y ante entrada directa
+00:07 +156 ~2: test/profile_usability_test.dart: perfil Size(360.0, 800.0) texto 1.0 conserva acciones sin overflow
+00:07 +157 ~2: test/recovery_test.dart: forgot conserva campo deshabilitado durante carga y confirma uniforme
+00:07 +158 ~2: test/recovery_test.dart: forgot conserva campo deshabilitado durante carga y confirma uniforme
+00:07 +159 ~2: test/password_change_test.dart: éxito real del cubit limpia sesión y redirige mostrando aviso fijo
+00:07 +160 ~2: test/password_change_test.dart: éxito real del cubit limpia sesión y redirige mostrando aviso fijo
+00:07 +161 ~2: test/password_change_test.dart: éxito real del cubit limpia sesión y redirige mostrando aviso fijo
+00:07 +162 ~2: test/password_change_test.dart: éxito real del cubit limpia sesión y redirige mostrando aviso fijo
+00:07 +163 ~2: test/password_change_test.dart: éxito real del cubit limpia sesión y redirige mostrando aviso fijo
+00:07 +164 ~2: test/recovery_test.dart: reset no muestra campos antes de verificación real ni para enlace inválido
+00:07 +165 ~2: test/profile_usability_test.dart: perfil Size(390.0, 844.0) texto 1.0 conserva acciones sin overflow
+00:07 +166 ~2: test/password_change_test.dart: cambio contraseña Size(360.0, 800.0) texto 1.0 no desborda y permite alcanzar guardar
+00:07 +167 ~2: test/recovery_test.dart: /reset-password no invoca validación HTTP ni muestra campos
+00:07 +168 ~2: test/profile_usability_test.dart: edición Size(390.0, 844.0) texto 1.0 conserva acciones sin overflow
+00:07 +169 ~2: test/profile_usability_test.dart: edición Size(390.0, 844.0) texto 1.0 conserva acciones sin overflow
+00:07 +170 ~2: test/password_change_test.dart: cambio contraseña Size(360.0, 800.0) texto 2.0 no desborda y permite alcanzar guardar
+00:07 +171 ~2: test/recovery_test.dart: validación fallida ofrece reintento sin habilitar formulario: Has realizado demasiados intentos. Espera unos minutos antes de intentarlo de nuevo.
+00:08 +172 ~2: test/password_change_test.dart: cambio contraseña Size(390.0, 844.0) texto 1.0 no desborda y permite alcanzar guardar
+00:08 +173 ~2: test/profile_usability_test.dart: perfil Size(390.0, 844.0) texto 2.0 conserva acciones sin overflow
+00:08 +174 ~2: test/recovery_test.dart: validación fallida ofrece reintento sin habilitar formulario: No pudimos completar la solicitud. Inténtalo de nuevo.
+00:08 +175 ~2: test/password_change_test.dart: cambio contraseña Size(390.0, 844.0) texto 2.0 no desborda y permite alcanzar guardar
+00:08 +176 ~2: test/profile_usability_test.dart: edición Size(390.0, 844.0) texto 2.0 conserva acciones sin overflow
+00:08 +177 ~2: test/recovery_test.dart: reset valida Unicode/72 bytes y confirmación sin enviar
+00:08 +178 ~2: test/recovery_test.dart: reset valida Unicode/72 bytes y confirmación sin enviar
+00:08 +179 ~2: test/recovery_test.dart: reset valida Unicode/72 bytes y confirmación sin enviar
+00:08 +180 ~2: test/recovery_test.dart: reset valida Unicode/72 bytes y confirmación sin enviar
+00:08 +181 ~2: test/recovery_test.dart: reset valida Unicode/72 bytes y confirmación sin enviar
+00:08 +182 ~2: test/password_change_test.dart: teclado visible y acción done envían una sola vez
+00:08 +183 ~2: test/password_change_test.dart: teclado visible y acción done envían una sola vez
+00:08 +184 ~2: test/recovery_test.dart: reset carga estable/doble envío y 429 conservan contraseñas ocultas
+00:08 +185 ~2: test/recovery_test.dart: reset carga estable/doble envío y 429 conservan contraseñas ocultas
+00:08 +186 ~2: test/profile_usability_test.dart: edición con teclado visible permite desplazarse y enviar por acción done
+00:08 +187 ~2: test/profile_usability_test.dart: edición con teclado visible permite desplazarse y enviar por acción done
+00:08 +188 ~2: test/recovery_test.dart: reset exitoso borra sesión/URL y vuelve a login sin autologin
+00:09 +189 ~2: test/recovery_test.dart: cambio de query revalida enlace y limpia campos anteriores
+00:09 +190 ~2: test/recovery_test.dart: forgot Size(360.0, 800.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +191 ~2: test/session_async_test.dart: un login pendiente no restaura la sesión después de logout
+00:09 +192 ~2: test/recovery_test.dart: reset Size(360.0, 800.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +193 ~2: test/recovery_test.dart: reset Size(360.0, 800.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +194 ~2: test/recovery_test.dart: reset Size(360.0, 800.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +195 ~2: test/recovery_test.dart: reset Size(360.0, 800.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +196 ~2: test/recovery_test.dart: reset Size(360.0, 800.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +197 ~2: test/recovery_test.dart: forgot Size(360.0, 800.0) texto 2.0 sin overflow y acción alcanzable
+00:09 +198 ~2: test/recovery_test.dart: reset Size(360.0, 800.0) texto 2.0 sin overflow y acción alcanzable
+00:09 +199 ~2: test/recovery_test.dart: forgot Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +200 ~2: test/recovery_test.dart: forgot Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +201 ~2: test/recovery_test.dart: forgot Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +202 ~2: test/recovery_test.dart: forgot Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +203 ~2: test/recovery_test.dart: reset Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +204 ~2: test/recovery_test.dart: reset Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +205 ~2: test/recovery_test.dart: reset Size(390.0, 844.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +206 ~2: test/recovery_test.dart: forgot Size(390.0, 844.0) texto 2.0 sin overflow y acción alcanzable
+00:09 +207 ~2: test/recovery_test.dart: reset Size(390.0, 844.0) texto 2.0 sin overflow y acción alcanzable
+00:09 +208 ~2: test/recovery_test.dart: forgot Size(1440.0, 900.0) texto 1.0 sin overflow y acción alcanzable
+00:09 +209 ~2: test/recovery_test.dart: reset Size(1440.0, 900.0) texto 1.0 sin overflow y acción alcanzable
+00:10 +210 ~2: test/recovery_test.dart: forgot Size(1440.0, 900.0) texto 2.0 sin overflow y acción alcanzable
+00:10 +211 ~2: test/recovery_test.dart: reset Size(1440.0, 900.0) texto 2.0 sin overflow y acción alcanzable
+00:10 +212 ~2: test/visual_layout_test.dart: (setUpAll)
+00:10 +212 ~2: test/recovery_test.dart: forgot teclado y done envían una sola vez
+00:10 +213 ~2: test/visual_layout_test.dart: formulario contenido Size(360.0, 800.0) registro=false
+00:10 +214 ~2: test/visual_layout_test.dart: formulario contenido Size(360.0, 800.0) registro=false
+00:11 +215 ~2: test/web_layout_navigation_test.dart: LoginPage legible sin overflow a Size(1440.0, 900.0)
+00:11 +216 ~2: test/widget_test.dart: Smoke test: la app arranca en la pantalla de login
+00:11 +217 ~2: test/widget_test.dart: Smoke test: la app arranca en la pantalla de login
+00:12 +218 ~2: test/widget_test.dart: Smoke test: la app arranca en la pantalla de login
+00:12 +219 ~2: test/widget_test.dart: Smoke test: la app arranca en la pantalla de login
+00:12 +220 ~2: test/widget_test.dart: Smoke test: la app arranca en la pantalla de login
+00:12 +221 ~2: test/visual_layout_test.dart: formulario contenido Size(1440.0, 900.0) registro=true
+00:12 +222 ~2: test/web_layout_navigation_test.dart: RegisterPage legible sin overflow a Size(390.0, 844.0)
+00:12 +223 ~2: test/web_layout_navigation_test.dart: LoginPage legible sin overflow a Size(360.0, 360.0)
+00:12 +224 ~2: test/web_layout_navigation_test.dart: RegisterPage legible sin overflow a Size(360.0, 360.0)
+00:12 +225 ~2: test/web_layout_navigation_test.dart: registro abierto directamente vuelve a login tras éxito sin pila previa
+00:13 +226 ~2: All tests passed!

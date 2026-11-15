@@ -27,6 +27,19 @@ User.init(
             type: DataTypes.STRING,
             allowNull: false
         },
+        sessionVersion: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0,
+            validate: { min: 0 }
+        },
+        karmaPoints: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            defaultValue: 0,
+            field: "karma_points",
+            validate: { min: 0 }
+        },
         telefono: {
             type: DataTypes.STRING
         },

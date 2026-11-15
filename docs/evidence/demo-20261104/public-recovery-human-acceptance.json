@@ -1,0 +1,15 @@
+{
+  "date":"2026-11-04",
+  "web":"https://crowdradar-demo-web.vercel.app",
+  "api":"https://crowdradar-demo-api.vercel.app",
+  "backendSource":"7780db488892a0dc3c45edfc7a9622b846e71847",
+  "frontendSource":"a4919f021157632a4e6500855c6d32acff2f0ab9",
+  "provider":"Rael's authorized Brevo Free SMTP account",
+  "request":{"utc":"2026-11-04T22:47:57.857Z","status":202,"count":1,"retries":0},
+  "humanConfirmation":"Sí, llegaron ambos y pude entrar",
+  "humanChecks":["Recovery email received","Password personally changed through the link","Password-change notice received","Login with new password succeeded"],
+  "databaseChecks":{"mode":"API role, TLS/provenance verified, READ ONLY REPEATABLE READ","preUtc":"2026-11-04T22:50:13.864Z","postUtc":"2026-11-04T22:54:59.946Z","sessionVersionBefore":0,"sessionVersionAfter":1,"resetTokenConsumedAt":"2026-11-04T22:50:15.422Z","activeOldSessionDevicesBefore":1,"activeOldSessionDevicesAfter":0,"kennedyFavoritePreserved":true},
+  "result":"PASS_RECEIPT_RESET_NOTICE_AND_LOGIN",
+  "passwordsHashesTokenValuesOrLinksRead":false,
+  "limits":["The application still uses deferred SMTP delivery, without a durable mail queue or automatic retry guarantee","Session version and device eligibility were observed; no previous human password or JWT was collected"]
+}

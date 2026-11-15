@@ -1,0 +1,73 @@
+HU8 — destino FCM explícito, corrección local posterior al control real positivo
+30/10/2026 America/Lima. Base publicada: 5a23a8bec546a80ec4b3c7fcf23b001c3b95d5c6.
+Colaboración delegada asistida; registro de validación preparado antes de publicar esta corrección.
+
+Motivo y alcance:
+- El control aislado run-20261030-2251 obtuvo un registration token FCM real (142 caracteres,
+  no FID ni JWT), ACK Admin token y eventos worker-push/window-message correlacionados
+  a2026-10-31T03:58:36Z, según evidencia QA conservada. No es aceptación HU8 de la app.
+- La API previa aceptaba cadenas opacas pero dispatch siempre utilizaba fid. Un FID de
+  Installations y un registration token FCM no son el mismo identificador.
+- POST devices admite targetType opcional fid/fcm-token; omisión mantiene fid compatible.
+  Se rechazan tipos desconocidos/nulos, claves adicionales y JWT de estructura evidente.
+- La nueva012 agrega target_type con defaultfid y CHECK; no infiere por contenido ni modifica001–011.
+- Upsert mantiene lock/unicidad por valor y rota registrationId/purga cola. Claim e isEligible
+  incluyen tipo junto con cuenta, favorito, sesión, binding y destino original.
+- Dispatch usa exclusivamente fid o token según tipo declarado, sin alias, inferencia o fallback.
+  Web continúa data-only y conserva los seis campos de sesión/lugar. DELETE no cambia.
+- Readiness, migrador explícito y runners R01/S3/HU8 conocen012. Sin DDL de arranque.
+
+Validación ejecutada sobre esta corrección:
+- npm test:225/225, cero fallos/omitidas, duration8980ms; una ejecución final.
+  Log QA: backend-target-types-tests-final.log.
+- node --check:132 archivos JavaScript correctos. git diff --check:exit0.
+- Diff de los once migradores anteriores contra HEAD: vacío.
+- Nuevas pruebas de contrato/defaultFID/FCM explícito/JWT inválido, envío exclusivo por tipo,
+  ausencia de inferencia por longitud, tipo desconocido cerrado y migración012/readiness.
+- Preservación SQL012 primera aplicación y repetición:6 dispositivos,12 eventos,12 favoritos,
+  7 baselines idénticos; filas anteriores quedanfid y metadata001–011 conservada.
+  Evidencia QA: migration012-preservation-before.json, -after-first.json y -after-repeat.json.
+
+Regresión SQL/HTTP final posterior a012: HU8 7 bloques aprobados; S3 fresh7/7 y legacy7/7 en bases conservadas; HU7 usuarios4/cuentas6/reportes8, total18/18. R01 no se repitió porque exige crear dos bases nuevas y rechaza las existentes: el resultado6/6 anterior permanece histórico. Runners actuales R01/S3 incluyen012. Evidencia agregada QA: target-types-sql-final.json y registros *-latest.json. No se enviaron FCM/SMTP ni se crearon fixtures
+desde la ejecución de pruebas unitarias/sintaxis. QA SQL usa su propio runner con doble FCM;
+root controló las pruebas reales posteriores registradas a continuación; no se atribuyen al control aislado ni a un ACK.
+
+
+Producto real — recepción y apertura confirmadas:
+- Chrome real, build Web con prefijo SHA2561384AA47. Tres reporteros nuevos crearon tres POST201
+  SATURADO; GET devolvió SATURADO con tres personas distintas. Se preservaron hashes/IDs históricos.
+- Original reconcilePlace(7): SIN_DATOS→SATURADO, outbox29, destinatario C31/device22,
+  targetType fcm-token, longitud142, sin forma FID/JWT. No alias ni inferencia de destino.
+- Original dispatchPending: configuredtrue/sent1 a2026-10-31T04:19:31Z.
+- Rael confirmó por el chat: «Sí, llegó y abrió HU8 FCM Chrome».
+- Esta es prueba del flujo de negocio y navegación de la app; se distingue del control legacy aislado.
+
+Producto real — logout, purga y registro nuevo:
+- Cuatro reporteros distintos nuevos: cuatro POST201 TRANQUILO, cálculo TRANQUILO/siete votos.
+- Original reconcilePlace(7) encoló UNA alerta pending30 para device22, attempts0. Sin dispatch.
+- Logout/login de la misma cuenta y reactivación realizados por el titular.
+- Verificación SELECT: device22 borrado, pending30 borrado; nuevo device23 con binding diferente,
+  sesión FCM vigente y favorito propio; pending0. Hashes históricos y evidencia de producto intactos.
+- No se enviaron la alerta pendiente anterior ni mensajes viejos durante este ensayo.
+
+Negativos con métodos originales, exit0:
+- nochange: reconcilePlace(7) devolvió changed:false/initialized:false, siete reportes vigentes.
+  Cero evento nuevo. Las14 filas del outbox global conservaron hash/contenido idénticos.
+- postlogout: guardas globaleligible0 y retryexhaustion0 ANTES de habilitar configuración FCM.
+  Original dispatchPending devolvió configured:true/sent:0. Las14 filas del outbox global,
+  incluidas las históricas/ineligibles, conservaron hash/contenido idénticos.
+- Worker automático y SMTP deshabilitados. Sin fallback, scheduler nuevo ni acceso a otras bases.
+
+Evidencia QA adicional fuera del repo, conservada:
+product-token-report-state.json
+product-push-dispatch-once.lock y prueba product-push-dispatch correspondiente
+product-token-logout-state.json
+product-token-logout-verify.json
+product-token-nochange-proof.json
+product-token-postlogout-proof.json
+
+Resultado: núcleo HU8.3 recibido/abierto y logout/purga/cero cambio/cero envío anterior comprobados
+localmente en Chrome. Pendientes revisión humana e integración del par definitivo identificado en
+los PR existentes; no merge ni despliegue. Worker en memoria no demuestra ejecución permanente en Vercel.
+Las225 pruebas/132JS y regresiones SQL superiores corresponden al código final, que no se modificó
+durante estos helpers de QA ni esta actualización documental. Sin nuevos commits/push desde el agente.

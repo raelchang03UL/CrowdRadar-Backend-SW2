@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "outcome": "PASS",
+  "sourceProjectRef": "ycxuhejpehmdfbvdplpl",
+  "backup": {
+    "snapshotAt": "2026-11-04T22:58:00.812Z",
+    "completedAt": "2026-11-04T22:58:11.224Z",
+    "format": "PostgreSQL custom archive",
+    "clientVersion": "18.1",
+    "sourceReadOnly": true,
+    "schemas": ["public", "crowdradar_demo_identity"],
+    "bytes": 54655,
+    "sha256": "1d6518f3087db945d2b92d662f4d8f231a7c560dbeec3f9576eca39603a73e5f",
+    "privateArchivePublished": false
+  },
+  "restore": {
+    "completedAt": "2026-11-04T22:58:59.515Z",
+    "host": "127.0.0.1",
+    "port": 55491,
+    "database": "crowdradar_demo_restore_20261104",
+    "newDatabaseVerifiedAbsentBeforeCreation": true,
+    "countsEqualToSourceSnapshot": true,
+    "foreignKeysValidated": 20,
+    "sequencesChecked": 8,
+    "migrationLedgerEntries": 13,
+    "catalogPlaces": 5,
+    "rolesRestored": false,
+    "cronRestored": false,
+    "platformRestored": false,
+    "remoteWrites": false
+  },
+  "snapshotCounts": {
+    "crowdradar_migrations": 13,
+    "favorites": 1,
+    "password_recovery_limits": 5,
+    "password_reset_tokens": 1,
+    "place_saturation": 2,
+    "places": 5,
+    "push_device_tokens": 1,
+    "push_notification_outbox": 2,
+    "report_denunciations": 0,
+    "report_karma_awards": 8,
+    "report_moderation_actions": 0,
+    "report_validations": 0,
+    "saturation_reports": 8,
+    "user_moderation_actions": 0,
+    "users": 4,
+    "crowdradar_demo_identity.provenance": 1
+  },
+  "privacy": {
+    "recordValuesIncluded": false,
+    "humanEmailIncluded": false,
+    "credentialsIncluded": false,
+    "archiveAndRestoreClusterAcl": "Owner-only access verified by coordinator; private copies retained."
+  },
+  "anonymousHttp": {
+    "inspectedAt": "2026-11-04T22:52:57.523Z",
+    "credentialsSent": false,
+    "restStatus": 401,
+    "graphqlStatus": 401,
+    "conclusion": "Anonymous requests rejected; these responses do not prove Data API disabled."
+  },
+  "scope": "Application schema and data recovery rehearsal; not a full infrastructure or credentials restore.",
+  "evidenceBasis": "Coordinator execution plus private archive manifest and restore-validation summary; no private files copied."
+}

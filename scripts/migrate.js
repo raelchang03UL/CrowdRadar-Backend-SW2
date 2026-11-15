@@ -1,0 +1,50 @@
+import { migrateSaturationAlerts, saturationAlertsMigration } from "../src/database/migrateSaturationAlerts.js";
+import { migratePushTargetTypes, pushTargetTypesMigration } from "../src/database/migratePushTargetTypes.js";
+import { migrateFavorites, favoritesMigration } from "../src/database/migrateFavorites.js";
+import dotenv from "dotenv";
+import { createMigrationConnection } from "../src/config/migrationConnection.js";
+import { migratePlaces } from "../src/database/migratePlaces.js";
+import { migrateAuth, authMigration } from "../src/database/migrateAuth.js";
+import { migrateRecovery, recoveryMigration } from "../src/database/migrateRecovery.js";
+import { migrateReportCompatibility, reportCompatibilityMigration } from "../src/database/migrateReportCompatibility.js";
+import { migrateKarma, karmaMigration } from "../src/database/migrateKarma.js";
+import { migrateValidation, validationMigration } from "../src/database/migrateValidation.js";
+import { migrateUserModeration, userModerationMigration } from "../src/database/migrateUserModeration.js";
+import { migrateReportModeration, reportModerationMigration } from "../src/database/migrateReportModeration.js";
+import { assertMigrationTarget, authorizeDemoMigration, revokeDemoMigrationAuthorization } from "../src/database/databaseSafety.js";
+import { isDemoDeployment } from "../src/config/demoSupabaseEnvironment.js";
+import { migratePlaceDetails, placeDetailsMigration } from "../src/database/migratePlaceDetails.js";
+
+dotenv.config();
+let sequelize;
+try {
+    sequelize = createMigrationConnection();
+    if (isDemoDeployment()) await authorizeDemoMigration(sequelize);
+    assertMigrationTarget(sequelize);
+    const migrate = async operation => { assertMigrationTarget(sequelize); return operation(sequelize); };
+    const applied = await migrate(migratePlaces);
+    console.log(applied ? "001-create-places aplicada." : "001-create-places ya aplicada; sin cambios.");
+    const authApplied = await migrate(migrateAuth);
+    console.log(authApplied ? `${authMigration} aplicada.` : `${authMigration} ya aplicada; sin cambios.`);
+    const recoveryApplied = await migrate(migrateRecovery);
+    console.log(recoveryApplied ? `${recoveryMigration} aplicada.` : `${recoveryMigration} ya aplicada; sin cambios.`);
+    const detailsApplied = await migrate(migratePlaceDetails);
+    console.log(detailsApplied ? `${placeDetailsMigration} aplicada.` : `${placeDetailsMigration} ya aplicada; sin cambios.`);
+
+    const reportsApplied = await migrate(migrateReportCompatibility);
+    console.log(`${reportCompatibilityMigration}: ${reportsApplied ? 'aplicada' : 'sin cambios'}.`);
+    const karmaApplied = await migrate(migrateKarma);
+    console.log(`${karmaMigration}: ${karmaApplied ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${validationMigration}: ${await migrate(migrateValidation) ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${userModerationMigration}: ${await migrate(migrateUserModeration) ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${reportModerationMigration}: ${await migrate(migrateReportModeration) ? 'aplicada' : 'sin cambios'}.`);
+    console.log(`${favoritesMigration}: ${await migrate(migrateFavorites) ? "aplicada" : "sin cambios"}.`);
+    console.log(`${saturationAlertsMigration}: ${await migrate(migrateSaturationAlerts) ? "aplicada" : "sin cambios"}.`);
+    console.log(`${pushTargetTypesMigration}: ${await migrate(migratePushTargetTypes) ? "aplicada" : "sin cambios"}.`);
+} catch (error) {
+    console.error("No se completaron las migraciones. Revisa configuración, permisos y destino autorizado; no se muestran SQL ni credenciales.");
+    process.exitCode = 1;
+} finally {
+    if (sequelize) revokeDemoMigrationAuthorization(sequelize);
+    if (sequelize) await sequelize.close();
+}

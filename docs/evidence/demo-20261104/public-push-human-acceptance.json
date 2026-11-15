@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-04",
+  "web": "https://crowdradar-demo-web.vercel.app",
+  "api": "https://crowdradar-demo-api.vercel.app",
+  "frontendSource": "a4919f021157632a4e6500855c6d32acff2f0ab9",
+  "backendSource": "7780db488892a0dc3c45edfc7a9622b846e71847",
+  "browser": "User's normal Chrome",
+  "projectRef": "ycxuhejpehmdfbvdplpl",
+  "placeId": -2005,
+  "placeName": "Parque John F. Kennedy",
+  "transition": {"previousLevel":"SATURADO", "newLevel":"MODERADO"},
+  "reports": {"ids":[6,7,8], "users":[1,3,4], "createdAtUtc":"2026-11-04T22:45:30Z", "transport":"three real public API HTTP 201 requests"},
+  "delivery": {"mode":"automatic Supabase cron to public Vercel API", "outboxId":2, "sentAtUtc":"2026-11-04T22:46:00.409Z", "attempts":1, "errors":0, "recipientUserId":2, "activeRecipientDevices":1, "qaOutboxCount":0},
+  "humanConfirmation": "Sí, llegó y abrió Parque Kennedy",
+  "result": "PASS_RECEIVED_AND_OPENED",
+  "evidence": ["fcm-kennedy-repeat-20261104.json", "supabase-cron-after-repeat.log", "supabase-outbox-after-repeat.log"],
+  "noChangeControl": "Ten automatic runs from 22:36 through 22:45 UTC sent zero alerts while the place level remained unchanged.",
+  "priorAttempt": "17:35 Lima provider acceptance was recorded. User clarified uncertainty about seeing it and requested this repeat; no human receipt is attributed to that attempt.",
+  "limits": ["Authenticated CrowdRadar tab remained open", "Does not verify app-closed delivery, Android or iOS", "Provider ACK and human receipt are separate evidence"],
+  "secretsIncluded": false
+}
